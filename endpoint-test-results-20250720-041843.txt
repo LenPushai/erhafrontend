@@ -1,0 +1,32 @@
+# QUOTE MANAGEMENT ENDPOINT TEST REPORT
+Generated: 2025-07-20 04:18:43
+Target: http://localhost:8082/api/v1/quotes
+
+## SUMMARY
+- Total Tests: 15
+- Passed: 1  
+- Failed: 14
+- Success Rate: 6.7%
+- Deployment Readiness: 0%
+- Average Response Time: 0ms
+
+## DETAILED RESULTS
+[PASS] Actuator Health - GET /api/v1/actuator/health (200) - 373ms
+[FAIL] Quote Service Health - GET /api/v1/quotes/health (ERROR) - 0ms
+[FAIL] Quote Dashboard - GET /api/v1/quotes/dashboard (ERROR) - 0ms
+[FAIL] Quote Statistics - GET /api/v1/quotes/stats (ERROR) - 0ms
+[FAIL] Quote Analytics - GET /api/v1/quotes/analytics (ERROR) - 0ms
+[FAIL] Status Counts - GET /api/v1/quotes/status-counts (ERROR) - 0ms
+[FAIL] General Search - GET /api/v1/quotes/search (ERROR) - 0ms
+[FAIL] Value Range - GET /api/v1/quotes/value-range (ERROR) - 0ms
+[FAIL] High Risk Quotes - GET /api/v1/quotes/high-risk (ERROR) - 0ms
+[FAIL] Quality Costs - GET /api/v1/quotes/quality-costs (ERROR) - 0ms
+[FAIL] Quality Level Standard - GET /api/v1/quotes/quality-level/STANDARD (ERROR) - 0ms
+[FAIL] Draft Quotes - GET /api/v1/quotes/status/DRAFT (ERROR) - 0ms
+[FAIL] Approved Quotes - GET /api/v1/quotes/status/APPROVED (ERROR) - 0ms
+[FAIL] Pending Review - GET /api/v1/quotes/status/PENDING_REVIEW (ERROR) - 0ms
+[FAIL] Initialize Sample Data - POST /api/v1/quotes/init-sample-data (ERROR) - 0ms
+
+
+## STATUS
+? NEEDS WORK - Controller issues persist

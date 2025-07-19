@@ -1,0 +1,18 @@
+# ================================================================
+# IMMEDIATE DEPLOYMENT COMMANDS
+# ================================================================
+
+# Step 1: Stop current application
+# Press Ctrl+C in the terminal running mvn spring-boot:run
+
+# Step 2: Replace the QuoteController
+copy QuoteController-MINIMAL-041359.java src\main\java\com\erha\quote\controller\QuoteController.java
+
+# Step 3: Clean and compile
+mvn clean compile
+
+# Step 4: Start application
+mvn spring-boot:run
+
+# Step 5: Wait for startup message, then test
+# You should see: "Tomcat started on port 8082"

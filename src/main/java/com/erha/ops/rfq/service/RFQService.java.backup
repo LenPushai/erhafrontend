@@ -5,6 +5,7 @@ import com.erha.ops.rfq.repository.RFQRepository;
 import com.erha.ops.rfq.enums.RFQStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +42,11 @@ public class RFQService {
         return rfqRepository.findById(rfqId);
     }
     
-    @Transactional(readOnly = true)
+        @Transactional(readOnly = true)
     public List<RFQ> getRFQsByStatus(RFQStatus status) {
-        return rfqRepository.findByStatusAndIsDeletedFalse(status);
+        Pageable pageable = PageRequest.of(0, 100); // Default limit
+        Page<RFQ> page = rfqRepository.findByStatusAndIsDeletedFalse(status, pageable);
+        return page.getContent();
     }
     
     @Transactional(readOnly = true)
@@ -56,3 +59,5 @@ public class RFQService {
         return String.format("RFQ%06d", count + 1);
     }
 }
+
+

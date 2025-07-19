@@ -1,0 +1,81 @@
+﻿/* 💰 ERHA Quote Management Styles */
+.App {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+}
+
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.quote-form {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.quote-item {
+  border-left: 4px solid #0d6efd;
+  transition: all 0.2s ease-in-out;
+}
+
+.quote-item:hover {
+  border-left-color: #0b5ed7;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.priority-urgent {
+  border-left-color: #dc3545 !important;
+}
+
+.priority-high {
+  border-left-color: #fd7e14 !important;
+}
+
+.priority-normal {
+  border-left-color: #198754 !important;
+}
+
+.priority-low {
+  border-left-color: #6c757d !important;
+}
+
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0 15px;
+  }
+  
+  .display-4 {
+    font-size: 2rem;
+  }
+}

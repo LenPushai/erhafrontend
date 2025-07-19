@@ -1,0 +1,35 @@
+# ERHA OPS SYSTEM DIAGNOSTIC REPORT
+Generated: 2025-07-20 03:42:18
+Health Score: 7/10 (70%)
+
+## Controllers Found: 7
+- DebugController
+- DiagnosticAuthController
+- TestAuthController
+- TestController
+- WorkingAuthController
+- QuoteController
+- RFQController
+
+
+## Repositories Found: 4
+- UserRepository
+- RFQRepository
+- QuoteRepository
+- RFQRepository
+
+
+## Main Classes Found: 2
+- ErhaOpsApplication
+- QuoteManagementApplication
+
+
+## Server Configuration
+- Port: 8080
+- URL: http://localhost:8080
+
+## Next Steps
+1. Compile: mvn clean compile
+2. Run: mvn spring-boot:run
+3. Test endpoints
+4. Monitor logs

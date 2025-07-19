@@ -1,0 +1,21 @@
+# ================================================================
+# EXECUTE IMMEDIATELY - 5 MINUTE FIX
+# ================================================================
+
+# 1. Stop current application (Ctrl+C in terminal running mvn spring-boot:run)
+
+# 2. Replace controller file
+copy QuoteController-FIXED-040914.java src\main\java\com\erha\quote\controller\QuoteController.java
+
+# 3. Recompile
+mvn clean compile
+
+# 4. Restart application  
+mvn spring-boot:run
+
+# 5. Test endpoints (in new terminal)
+.\quick-test-040914.ps1
+
+# 6. Manual verification
+curl http://localhost:8082/api/v1/quotes/health
+curl http://localhost:8082/api/v1/quotes/dashboard

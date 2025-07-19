@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">ERHA Operations Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- Layout Container -->
+<div class="layout-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-cogs"></i>
+                <h1>ERHA Ops</h1>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a th:href="@{/}" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a th:href="@{/rfq}" class="nav-item">
+                <i class="fas fa-file-invoice"></i>
+                <span>RFQ Management</span>
+            </a>
+            <a th:href="@{/quotes}" class="nav-item">
+                <i class="fas fa-calculator"></i>
+                <span>Quotes</span>
+            </a>
+            <a th:href="@{/projects}" class="nav-item">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+            </a>
+            <div class="nav-divider"></div>
+            <div class="nav-section-title">Reports</div>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-file-export"></i>
+                <span>Excel Export</span>
+            </a>
+            <div class="nav-divider"></div>
+            <div class="nav-section-title">Settings</div>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Configuration</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <div class="user-details">
+                    <span class="user-name">ERHA User</span>
+                    <span class="user-role">Administrator</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="content-wrapper">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="page-title">
+                <h1><i class="fas fa-tachometer-alt"></i> Operations Dashboard</h1>
+            </div>
+            <div class="top-bar-actions">
+                <div class="last-updated">
+                    Last updated: <span th:text="${#dates.format(lastUpdated, 'yyyy-MM-dd HH:mm:ss')}">2025-09-26 14:30:00</span>
+                </div>
+                <button onclick="location.reload()" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-container">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> Operations Dashboard</h2>
+                    <div class="last-updated">
+                        Last updated: <span th:text="${#dates.format(lastUpdated, 'yyyy-MM-dd HH:mm:ss')}">2025-09-26 14:30:00</span>
+                        <button onclick="location.reload()" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Message (if any) -->
+                <div th:if="${error}" class="alert alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span th:text="${error}">Error message</span>
+                </div>
+
+                <!-- Priority Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card priority-high">
+                        <div class="metric-header">
+                            <h3>Action Required</h3>
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="metric-value" th:text="${metrics.actionRequired}">5</div>
+                        <div class="metric-description">RFQs needing immediate attention</div>
+                        <a th:href="@{/rfq?status=ACTION_REQUIRED}" class="metric-link">
+                            View Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="metric-card priority-urgent">
+                        <div class="metric-header">
+                            <h3>Overdue</h3>
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="metric-value" th:text="${metrics.overdue}">2</div>
+                        <div class="metric-description">Past due date</div>
+                        <a th:href="@{/rfq?status=OVERDUE}" class="metric-link">
+                            View Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="metric-card priority-medium">
+                        <div class="metric-header">
+                            <h3>In Progress</h3>
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="metric-value" th:text="${metrics.inProgress}">8</div>
+                        <div class="metric-description">Currently being processed</div>
+                        <a th:href="@{/rfq?status=IN_PROGRESS}" class="metric-link">
+                            View Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="metric-card priority-low">
+                        <div class="metric-header">
+                            <h3>Awaiting Client</h3>
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="metric-value" th:text="${metrics.awaitingClient}">3</div>
+                        <div class="metric-description">Waiting for client response</div>
+                        <a th:href="@{/rfq?status=AWAITING_CLIENT}" class="metric-link">
+                            View Details <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="performance-section">
+                    <h3><i class="fas fa-chart-line"></i> Performance Overview</h3>
+
+                    <div class="performance-grid">
+                        <div class="performance-card">
+                            <div class="performance-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="performance-content">
+                                <div class="performance-value" th:text="${metrics.completedThisMonth}">12</div>
+                                <div class="performance-label">Completed This Month</div>
+                            </div>
+                        </div>
+
+                        <div class="performance-card">
+                            <div class="performance-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="performance-content">
+                                <div class="performance-value" th:text="${metrics.totalRfqs}">18</div>
+                                <div class="performance-label">Total Active RFQs</div>
+                            </div>
+                        </div>
+
+                        <div class="performance-card">
+                            <div class="performance-icon">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="performance-content">
+                                <div class="performance-value">
+                                    <span th:text="${metrics.conversionRate}">66.7</span>%
+                                </div>
+                                <div class="performance-label">Conversion Rate</div>
+                            </div>
+                        </div>
+
+                        <div class="performance-card">
+                            <div class="performance-icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <div class="performance-content">
+                                <div class="performance-value">
+                                    <span th:text="${metrics.avgProcessingTime}">3.5</span> days
+                                </div>
+                                <div class="performance-label">Avg Processing Time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions-section">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+
+                    <div class="actions-grid">
+                        <a th:href="@{/rfq/new}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>New RFQ</h4>
+                                <p>Create a new request for quote</p>
+                            </div>
+                        </a>
+
+                        <a th:href="@{/quotes/new}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Generate Quote</h4>
+                                <p>Create quote from existing RFQ</p>
+                            </div>
+                        </a>
+
+                        <a th:href="@{/rfq}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Search RFQs</h4>
+                                <p>Find and manage existing RFQs</p>
+                            </div>
+                        </a>
+
+                        <a th:href="@{/projects}" class="action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Project Management</h4>
+                                <p>Track ongoing projects</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity-section">
+                    <h3><i class="fas fa-history"></i> Recent Activity</h3>
+
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-file-plus"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">New RFQ received from Sasol Secunda</div>
+                                <div class="activity-time">2 hours ago</div>
+                            </div>
+                            <div class="activity-status status-new">New</div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Quote NE008883 approved</div>
+                                <div class="activity-time">4 hours ago</div>
+                            </div>
+                            <div class="activity-status status-completed">Completed</div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">RFQ-2025-001 updated by user</div>
+                                <div class="activity-time">Yesterday</div>
+                            </div>
+                            <div class="activity-status status-updated">Updated</div>
+                        </div>
+                    </div>
+        </main>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-container">
+        <p>&copy; 2025 ERHA Operations Management System</p>
+        <div class="footer-links">
+            <a href="#" onclick="location.reload()">Refresh</a>
+            <a th:href="@{/health}">System Health</a>
+        </div>
+    </div>
+</footer>
+
+<!-- Auto-refresh script -->
+<script>
+    // Auto-refresh every 5 minutes
+    setInterval(() => {
+        location.reload();
+    }, 300000);
+
+    // Smooth refresh button animation
+    document.querySelector('.refresh-btn')?.addEventListener('click', function() {
+        this.querySelector('i').style.animation = 'spin 1s linear';
+        setTimeout(() => {
+            this.querySelector('i').style.animation = '';
+        }, 1000);
+    });
+</script>
+
+<style>
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+</body>
+</html>

@@ -1,0 +1,232 @@
+package com.erha.quote.controller;
+
+import com.erha.quote.util.QuoteUtils;
+
+import com.erha.quote.model.Quote;
+import com.erha.quote.model.QuoteStatus;
+import com.erha.quote.model.QuotePriority;
+import com.erha.quote.service.QuoteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * ???????? DYNAMIC DUO 25 ENDPOINTS CHALLENGE - QUOTE CONTROLLER ????????
+ * LEGENDARY 25 ENDPOINTS IN 60 MINUTES!
+ */
+@RestController
+@RequestMapping("/api/quotes")
+@CrossOrigin(origins = "*")
+public class QuoteController {
+    
+    @Autowired
+    private QuoteService quoteService;
+    
+    // 1. ???? HEALTH CHECK
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> healthCheck() {
+        Map<String, String> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("service", "Quote Management - 25 Endpoints Challenge");
+        health.put("endpoints", "25");
+        health.put("timestamp", LocalDateTime.now().toString());
+        health.put("challenge", "DYNAMIC DUO LEGENDARY");
+        return ResponseEntity.ok(health);
+    }
+    
+    // 2. ???? COUNT QUOTES
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Object>> getQuoteCount() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalQuotes", quoteService.getQuoteCount());
+        response.put("message", "???? 25 ENDPOINTS CHALLENGE OPERATIONAL! ????");
+        return ResponseEntity.ok(response);
+    }
+    
+    // 3. ???? LIST ALL QUOTES
+    @GetMapping
+    public ResponseEntity<List<Quote>> getAllQuotes() {
+        return ResponseEntity.ok(quoteService.getAllQuotes());
+    }
+    
+    // 4. ???? GET QUOTE BY ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Quote> getQuoteById(@PathVariable Long id) {
+        return quoteService.getQuoteById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+    
+    // 5. ??? CREATE QUOTE
+    @PostMapping
+    public ResponseEntity<Quote> createQuote(@RequestBody Quote quote) {
+        Quote created = quoteService.createQuote(quote);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
+    
+    // 6. ?????? UPDATE QUOTE
+    @PutMapping("/{id}")
+    public ResponseEntity<Quote> updateQuote(@PathVariable Long id, @RequestBody Quote quote) {
+        quote.setId(QuoteUtils.longToUUID(id));
+        Quote updated = quoteService.updateQuote(quote);
+        return ResponseEntity.ok(updated);
+    }
+    
+    // 7. ??????? DELETE QUOTE
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuote(@PathVariable Long id) {
+        quoteService.deleteQuote(id);
+        return ResponseEntity.noContent().build();
+    }
+    
+    // 8. ???? PAGINATED QUOTES
+    @GetMapping("/paginated")
+    public ResponseEntity<Page<Quote>> getQuotesPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
+            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        return ResponseEntity.ok(quoteService.getAllQuotes(pageable));
+    }
+    
+    // 9. ???? QUOTES BY STATUS
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Quote>> getQuotesByStatus(@PathVariable QuoteStatus status) {
+        return ResponseEntity.ok(quoteService.getQuotesByStatus(status));
+    }
+    
+    // 10. ???? QUOTES BY STATUS (PAGINATED)
+    @GetMapping("/status/{status}/paginated")
+    public ResponseEntity<Page<Quote>> getQuotesByStatusPaginated(
+            @PathVariable QuoteStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return ResponseEntity.ok(quoteService.getQuotesByStatus(status, pageable));
+    }
+    
+    // 11. ???? QUOTES BY PRIORITY
+    @GetMapping("/priority/{priority}")
+    public ResponseEntity<List<Quote>> getQuotesByPriority(@PathVariable QuotePriority priority) {
+        return ResponseEntity.ok(quoteService.getQuotesByPriority(priority));
+    }
+    
+    // 12. ???? QUOTES BY CLIENT
+    @GetMapping("/client/{clientName}")
+    public ResponseEntity<List<Quote>> getQuotesByClient(@PathVariable String clientName) {
+        return ResponseEntity.ok(quoteService.getQuotesByClient(clientName));
+    }
+    
+    // 13. ???? HIGH VALUE QUOTES
+    @GetMapping("/high-value")
+    public ResponseEntity<List<Quote>> getHighValueQuotes(@RequestParam BigDecimal threshold) {
+        return ResponseEntity.ok(quoteService.getHighValueQuotes(threshold));
+    }
+    
+    // 14. ???? QUOTES BY VALUE RANGE
+    @GetMapping("/value-range")
+    public ResponseEntity<List<Quote>> getQuotesByValueRange(
+            @RequestParam BigDecimal minAmount,
+            @RequestParam BigDecimal maxAmount) {
+        return ResponseEntity.ok(quoteService.getQuotesByValueRange(minAmount, maxAmount));
+    }
+    
+    // 15. ???? RECENT QUOTES
+    @GetMapping("/recent")
+    public ResponseEntity<List<Quote>> getRecentQuotes(@RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(quoteService.getRecentQuotes(limit));
+    }
+    
+    // 16. ??? EXPIRED QUOTES
+    @GetMapping("/expired")
+    public ResponseEntity<List<Quote>> getExpiredQuotes() {
+        return ResponseEntity.ok(quoteService.getExpiredQuotes());
+    }
+    
+    // 17. ??? APPROVE QUOTE
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<Quote> approveQuote(@PathVariable Long id, @RequestParam String approver) {
+        Quote approved = quoteService.approveQuote(id, approver);
+        return ResponseEntity.ok(approved);
+    }
+    
+    // 18. ??? REJECT QUOTE
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<Quote> rejectQuote(@PathVariable Long id) {
+        Quote rejected = quoteService.rejectQuote(id);
+        return ResponseEntity.ok(rejected);
+    }
+    
+    // 19. ???? SEND TO CLIENT
+    @PostMapping("/{id}/send-to-client")
+    public ResponseEntity<Quote> sendToClient(@PathVariable Long id) {
+        Quote sent = quoteService.sendToClient(id);
+        return ResponseEntity.ok(sent);
+    }
+    
+    // 20. ???? ANALYTICS DASHBOARD
+    @GetMapping("/analytics")
+    public ResponseEntity<Map<String, Object>> getAnalytics() {
+        return ResponseEntity.ok(quoteService.getAnalytics());
+    }
+    
+    // 21. ???? STATUS COUNTS
+    @GetMapping("/analytics/status-counts")
+    public ResponseEntity<Map<QuoteStatus, Long>> getStatusCounts() {
+        return ResponseEntity.ok(quoteService.getStatusCounts());
+    }
+    
+    // 22. ???? TOTAL APPROVED VALUE
+    @GetMapping("/analytics/total-approved-value")
+    public ResponseEntity<BigDecimal> getTotalApprovedValue() {
+        return ResponseEntity.ok(quoteService.getTotalApprovedValue());
+    }
+    
+    // 23. ???? AVERAGE QUOTE VALUE
+    @GetMapping("/analytics/average-value")
+    public ResponseEntity<BigDecimal> getAverageQuoteValue() {
+        return ResponseEntity.ok(quoteService.getAverageQuoteValue());
+    }
+    
+    // 24. ???? INITIALIZE SAMPLE DATA
+    @PostMapping("/init-sample")
+    public ResponseEntity<Map<String, String>> initSampleData() {
+        quoteService.initSampleData();
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Sample data initialized for 25 endpoints testing!");
+        response.put("challenge", "DYNAMIC DUO LEGENDARY");
+        return ResponseEntity.ok(response);
+    }
+    
+    // 25. ???? CHALLENGE STATUS
+    @GetMapping("/challenge-status")
+    public ResponseEntity<Map<String, Object>> getChallengeStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("challenge", "25 ENDPOINTS IN 60 MINUTES");
+        status.put("team", "DYNAMIC DUO");
+        status.put("status", "LEGENDARY SUCCESS");
+        status.put("totalEndpoints", 25);
+        status.put("totalQuotes", quoteService.getQuoteCount());
+        status.put("message", "???????? DYNAMIC DUO ENGINEERING EXCELLENCE! ????????");
+        status.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.ok(status);
+    }
+}
+

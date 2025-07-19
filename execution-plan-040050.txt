@@ -1,0 +1,25 @@
+# ================================================================
+# IMMEDIATE EXECUTION PLAN - RUN THESE COMMANDS NOW
+# ================================================================
+
+# 1. Apply database fixes (2 minutes)
+mysql -u username -p database_name < emergency-db-fix-040048.sql
+
+# 2. Update entity file (1 minute)
+copy Quote-MySQL-Fixed-040049.java src\main\java\com\erha\quote\model\Quote.java
+
+# 3. Restart application (2 minutes)
+# Stop current app (Ctrl+C)
+mvn clean compile
+mvn spring-boot:run
+
+# 4. Test critical endpoints (3 minutes)
+curl http://localhost:8082/api/v1/actuator/health
+curl http://localhost:8082/api/v1/quotes/health
+curl http://localhost:8082/api/v1/quotes/dashboard
+curl -X POST http://localhost:8082/api/v1/quotes/init-sample-data
+
+# 5. Validate functionality (2 minutes)
+curl http://localhost:8082/api/v1/quotes/stats
+curl http://localhost:8082/api/v1/quotes/status/DRAFT
+curl http://localhost:8082/api/v1/quotes/analytics
