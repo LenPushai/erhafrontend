@@ -1,0 +1,67 @@
+package com.erha.ops.auth.controller;
+
+import com.erha.ops.auth.dto.AuthRequest;
+import com.erha.ops.auth.dto.AuthResponse;
+import com.erha.ops.auth.dto.RegisterRequest;
+import com.erha.ops.auth.service.AuthService;
+import com.erha.ops.repository.UserRepository;
+import com.erha.ops.entity.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    @Autowired
+    private AuthService authService;
+    
+    @Autowired
+    private UserRepository userRepository;
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("ERHA OPS Authentication API is RUNNING! System Status: OPERATIONAL");
+    }
+    
+    @GetMapping("/debug")
+    public ResponseEntity<Map<String, String>> debug() {
+        Map<String, String> info = new HashMap<>();
+        info.put("status", "Auth controller is working!");
+        info.put("timestamp", LocalDateTime.now().toString());
+        
+        try {
+            boolean userExists = userRepository.findByUsername("jwttest").isPresent();
+            info.put("user_jwttest_exists", String.valueOf(userExists));
+            
+            if (userExists) {
+                User user = userRepository.findByUsername("jwttest").get();
+                info.put("user_has_password", user.getPassword() != null ? "YES" : "NO");
+                info.put("user_has_passwordHash", user.getPasswordHash() != null ? "YES" : "NO");
+                info.put("password_length", user.getPassword() != null ? String.valueOf(user.getPassword().length()) : "NULL");
+                info.put("user_status", String.valueOf(user.getUserStatus()));
+                info.put("user_role", String.valueOf(user.getUserRole()));
+            }
+        } catch (Exception e) {
+            info.put("error", e.getMessage());
+            info.put("error_type", e.getClass().getSimpleName());
+        }
+        
+        return ResponseEntity.ok(info);
+    }
+}

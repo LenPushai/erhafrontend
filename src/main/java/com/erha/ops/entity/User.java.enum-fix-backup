@@ -1,0 +1,162 @@
+package com.erha.ops.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "users")
+public class User {
+    
+    @Id
+    @Column(name = "id", columnDefinition = "CHAR(36)")
+    private String id;
+    
+    @Column(name = "username", unique = true, nullable = false, length = 50)
+    private String username;
+    
+    @Column(name = "email", unique = true, nullable = false, length = 100)
+    private String email;
+    
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
+    
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash;
+    
+    @Column(name = "first_name", length = 50)
+    private String firstName;
+    
+    @Column(name = "last_name", length = 50)
+    private String lastName;
+    
+    @Column(name = "employee_id", length = 20)
+    private String employeeId;
+    
+    @Column(name = "department", length = 100)
+    private String department;
+    
+    @Column(name = "position", length = 100)
+    private String position;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_role", columnDefinition = "ENUM('USER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'SYSTEM_ADMIN')")
+    private UserRole userRole;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_status", columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING')")
+    private UserStatus userStatus;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "safety_clearance", columnDefinition = "ENUM('BASIC', 'INTERMEDIATE', 'ADVANCED', 'ADMIN', 'SUPERVISOR')")
+    private SafetyClearance safetyClearance;
+    
+    @Column(name = "is_active")
+    private Boolean isActive;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @Column(name = "created_by", length = 50)
+    private String createdBy;
+    
+    @Column(name = "updated_by", length = 50)
+    private String updatedBy;
+    
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts;
+    
+    @Column(name = "two_factor_enabled")
+    private Boolean twoFactorEnabled;
+
+    // Enums
+    public enum UserRole {
+        USER, ADMIN, MANAGER, SUPERVISOR, SYSTEM_ADMIN
+    }
+    
+    public enum UserStatus {
+        ACTIVE, INACTIVE, SUSPENDED, PENDING
+    }
+    
+    public enum SafetyClearance {
+        BASIC, INTERMEDIATE, ADVANCED, ADMIN, SUPERVISOR
+    }
+
+    // Default constructor
+    public User() {}
+
+    // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    
+    public String getEmployeeId() { return employeeId; }
+    public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
+    
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+    
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
+    
+    public UserRole getUserRole() { return userRole; }
+    public void setUserRole(UserRole userRole) { this.userRole = userRole; }
+    
+    // Helper method for backward compatibility with String
+    public String getUserRoleString() { return userRole != null ? userRole.name() : null; }
+    public void setUserRoleString(String userRole) { this.userRole = userRole != null ? UserRole.valueOf(userRole) : null; }
+    
+    public UserStatus getUserStatus() { return userStatus; }
+    public void setUserStatus(UserStatus userStatus) { this.userStatus = userStatus; }
+    
+    // Helper method for backward compatibility with String
+    public String getUserStatusString() { return userStatus != null ? userStatus.name() : null; }
+    public void setUserStatusString(String userStatus) { this.userStatus = userStatus != null ? UserStatus.valueOf(userStatus) : null; }
+    
+    public SafetyClearance getSafetyClearance() { return safetyClearance; }
+    public void setSafetyClearance(SafetyClearance safetyClearance) { this.safetyClearance = safetyClearance; }
+    
+    // Helper method for backward compatibility with String
+    public String getSafetyClearanceString() { return safetyClearance != null ? safetyClearance.name() : null; }
+    public void setSafetyClearanceString(String safetyClearance) { this.safetyClearance = safetyClearance != null ? SafetyClearance.valueOf(safetyClearance) : null; }
+    
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    
+    public String getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
+    
+    public Integer getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) { this.failedLoginAttempts = failedLoginAttempts; }
+    
+    public Boolean getTwoFactorEnabled() { return twoFactorEnabled; }
+    public void setTwoFactorEnabled(Boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; }
+}
