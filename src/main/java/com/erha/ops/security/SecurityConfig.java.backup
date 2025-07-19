@@ -1,28 +1,32 @@
-package com.erha.ops.security;
+
+package com.erhaops.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.Arrays;
-
+/**
+ * ERHA OPS Security Configuration
+ * Enhanced for v7.0 with RFQ Management Module support
+ * Maintains zero-incident security culture
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -30,33 +34,55 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+        http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
+                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/").permitAll()
-                        .anyRequest().authenticated()
-                );
-        return http.build();
-    }
+                        .requestMatchers("/api/auth/test").permitAll()
+                        .requestMatchers("/api/auth/enhanced-diagnostic").permitAll()
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+                        // RFQ Management Module - ERHA OPS v7.0
+                        // GET endpoints - accessible to most authenticated users
+                        .requestMatchers(HttpMethod.GET, "/api/rfq").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER", "WORKER")
+                        .requestMatchers(HttpMethod.GET, "/api/rfq/*").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER", "WORKER")
+                        .requestMatchers(HttpMethod.GET, "/api/rfq/*/history").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/rfq/*/quality-requirements").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers(HttpMethod.GET, "/api/rfq/*/safety-assessment").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "SAFETY_OFFICER", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers(HttpMethod.GET, "/api/rfq/*/compliance-estimate").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER")
+
+                        // POST endpoints - creation and updates
+                        .requestMatchers(HttpMethod.POST, "/api/rfq").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers(HttpMethod.POST, "/api/rfq/*/convert-to-quote").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/rfq/*/quality-requirements").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers(HttpMethod.POST, "/api/rfq/*/safety-assessment").hasAnyRole("SYSTEM_ADMIN", "SAFETY_OFFICER", "MODULE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/rfq/*/compliance-estimate").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN")
+
+                        // PUT endpoints - updates
+                        .requestMatchers(HttpMethod.PUT, "/api/rfq/*").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/rfq/*/status").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN", "MODULE_USER")
+
+                        // DELETE endpoints - admin only
+                        .requestMatchers(HttpMethod.DELETE, "/api/rfq/*").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN")
+
+                        // Specialized query endpoints
+                        .requestMatchers("/api/rfq/requiring-safety-assessment").hasAnyRole("SYSTEM_ADMIN", "SAFETY_OFFICER", "MODULE_ADMIN")
+                        .requestMatchers("/api/rfq/requiring-quality-assessment").hasAnyRole("SYSTEM_ADMIN", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers("/api/rfq/overdue").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER")
+                        .requestMatchers("/api/rfq/high-priority").hasAnyRole("SYSTEM_ADMIN", "EXECUTIVE", "MODULE_ADMIN", "MODULE_USER")
+
+                        // TEMPORARY: For initial testing - REMOVE IN PRODUCTION
+                        // .requestMatchers("/api/rfq/**").permitAll()
+
+                        // All other requests require authentication
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        // Add JWT filter
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 }

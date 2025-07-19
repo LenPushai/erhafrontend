@@ -3,8 +3,6 @@ package com.erha.ops.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -13,9 +11,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * ERHA OPS Complete Security Configuration
- * Includes all required beans for JWT authentication + RFQ endpoints
- * Compatible with existing AuthService
+ * ERHA OPS Simple Security Configuration
+ * Minimal config to get RFQ endpoints working
+ * TEMPORARY: For development and testing
  */
 @Configuration
 @EnableWebSecurity
@@ -27,11 +25,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
@@ -39,7 +32,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 
                 // RFQ endpoints - TEMPORARY: allow all for testing
-                // TODO: Add proper role-based security after testing
                 .requestMatchers("/api/rfq/**").permitAll()
                 
                 // All other requests require authentication

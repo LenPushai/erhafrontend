@@ -1,0 +1,328 @@
+package com.erha.ops.rfq.entity;
+
+import com.erha.ops.rfq.enums.*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
+
+/**
+ * Enhanced RFQ Entity with Safety & Quality Integration
+ * ERHA OPS v7.0 - Zero-incident safety culture
+ */
+@Entity
+@Table(name = "enhanced_rfqs")
+public class RFQ {
+    
+    @Id
+    @Column(name = "rfq_id", columnDefinition = "CHAR(36)")
+    private String rfqId;
+    
+    @Column(name = "rfq_number", unique = true, nullable = false)
+    private String rfqNumber;
+    
+    @Column(name = "title", nullable = false, length = 200)
+    @NotBlank(message = "RFQ title is required")
+    private String title;
+    
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+    
+    // Client Information
+    @Column(name = "client_name", nullable = false, length = 100)
+    @NotBlank(message = "Client name is required")
+    private String clientName;
+    
+    @Column(name = "client_email", length = 100)
+    @Email(message = "Valid email is required")
+    private String clientEmail;
+    
+    @Column(name = "client_phone", length = 20)
+    private String clientPhone;
+    
+    @Column(name = "client_company", length = 100)
+    private String clientCompany;
+    
+    // RFQ Details
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private RFQStatus status = RFQStatus.DRAFT;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority", nullable = false)
+    private RFQPriority priority = RFQPriority.MEDIUM;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "project_type")
+    private ProjectType projectType;
+    
+    @Column(name = "estimated_value", precision = 15, scale = 2)
+    private BigDecimal estimatedValue;
+    
+    @Column(name = "currency", length = 3)
+    private String currency = "ZAR";
+    
+    // Dates
+    @Column(name = "received_date", nullable = false)
+    private LocalDateTime receivedDate;
+    
+    @Column(name = "response_due_date")
+    private LocalDateTime responseDueDate;
+    
+    @Column(name = "project_start_date")
+    private LocalDateTime projectStartDate;
+    
+    @Column(name = "project_end_date")
+    private LocalDateTime projectEndDate;
+    
+    // ENHANCED: Quality Requirements
+    @Column(name = "quality_requirements", columnDefinition = "TEXT")
+    private String qualityRequirements;
+    
+    @Column(name = "iso_compliance_required")
+    private Boolean isoComplianceRequired = false;
+    
+    @Column(name = "client_quality_standards", columnDefinition = "TEXT")
+    private String clientQualityStandards;
+    
+    @Column(name = "quality_documentation_needed")
+    private Boolean qualityDocumentationNeeded = false;
+    
+    // ENHANCED: Safety Considerations
+    @Column(name = "safety_risk_level")
+    @Enumerated(EnumType.STRING)
+    private SafetyRiskLevel safetyRiskLevel = SafetyRiskLevel.LOW;
+    
+    @Column(name = "safety_requirements", columnDefinition = "TEXT")
+    private String safetyRequirements;
+    
+    @Column(name = "hazard_assessment_needed")
+    private Boolean hazardAssessmentNeeded = false;
+    
+    @Column(name = "special_safety_equipment")
+    private Boolean specialSafetyEquipmentNeeded = false;
+    
+    @Column(name = "workshop_areas_involved", length = 500)
+    private String workshopAreasInvolved;
+    
+    // Compliance Costs
+    @Column(name = "compliance_cost_estimate", precision = 15, scale = 2)
+    private BigDecimal complianceCostEstimate;
+    
+    @Column(name = "safety_cost_estimate", precision = 15, scale = 2)
+    private BigDecimal safetyCostEstimate;
+    
+    @Column(name = "quality_cost_estimate", precision = 15, scale = 2)
+    private BigDecimal qualityCostEstimate;
+    
+    // Assignment
+    @Column(name = "assigned_to_user_id", columnDefinition = "CHAR(36)")
+    private String assignedToUserId;
+    
+    @Column(name = "assigned_to_name", length = 100)
+    private String assignedToName;
+    
+    // Conversion tracking
+    @Column(name = "converted_to_quote")
+    private Boolean convertedToQuote = false;
+    
+    @Column(name = "quote_id", columnDefinition = "CHAR(36)")
+    private String quoteId;
+    
+    @Column(name = "conversion_date")
+    private LocalDateTime conversionDate;
+    
+    // Audit fields
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @Column(name = "created_by_user_id", columnDefinition = "CHAR(36)")
+    private String createdByUserId;
+    
+    @Column(name = "updated_by_user_id", columnDefinition = "CHAR(36)")
+    private String updatedByUserId;
+    
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+    
+    @Column(name = "tags", length = 500)
+    private String tags;
+    
+    @Column(name = "internal_notes", columnDefinition = "TEXT")
+    private String internalNotes;
+    
+    // Constructors
+    public RFQ() {
+        this.createdAt = LocalDateTime.now();
+        this.receivedDate = LocalDateTime.now();
+    }
+    
+    // Lifecycle Methods
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    // Business Methods
+    public boolean isOverdue() {
+        return responseDueDate != null && 
+               LocalDateTime.now().isAfter(responseDueDate) && 
+               status != RFQStatus.CONVERTED && 
+               status != RFQStatus.DECLINED;
+    }
+    
+    public boolean requiresQualityAssessment() {
+        return isoComplianceRequired || 
+               qualityDocumentationNeeded || 
+               (qualityRequirements != null && !qualityRequirements.trim().isEmpty());
+    }
+    
+    public boolean requiresSafetyAssessment() {
+        return safetyRiskLevel != SafetyRiskLevel.LOW || 
+               hazardAssessmentNeeded || 
+               specialSafetyEquipmentNeeded ||
+               (safetyRequirements != null && !safetyRequirements.trim().isEmpty());
+    }
+    
+    public BigDecimal getTotalComplianceCost() {
+        BigDecimal total = BigDecimal.ZERO;
+        if (complianceCostEstimate != null) total = total.add(complianceCostEstimate);
+        if (safetyCostEstimate != null) total = total.add(safetyCostEstimate);
+        if (qualityCostEstimate != null) total = total.add(qualityCostEstimate);
+        return total;
+    }
+    
+    public void markAsConverted(String quoteId) {
+        this.convertedToQuote = true;
+        this.quoteId = quoteId;
+        this.conversionDate = LocalDateTime.now();
+        this.status = RFQStatus.CONVERTED;
+    }
+    
+    // Getters and Setters (ALL FIELDS)
+    public String getRfqId() { return rfqId; }
+    public void setRfqId(String rfqId) { this.rfqId = rfqId; }
+    
+    public String getRfqNumber() { return rfqNumber; }
+    public void setRfqNumber(String rfqNumber) { this.rfqNumber = rfqNumber; }
+    
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public String getClientName() { return clientName; }
+    public void setClientName(String clientName) { this.clientName = clientName; }
+    
+    public String getClientEmail() { return clientEmail; }
+    public void setClientEmail(String clientEmail) { this.clientEmail = clientEmail; }
+    
+    public String getClientPhone() { return clientPhone; }
+    public void setClientPhone(String clientPhone) { this.clientPhone = clientPhone; }
+    
+    public String getClientCompany() { return clientCompany; }
+    public void setClientCompany(String clientCompany) { this.clientCompany = clientCompany; }
+    
+    public RFQStatus getStatus() { return status; }
+    public void setStatus(RFQStatus status) { this.status = status; }
+    
+    public RFQPriority getPriority() { return priority; }
+    public void setPriority(RFQPriority priority) { this.priority = priority; }
+    
+    public ProjectType getProjectType() { return projectType; }
+    public void setProjectType(ProjectType projectType) { this.projectType = projectType; }
+    
+    public BigDecimal getEstimatedValue() { return estimatedValue; }
+    public void setEstimatedValue(BigDecimal estimatedValue) { this.estimatedValue = estimatedValue; }
+    
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
+    
+    public LocalDateTime getReceivedDate() { return receivedDate; }
+    public void setReceivedDate(LocalDateTime receivedDate) { this.receivedDate = receivedDate; }
+    
+    public LocalDateTime getResponseDueDate() { return responseDueDate; }
+    public void setResponseDueDate(LocalDateTime responseDueDate) { this.responseDueDate = responseDueDate; }
+    
+    public LocalDateTime getProjectStartDate() { return projectStartDate; }
+    public void setProjectStartDate(LocalDateTime projectStartDate) { this.projectStartDate = projectStartDate; }
+    
+    public LocalDateTime getProjectEndDate() { return projectEndDate; }
+    public void setProjectEndDate(LocalDateTime projectEndDate) { this.projectEndDate = projectEndDate; }
+    
+    public String getQualityRequirements() { return qualityRequirements; }
+    public void setQualityRequirements(String qualityRequirements) { this.qualityRequirements = qualityRequirements; }
+    
+    public Boolean getIsoComplianceRequired() { return isoComplianceRequired; }
+    public void setIsoComplianceRequired(Boolean isoComplianceRequired) { this.isoComplianceRequired = isoComplianceRequired; }
+    
+    public String getClientQualityStandards() { return clientQualityStandards; }
+    public void setClientQualityStandards(String clientQualityStandards) { this.clientQualityStandards = clientQualityStandards; }
+    
+    public Boolean getQualityDocumentationNeeded() { return qualityDocumentationNeeded; }
+    public void setQualityDocumentationNeeded(Boolean qualityDocumentationNeeded) { this.qualityDocumentationNeeded = qualityDocumentationNeeded; }
+    
+    public SafetyRiskLevel getSafetyRiskLevel() { return safetyRiskLevel; }
+    public void setSafetyRiskLevel(SafetyRiskLevel safetyRiskLevel) { this.safetyRiskLevel = safetyRiskLevel; }
+    
+    public String getSafetyRequirements() { return safetyRequirements; }
+    public void setSafetyRequirements(String safetyRequirements) { this.safetyRequirements = safetyRequirements; }
+    
+    public Boolean getHazardAssessmentNeeded() { return hazardAssessmentNeeded; }
+    public void setHazardAssessmentNeeded(Boolean hazardAssessmentNeeded) { this.hazardAssessmentNeeded = hazardAssessmentNeeded; }
+    
+    public Boolean getSpecialSafetyEquipmentNeeded() { return specialSafetyEquipmentNeeded; }
+    public void setSpecialSafetyEquipmentNeeded(Boolean specialSafetyEquipmentNeeded) { this.specialSafetyEquipmentNeeded = specialSafetyEquipmentNeeded; }
+    
+    public String getWorkshopAreasInvolved() { return workshopAreasInvolved; }
+    public void setWorkshopAreasInvolved(String workshopAreasInvolved) { this.workshopAreasInvolved = workshopAreasInvolved; }
+    
+    public BigDecimal getComplianceCostEstimate() { return complianceCostEstimate; }
+    public void setComplianceCostEstimate(BigDecimal complianceCostEstimate) { this.complianceCostEstimate = complianceCostEstimate; }
+    
+    public BigDecimal getSafetyCostEstimate() { return safetyCostEstimate; }
+    public void setSafetyCostEstimate(BigDecimal safetyCostEstimate) { this.safetyCostEstimate = safetyCostEstimate; }
+    
+    public BigDecimal getQualityCostEstimate() { return qualityCostEstimate; }
+    public void setQualityCostEstimate(BigDecimal qualityCostEstimate) { this.qualityCostEstimate = qualityCostEstimate; }
+    
+    public String getAssignedToUserId() { return assignedToUserId; }
+    public void setAssignedToUserId(String assignedToUserId) { this.assignedToUserId = assignedToUserId; }
+    
+    public String getAssignedToName() { return assignedToName; }
+    public void setAssignedToName(String assignedToName) { this.assignedToName = assignedToName; }
+    
+    public Boolean getConvertedToQuote() { return convertedToQuote; }
+    public void setConvertedToQuote(Boolean convertedToQuote) { this.convertedToQuote = convertedToQuote; }
+    
+    public String getQuoteId() { return quoteId; }
+    public void setQuoteId(String quoteId) { this.quoteId = quoteId; }
+    
+    public LocalDateTime getConversionDate() { return conversionDate; }
+    public void setConversionDate(LocalDateTime conversionDate) { this.conversionDate = conversionDate; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public String getCreatedByUserId() { return createdByUserId; }
+    public void setCreatedByUserId(String createdByUserId) { this.createdByUserId = createdByUserId; }
+    
+    public String getUpdatedByUserId() { return updatedByUserId; }
+    public void setUpdatedByUserId(String updatedByUserId) { this.updatedByUserId = updatedByUserId; }
+    
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+    
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
+    
+    public String getInternalNotes() { return internalNotes; }
+    public void setInternalNotes(String internalNotes) { this.internalNotes = internalNotes; }
+}
