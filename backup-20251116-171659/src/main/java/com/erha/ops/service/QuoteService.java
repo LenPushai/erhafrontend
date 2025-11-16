@@ -190,21 +190,4 @@ public class QuoteService {
         public long getAcceptedQuotes() { return acceptedQuotes; }
         public long getRejectedQuotes() { return rejectedQuotes; }
     }
-
-    @Autowired
-    private PdfGenerationService pdfGenerationService;
-
-    public byte[] generateQuotePdf(Long quoteId) {
-        Quote quote = quoteRepository.findById(quoteId)
-            .orElseThrow(() -> new RuntimeException("Quote not found with id: " + quoteId));
-        try {
-            return pdfGenerationService.generateQuotePdf(quote);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate PDF for quote: " + quoteId, e);
-        }
-    }
-
-
-
 }
-

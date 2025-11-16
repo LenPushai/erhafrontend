@@ -22,11 +22,6 @@ import com.erha.ops.dto.ApprovalPinResponse;
 import com.erha.ops.dto.ApprovePinRequest;
 import com.erha.ops.service.QuoteApprovalService;
 
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import java.util.HashMap;
-import java.util.Map;
 @PreAuthorize("isAuthenticated()")
 @RestController
 @RequestMapping("/api/v1/quotes")
@@ -380,36 +375,5 @@ public class QuoteController {
     public ResponseEntity<String> checkPinStatus(@PathVariable Long id) {
         return ResponseEntity.ok(quoteApprovalService.checkPinStatus(id));
     }
-
-    @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> downloadQuotePdf(@PathVariable Long id) {
-        try {
-            byte[] pdfBytes = quoteService.generateQuotePdf(id);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDisposition(ContentDisposition.attachment().filename("Quote_" + id + ".pdf").build());
-            return ResponseEntity.ok().headers(headers).body(pdfBytes);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/{id}/pdf/preview")
-    public ResponseEntity<byte[]> previewQuotePdf(@PathVariable Long id) {
-        try {
-            byte[] pdfBytes = quoteService.generateQuotePdf(id);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDisposition(ContentDisposition.inline().filename("Quote_" + id + ".pdf").build());
-            return ResponseEntity.ok().headers(headers).body(pdfBytes);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-
-
 }
-
-
 

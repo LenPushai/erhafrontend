@@ -204,7 +204,62 @@ public class QuoteService {
         }
     }
 
+    public Quote sendQuoteForSignature(Long quoteId) {
+        Quote quote = quoteRepository.findById(quoteId)
+            .orElseThrow(() -> new RuntimeException("Quote not found with id: " + quoteId));
+        if (quote.getQuoteStatus() == Quote.QuoteStatus.DRAFT) {
+            throw new RuntimeException("Cannot send draft quote for signature. Please submit first.");
+        }
+        try {
+            byte[] pdfBytes = pdfGenerationService.generateQuotePdf(quote);
+            String recipientEmail = quote.getClient() != null && quote.getClient().getEmail() != null
+                ? quote.getClient().getEmail() : null;
+            if (recipientEmail == null || recipientEmail.trim().isEmpty()) {
+                throw new RuntimeException("Client email is required to send for signature");
+            }
+            String recipientName = quote.getClient().getName();
+            String envelopeId = docuSignService.sendForSignature(pdfBytes, "Quote_" + quote.getQuoteNumber() + ".pdf",
+                recipientEmail, recipientName, "ERHA Quote " + quote.getQuoteNumber());
+            quote.setDocusignEnvelopeId(envelopeId);
+            quote.setDocusignSentAt(java.time.LocalDateTime.now());
+            return quoteRepository.save(quote);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send quote for signature: " + e.getMessage(), e);
+        }
+    }
 
+    public Quote checkDocuSignStatus(Long quoteId) {
+        Quote quote = quoteRepository.findById(quoteId)
+            .orElseThrow(() -> new RuntimeException("Quote not found with id: " + quoteId));
+        if (quote.getDocusignEnvelopeId() == null) {
+            throw new RuntimeException("Quote has not been sent for signature");
+        }
+        try {
+            String status = docuSignService.getEnvelopeStatus(quote.getDocusignEnvelopeId());
+            if ("completed".equalsIgnoreCase(status) && quote.getDocusignSignedAt() == null) {
+                quote.setDocusignSignedAt(java.time.LocalDateTime.now());
+                quote.setQuoteStatus(Quote.QuoteStatus.ACCEPTED);
+                quote = quoteRepository.save(quote);
+            }
+            return quote;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to check DocuSign status: " + e.getMessage(), e);
+        }
+    }
 
+    public byte[] getSignedPdf(Long quoteId) {
+        Quote quote = quoteRepository.findById(quoteId)
+            .orElseThrow(() -> new RuntimeException("Quote not found with id: " + quoteId));
+        if (quote.getDocusignEnvelopeId() == null) {
+            throw new RuntimeException("Quote has not been sent for signature");
+        }
+        if (quote.getDocusignSignedAt() == null) {
+            throw new RuntimeException("Quote has not been signed yet");
+        }
+        try {
+            return docuSignService.getSignedDocument(quote.getDocusignEnvelopeId());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve signed PDF: " + e.getMessage(), e);
+        }
+    }
 }
-

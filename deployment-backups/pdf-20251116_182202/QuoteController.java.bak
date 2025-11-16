@@ -407,9 +407,54 @@ public class QuoteController {
         }
     }
 
+    @PostMapping("/{id}/send-for-signature")
+    public ResponseEntity<Map<String, Object>> sendForSignature(@PathVariable Long id) {
+        try {
+            Quote updatedQuote = quoteService.sendQuoteForSignature(id);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Quote sent for signature successfully");
+            response.put("envelopeId", updatedQuote.getDocusignEnvelopeId());
+            response.put("sentAt", updatedQuote.getDocusignSentAt());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 
+    @GetMapping("/{id}/signature-status")
+    public ResponseEntity<Map<String, Object>> checkSignatureStatus(@PathVariable Long id) {
+        try {
+            Quote quote = quoteService.checkDocuSignStatus(id);
+            Map<String, Object> response = new HashMap<>();
+            response.put("envelopeId", quote.getDocusignEnvelopeId());
+            response.put("sentAt", quote.getDocusignSentAt());
+            response.put("signedAt", quote.getDocusignSignedAt());
+            response.put("isSigned", quote.getDocusignSignedAt() != null);
+            response.put("status", quote.getQuoteStatus());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 
+    @GetMapping("/{id}/signed-pdf")
+    public ResponseEntity<byte[]> downloadSignedPdf(@PathVariable Long id) {
+        try {
+            byte[] signedPdfBytes = quoteService.getSignedPdf(id);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(ContentDisposition.attachment().filename("Quote_" + id + "_SIGNED.pdf").build());
+            return ResponseEntity.ok().headers(headers).body(signedPdfBytes);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
-
 
 
