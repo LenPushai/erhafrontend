@@ -1,0 +1,62 @@
+package com.erha.quote;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * ERHA OPS Quote Management Application - Development Version
+ * 
+ * Complete freedom for development:
+ * - No security restrictions
+ * - No authentication required
+ * - No CORS limitations
+ * - Full API access from anywhere
+ */
+@SpringBootApplication
+public class QuoteManagementApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(QuoteManagementApplication.class, args);
+        
+        System.out.println("\n" +
+            "???? ================================================================\n" +
+            "   ERHA OPS QUOTE MANAGEMENT - DEVELOPMENT MODE ACTIVE\n" +
+            "   ================================================================\n" +
+            "   ??? NO SECURITY - Complete open access\n" +
+            "   ??? NO CORS - Access from any origin\n" +
+            "   ??? NO AUTH - No authentication required\n" +
+            "   ??? FULL API - All endpoints available\n" +
+            "   \n" +
+            "   ???? API Base URL: http://localhost:8082/api/v1/quotes\n" +
+            "   ???? Swagger UI:   http://localhost:8082/api/v1/swagger-ui.html\n" +
+            "   ???? Actuator:     http://localhost:8082/api/v1/actuator/health\n" +
+            "   \n" +
+            "   ???? Ready for PowerShell testing!\n" +
+            "   ???? Ready for frontend development!\n" +
+            "   ??? Ready for any client integration!\n" +
+            "================================================================\n"
+        );
+    }
+
+    /**
+     * Global CORS configuration - allow everything from everywhere
+     * Perfect for development environment
+     */
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOriginPatterns("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600);
+            }
+        };
+    }
+}

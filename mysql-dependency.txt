@@ -1,0 +1,17 @@
+﻿<!-- Add this to your pom.xml dependencies section -->
+
+<!-- MySQL Connector -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- Remove or comment out PostgreSQL if present -->
+<!-- 
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>runtime</scope>
+</dependency>
+-->

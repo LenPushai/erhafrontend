@@ -1,0 +1,82 @@
+package com.erha.ops.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "quotes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Quote {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "quote_id")
+    private Long quoteId;
+    
+    @Column(name = "quote_number", unique = true, nullable = false, length = 50)
+    private String quoteNumber;
+    
+    @Column(name = "rfq_id")
+    private Long rfqId;
+    
+    @Column(name = "quote_date")
+    private LocalDate quoteDate;
+    
+    @Column(name = "valid_until_date")
+    private LocalDate validUntilDate;
+    
+    @Column(name = "client_id")
+    private Long clientId;
+    
+    @Column(name = "value_excl_vat", precision = 15, scale = 2)
+    private BigDecimal valueExclVat;
+    
+    @Column(name = "value_incl_vat", precision = 15, scale = 2)
+    private BigDecimal valueInclVat;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_status")
+    private QuoteStatus quoteStatus = QuoteStatus.DRAFT;
+    
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+    
+    @Column(name = "created_date", updatable = false)
+    private LocalDateTime createdDate;
+    
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+    
+    @Column(name = "created_by")
+    private String createdBy;
+    
+    @Column(name = "updated_by")
+    private String updatedBy;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdDate = LocalDateTime.now();
+        updatedDate = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedDate = LocalDateTime.now();
+    }
+    
+    public enum QuoteStatus {
+        DRAFT,
+        SUBMITTED,
+        ACCEPTED,
+        REJECTED,
+        EXPIRED,
+        CANCELLED
+    }
+}

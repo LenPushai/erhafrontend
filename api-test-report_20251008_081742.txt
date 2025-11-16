@@ -1,0 +1,143 @@
+﻿SPRING BOOT API TEST REPORT
+============================
+Date: 2025-10-08 08:17:42
+Backend URL: http://localhost:8084
+
+SUCCESSFUL ENDPOINTS (5):
+
+GET /
+  Description: Root endpoint
+  Status: 200
+  Content-Type: text/html;charset=UTF-8
+  Content Length: 15621 bytes
+  Response:
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERHA Operations Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* Original Working CSS */
+        .rfq-dashboard {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            margin-bottom: 30px;
+        }
+
+        .dashboard-header h1 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 28px;
+        }
+
+        .last-updated {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .dashboard-section {
+            margin-bottom: 40px;
+        }
+
+        .dashboard-section h2 {
+            color: #34495e;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+   
+
+GET /actuator
+  Description: Actuator root
+  Status: 200
+  Content-Type: application/vnd.spring-boot.actuator.v3+json
+  Content Length: 315 bytes
+  Response:
+  
+
+GET /actuator/health
+  Description: Health check
+  Status: 200
+  Content-Type: application/vnd.spring-boot.actuator.v3+json
+  Content Length: 308 bytes
+  Response:
+  
+
+GET /actuator/info
+  Description: Application info
+  Status: 200
+  Content-Type: application/vnd.spring-boot.actuator.v3+json
+  Content Length: 2 bytes
+  Response:
+  
+
+GET /api/v1/rfqs
+  Description: Get all RFQs (pattern 3)
+  Status: 200
+  Content-Type: application/json
+  Content Length: 4535 bytes
+  Response:
+  {"totalPages":1,"currentPage":0,"content":[{"id":20,"jobNo":"24-010","description":"PUMP OVERHAUL & SERVICE","estimatedValue":22500.00,"status":"Draft","department":"MAINTENANCE","isDeleted":false,"createdAt":"2024-09-23 18:15:00","requiredDate":"2024-11-18"},{"id":19,"jobNo":"SH24-010","description":"ELECTRICAL PANEL UPGRADE","estimatedValue":78000.00,"status":"Submitted","department":"ENGINEERING","isDeleted":false,"createdAt":"2024-09-23 17:00:00","requiredDate":"2024-12-25"},{"id":18,"jobNo":"24-009","description":"CONVEYOR BELT REPLACEMENT","estimatedValue":34000.00,"status":"Draft","department":"PRODUCTION","isDeleted":false,"createdAt":"2024-09-23 15:45:00","requiredDate":"2024-12-22"},{"id":17,"jobNo":"SH24-009","description":"SAFETY VALVE INSPECTION","estimatedValue":8500.00,"status":"Submitted","department":"PRODUCTION","isDeleted":false,"createdAt":"2024-09-23 13:30:00","requiredDate":"2024-11-28"},{"id":16,"jobNo":"24-008","description":"COOLING SYSTEM UPGRADE","estimatedVa
+
+
+FAILED ENDPOINTS (13):
+
+GET /actuator/mappings
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /api/rfqs
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /rfqs
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /erha/api/rfqs
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /api/rfqs/pending
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /api/rfqs/1
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /api/quotes
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /quotes
+  Status: 500
+  Error: The remote server returned an error: (500) Internal Server Error.
+
+GET /api/v1/quotes
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /api
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /swagger-ui.html
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /swagger-ui/
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.
+
+GET /v3/api-docs
+  Status: 404
+  Error: The remote server returned an error: (404) Not Found.

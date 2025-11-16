@@ -1,0 +1,55 @@
+package com.erha.ops.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "work_progress")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class WorkProgress {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "progress_id")
+    private Long progressId;
+    
+    @Column(name = "job_id", nullable = false)
+    private Long jobId;
+    
+    @Column(name = "progress_date", nullable = false)
+    private LocalDate progressDate;
+    
+    @Column(name = "previous_status", length = 50)
+    private String previousStatus;
+    
+    @Column(name = "new_status", length = 50)
+    private String newStatus;
+    
+    @Column(name = "progress_percentage")
+    private Integer progressPercentage;
+    
+    @Column(name = "hours_worked", precision = 8, scale = 2)
+    private Double hoursWorked;
+    
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+    
+    @Column(name = "reported_by_user_id")
+    private Long reportedByUserId;
+    
+    @Column(name = "created_date")
+    private LocalDateTime createdDate;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdDate = LocalDateTime.now();
+        if (progressDate == null) {
+            progressDate = LocalDate.now();
+        }
+    }
+}

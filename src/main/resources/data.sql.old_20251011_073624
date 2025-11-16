@@ -1,0 +1,9 @@
+-- ERHA OPS Quote Management - Sample Data
+-- This file is loaded automatically by Spring Boot
+
+-- Insert sample data for development
+INSERT INTO quotes (id, quote_number, client_id, created_by, title, description, status, priority, total_amount, currency, quality_cost, safety_cost, compliance_cost, risk_score, quality_level, created_at, updated_at)
+VALUES 
+('550e8400-e29b-41d4-a716-446655440001', 'QUO-2025-00001', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440003', 'Sample Steel Fabrication Quote', 'Custom steel fabrication project with enhanced safety requirements', 'DRAFT', 'MEDIUM', 150000.00, 'ZAR', 7500.00, 3000.00, 1500.00, 25, 'ENHANCED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Add more sample data as needed

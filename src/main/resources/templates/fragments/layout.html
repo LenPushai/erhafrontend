@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} - ERHA Operations">ERHA Operations</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>ERHA Operations</h1>
+                    <p>Management System</p>
+                </div>
+                <nav class="nav">
+                    <a th:href="@{/}">Dashboard</a>
+                    <a th:href="@{/rfq}">RFQ Management</a>
+                    <a th:href="@{/quotes}">Quotes</a>
+                    <a th:href="@{/projects}">Projects</a>
+                </nav>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div th:replace=""></div>
+        </main>
+    </div>
+</body>
+</html>

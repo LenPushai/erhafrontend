@@ -1,0 +1,63 @@
+package com.erha.ops.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "quotes")
+@Data
+public class Quote {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long quoteId;
+
+    @Column(name = "quote_number", unique = true, nullable = false, length = 50)
+    private String quoteNumber;
+
+    @Column(name = "rfq_id")
+    private Long rfqId;
+
+    @Column(name = "client_id")
+    private Long clientId;
+
+    @Column(name = "quote_date")
+    private LocalDate quoteDate;
+
+    @Column(name = "valid_until_date")
+    private LocalDate validUntilDate;
+
+    @Column(name = "value_excl_vat", precision = 15, scale = 2)
+    private BigDecimal valueExclVat;
+
+    @Column(name = "value_incl_vat", precision = 15, scale = 2)
+    private BigDecimal valueInclVat;
+
+    @Column(name = "quote_status", length = 50)
+    private String quoteStatus;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "created_date")
+    private LocalDateTime createdDate;
+
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+
+    @PrePersist
+    protected void onCreate() {
+        createdDate = LocalDateTime.now();
+        updatedDate = LocalDateTime.now();
+        if (quoteDate == null) {
+            quoteDate = LocalDate.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedDate = LocalDateTime.now();
+    }
+}

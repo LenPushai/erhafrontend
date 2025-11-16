@@ -1,0 +1,39 @@
+# Disable Flyway (JPA Handles Schema)
+spring.flyway.enabled=false
+
+# Your MySQL (From Logs)
+spring.datasource.url=jdbc:mysql://localhost:3306/erha_ops?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa/Johannesburg
+spring.datasource.username=root
+spring.datasource.password=Speedy01
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA (Update Schema)
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+# New: Formatted SQL logs
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+# Fix: Deprecated MySQL8Dialect (use this for MySQL 8+)
+spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
+# New: For JSON handling in MySQL
+spring.jpa.properties.hibernate.temp.use_jdbc_metadata_defaults=false
+# New: Fallback for dialect auto-detect if needed
+
+# Disable H2Console
+spring.h2.console.enabled=false
+
+# Server
+server.port=8084
+
+# Actuator (New: For /actuator/health testing)
+management.endpoints.web.exposure.include=health,info
+management.endpoint.health.show-details=always
+
+# Logging (Enhanced)
+logging.level.root=INFO
+# New: Root level to reduce noise
+logging.level.org.springframework.boot.autoconfigure.flyway=ERROR
+logging.level.com.zaxxer.hikari=INFO
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n

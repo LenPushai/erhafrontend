@@ -1,0 +1,350 @@
+package com.erha.ops.controller;
+
+import com.erha.ops.entity.Job;
+import com.erha.ops.rfq.entity.RFQ;
+import com.erha.ops.entity.Quote;
+import com.erha.ops.entity.WorkProgress;
+import com.erha.ops.service.JobService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/v1/jobs")
+@CrossOrigin(origins = "*")
+public class JobController {
+
+    private static final Logger logger = LoggerFactory.getLogger(JobController.class);
+
+    @Autowired
+    private JobService jobService;
+
+    // ========================================
+    // BASIC CRUD OPERATIONS
+    // ========================================
+
+    @GetMapping
+    public ResponseEntity<List<Job>> getAllJobs() {
+        logger.info("Fetching all jobs");
+        try {
+            List<Job> jobs = jobService.getAllJobs();
+            logger.info("Found {} jobs", jobs.size());
+            return ResponseEntity.ok(jobs);
+        } catch (Exception e) {
+            logger.error("Error fetching jobs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<Job> createJob(@RequestBody Job job) {
+        logger.info("Creating new job: {}", job.getJobNumber());
+        try {
+            Job createdJob = jobService.createJob(job);
+            logger.info("✅ Created job: {} - {}", createdJob.getJobNumber(), createdJob.getDescription());
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);
+        } catch (Exception e) {
+            logger.error("❌ Error creating job: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJobById(@PathVariable Long id) {
+        logger.info("Fetching job by ID: {}", id);
+        try {
+            Optional<Job> job = jobService.getJobById(id);
+            if (job.isPresent()) {
+                logger.info("Found job: {}", job.get().getJobNumber());
+                return ResponseEntity.ok(job.get());
+            } else {
+                logger.warn("Job not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching job: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job) {
+        logger.info("Updating job with ID: {}", id);
+        try {
+            Job updatedJob = jobService.updateJob(id, job);
+            logger.info("✅ Updated job: {}", updatedJob.getJobNumber());
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            logger.warn("Job not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("❌ Error updating job: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteJob(@PathVariable Long id) {
+        logger.info("Deleting job with ID: {}", id);
+        try {
+            Optional<Job> job = jobService.getJobById(id);
+            if (job.isEmpty()) {
+                logger.warn("Job not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            jobService.deleteJob(id);
+            logger.info("✅ Deleted job: {}", job.get().getJobNumber());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Job deleted successfully");
+            response.put("jobId", id);
+            response.put("jobNumber", job.get().getJobNumber());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("❌ Error deleting job: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // PATCH - Full partial update
+    @PatchMapping("/{id}")
+    public ResponseEntity<Job> partialUpdateJob(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        logger.info("Partial update job with ID: {} - Fields: {}", id, updates.keySet());
+
+        try {
+            Optional<Job> existingJob = jobService.getJobById(id);
+
+            if (existingJob.isEmpty()) {
+                logger.warn("Job not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            Job job = existingJob.get();
+
+            // Update only provided fields
+            if (updates.containsKey("jobNumber")) {
+                job.setJobNumber((String) updates.get("jobNumber"));
+            }
+            if (updates.containsKey("description")) {
+                job.setDescription((String) updates.get("description"));
+            }
+            if (updates.containsKey("department")) {
+                job.setDepartment((String) updates.get("department"));
+            }
+            if (updates.containsKey("status")) {
+                String statusStr = (String) updates.get("status");
+                job.setStatus(Job.JobStatus.valueOf(statusStr.toUpperCase()));
+                logger.info("🔄 Changing job {} status to: {}", job.getJobNumber(), statusStr);
+            }
+            if (updates.containsKey("location")) {
+                String locationStr = (String) updates.get("location");
+                job.setLocation(Job.JobLocation.valueOf(locationStr.toUpperCase()));
+            }
+            if (updates.containsKey("clientId")) {
+                job.setClientId(Long.valueOf(updates.get("clientId").toString()));
+            }
+            if (updates.containsKey("quoteId")) {
+                job.setQuoteId(Long.valueOf(updates.get("quoteId").toString()));
+                logger.info("🔗 Linking job {} to quote ID: {}", job.getJobNumber(), updates.get("quoteId"));
+            }
+            if (updates.containsKey("rfqId")) {
+                job.setRfqId(Long.valueOf(updates.get("rfqId").toString()));
+            }
+            if (updates.containsKey("orderNumber")) {
+                job.setOrderNumber((String) updates.get("orderNumber"));
+            }
+            if (updates.containsKey("orderValueExcl")) {
+                Object value = updates.get("orderValueExcl");
+                job.setOrderValueExcl(new BigDecimal(value.toString()));
+            }
+            if (updates.containsKey("orderValueIncl")) {
+                Object value = updates.get("orderValueIncl");
+                job.setOrderValueIncl(new BigDecimal(value.toString()));
+            }
+            if (updates.containsKey("expectedDeliveryDate")) {
+                String dateStr = (String) updates.get("expectedDeliveryDate");
+                job.setExpectedDeliveryDate(LocalDate.parse(dateStr));
+            }
+            if (updates.containsKey("actualDeliveryDate")) {
+                String dateStr = (String) updates.get("actualDeliveryDate");
+                job.setActualDeliveryDate(LocalDate.parse(dateStr));
+            }
+
+            Job updatedJob = jobService.updateJob(id, job);
+            logger.info("✅ Partial update successful for job: {}", updatedJob.getJobNumber());
+            return ResponseEntity.ok(updatedJob);
+
+        } catch (Exception e) {
+            logger.error("❌ Error in partial update: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // PATCH - Status only (kept for backward compatibility)
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Job> updateJobStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        logger.info("Updating job {} status to: {}", id, status);
+        try {
+            Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+            Job updatedJob = jobService.updateJobStatus(id, jobStatus);
+            logger.info("✅ Job {} status updated to: {}", updatedJob.getJobNumber(), status);
+            return ResponseEntity.ok(updatedJob);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid status '{}': {}", status, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("❌ Error updating job status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // FILTERING & SEARCH
+    // ========================================
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Job>> getJobsByStatus(@PathVariable String status) {
+        logger.info("Fetching jobs by status: {}", status);
+        try {
+            Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+            List<Job> jobs = jobService.getJobsByStatus(jobStatus);
+            logger.info("Found {} jobs with status {}", jobs.size(), jobStatus);
+            return ResponseEntity.ok(jobs);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid status '{}': {}", status, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("Error fetching jobs by status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<Job>> getJobsByDepartment(@PathVariable String department) {
+        logger.info("Fetching jobs for department: {}", department);
+        try {
+            List<Job> jobs = jobService.getJobsByDepartment(department);
+            logger.info("Found {} jobs for department {}", jobs.size(), department);
+            return ResponseEntity.ok(jobs);
+        } catch (Exception e) {
+            logger.error("Error fetching jobs by department: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<Job>> getJobsByClient(@PathVariable Long clientId) {
+        logger.info("Fetching jobs for client ID: {}", clientId);
+        try {
+            List<Job> jobs = jobService.getJobsByClient(clientId);
+            logger.info("Found {} jobs for client {}", jobs.size(), clientId);
+            return ResponseEntity.ok(jobs);
+        } catch (Exception e) {
+            logger.error("Error fetching jobs by client: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/emergency")
+    public ResponseEntity<List<Job>> getEmergencyJobs() {
+        logger.info("Fetching urgent/overdue jobs");
+        try {
+            // Get overdue jobs as emergency jobs
+            List<Job> jobs = jobService.getOverdueJobs();
+            logger.info("Found {} urgent/overdue jobs", jobs.size());
+            return ResponseEntity.ok(jobs);
+        } catch (Exception e) {
+            logger.error("Error fetching urgent jobs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // JOB CARD GENERATION
+    // ========================================
+
+    @GetMapping("/{id}/job-card")
+    public ResponseEntity<Map<String, Object>> getJobCard(@PathVariable Long id) {
+        logger.info("Generating job card for job ID: {}", id);
+
+        try {
+            Optional<Job> jobOpt = jobService.getJobById(id);
+
+            if (jobOpt.isEmpty()) {
+                logger.warn("Job not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            Job job = jobOpt.get();
+
+            Map<String, Object> jobCard = new HashMap<>();
+            jobCard.put("jobNumber", job.getJobNumber());
+            jobCard.put("description", job.getDescription());
+            jobCard.put("department", job.getDepartment());
+            jobCard.put("status", job.getStatus().toString());
+            jobCard.put("location", job.getLocation().toString());
+            jobCard.put("clientId", job.getClientId());
+            jobCard.put("orderNumber", job.getOrderNumber());
+            jobCard.put("orderValue", job.getOrderValueExcl());
+            jobCard.put("expectedDelivery", job.getExpectedDeliveryDate());
+            jobCard.put("generatedAt", LocalDate.now());
+
+            logger.info("✅ Generated job card for: {}", job.getJobNumber());
+            return ResponseEntity.ok(jobCard);
+
+        } catch (Exception e) {
+            logger.error("❌ Error generating job card: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ========================================
+    // STATISTICS
+    // ========================================
+
+    @GetMapping("/statistics")
+    public ResponseEntity<Map<String, Object>> getJobStatistics() {
+        logger.info("Fetching job statistics");
+        try {
+            List<Job> allJobs = jobService.getAllJobs();
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalJobs", allJobs.size());
+            stats.put("activeJobs", allJobs.stream().filter(j ->
+                    j.getStatus() == Job.JobStatus.IN_PROGRESS ||
+                            j.getStatus() == Job.JobStatus.QUALITY_CHECK ||
+                            j.getStatus() == Job.JobStatus.READY
+            ).count());
+            stats.put("completedJobs", allJobs.stream().filter(j ->
+                    j.getStatus() == Job.JobStatus.COMPLETE ||
+                            j.getStatus() == Job.JobStatus.DELIVERED ||
+                            j.getStatus() == Job.JobStatus.INVOICED
+            ).count());
+            stats.put("overdueJobs", jobService.getOverdueJobs().size());
+
+            logger.info("Statistics: Total={}, Active={}, Completed={}, Overdue={}",
+                    stats.get("totalJobs"), stats.get("activeJobs"),
+                    stats.get("completedJobs"), stats.get("overdueJobs"));
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("Error fetching statistics: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+}

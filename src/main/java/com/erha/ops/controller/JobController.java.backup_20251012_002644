@@ -1,0 +1,225 @@
+package com.erha.ops.controller;
+
+import com.erha.ops.entity.Job;
+import com.erha.ops.entity.Quote;
+import com.erha.ops.entity.Rfq;
+import com.erha.ops.entity.WorkProgress;
+import com.erha.ops.service.JobService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/v1/jobs")
+@CrossOrigin(origins = "*")
+public class JobController {
+
+    @Autowired
+    private JobService jobService;
+
+    // ============================================
+    // IMPORTANT: Specific paths MUST come before /{id}
+    // ============================================
+    
+    // Get job statistics (MUST be before /{id})
+    @GetMapping("/statistics")
+    public ResponseEntity<Map<String, Object>> getJobStatistics() {
+        Map<String, Object> stats = jobService.getJobStatistics();
+        return ResponseEntity.ok(stats);
+    }
+
+    // Get overdue jobs (MUST be before /{id})
+    @GetMapping("/overdue")
+    public ResponseEntity<List<Job>> getOverdueJobs() {
+        List<Job> jobs = jobService.getOverdueJobs();
+        return ResponseEntity.ok(jobs);
+    }
+
+    // Search jobs by keyword (MUST be before /{id})
+    @GetMapping("/search")
+    public ResponseEntity<List<Job>> searchJobs(@RequestParam String keyword) {
+        List<Job> jobs = jobService.searchJobs(keyword);
+        return ResponseEntity.ok(jobs);
+    }
+
+    // Get jobs by status (MUST be before /{id})
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Job>> getJobsByStatus(@PathVariable String status) {
+        try {
+            Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+            List<Job> jobs = jobService.getJobsByStatus(jobStatus);
+            return ResponseEntity.ok(jobs);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Get jobs by department (MUST be before /{id})
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<Job>> getJobsByDepartment(@PathVariable String department) {
+        List<Job> jobs = jobService.getJobsByDepartment(department);
+        return ResponseEntity.ok(jobs);
+    }
+
+    // Get jobs by client (MUST be before /{id})
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<Job>> getJobsByClient(@PathVariable Long clientId) {
+        List<Job> jobs = jobService.getJobsByClient(clientId);
+        return ResponseEntity.ok(jobs);
+    }
+
+    // Get jobs by priority (MUST be before /{id})
+    @GetMapping("/priority/{priority}")
+    public ResponseEntity<List<Job>> getJobsByPriority(@PathVariable String priority) {
+        try {
+            Job.JobPriority jobPriority = Job.JobPriority.valueOf(priority.toUpperCase());
+            List<Job> jobs = jobService.getJobsByPriority(jobPriority);
+            return ResponseEntity.ok(jobs);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // ============================================
+    // BASIC CRUD OPERATIONS
+    // ============================================
+    
+    // Get all jobs
+    @GetMapping
+    public ResponseEntity<List<Job>> getAllJobs() {
+        List<Job> jobs = jobService.getAllJobs();
+        return ResponseEntity.ok(jobs);
+    }
+
+    // Create new job
+    @PostMapping
+    public ResponseEntity<Job> createJob(@RequestBody Job job) {
+        try {
+            Job createdJob = jobService.createJob(job);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get job by ID (MUST come AFTER all specific paths)
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJobById(@PathVariable Long id) {
+        return jobService.getJobById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Update job (full update)
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job) {
+        try {
+            Job updatedJob = jobService.updateJob(id, job);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Update job status only (partial update)
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Job> updateJobStatus(@PathVariable Long id, @RequestBody Map<String, String> statusUpdate) {
+        try {
+            String statusStr = statusUpdate.get("status");
+            Job.JobStatus status = Job.JobStatus.valueOf(statusStr);
+            Job updatedJob = jobService.updateJobStatus(id, status);
+            return ResponseEntity.ok(updatedJob);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Delete/Cancel job
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
+        try {
+            jobService.deleteJob(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ============================================
+    // WORK PROGRESS OPERATIONS
+    // ============================================
+
+    // Get progress history for a job
+    @GetMapping("/{jobId}/progress")
+    public ResponseEntity<List<WorkProgress>> getJobProgress(@PathVariable Long jobId) {
+        List<WorkProgress> progress = jobService.getJobProgress(jobId);
+        return ResponseEntity.ok(progress);
+    }
+
+    // Add progress update to job
+    @PostMapping("/{jobId}/progress")
+    public ResponseEntity<WorkProgress> addJobProgress(@PathVariable Long jobId, @RequestBody WorkProgress progress) {
+        try {
+            WorkProgress createdProgress = jobService.addJobProgress(jobId, progress);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdProgress);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get latest progress for a job
+    @GetMapping("/{jobId}/progress/latest")
+    public ResponseEntity<WorkProgress> getLatestJobProgress(@PathVariable Long jobId) {
+        return jobService.getLatestJobProgress(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ============================================
+    // JOB-RFQ-QUOTE INTEGRATION
+    // ============================================
+
+    // Get RFQ linked to job
+    @GetMapping("/{jobId}/rfq")
+    public ResponseEntity<Rfq> getJobRfq(@PathVariable Long jobId) {
+        return jobService.getJobRfq(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Get Quote linked to job
+    @GetMapping("/{jobId}/quote")
+    public ResponseEntity<Quote> getJobQuote(@PathVariable Long jobId) {
+        return jobService.getJobQuote(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Link quote to job
+    @PostMapping("/{jobId}/link-quote/{quoteId}")
+    public ResponseEntity<Job> linkQuoteToJob(@PathVariable Long jobId, @PathVariable Long quoteId) {
+        try {
+            Job updatedJob = jobService.linkQuoteToJob(jobId, quoteId);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Link RFQ to job
+    @PostMapping("/{jobId}/link-rfq/{rfqId}")
+    public ResponseEntity<Job> linkRfqToJob(@PathVariable Long jobId, @PathVariable Long rfqId) {
+        try {
+            Job updatedJob = jobService.linkRfqToJob(jobId, rfqId);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}
