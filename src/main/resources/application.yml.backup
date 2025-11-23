@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8083
   servlet:
     context-path: /
@@ -94,7 +94,7 @@ springdoc:
 docusign:
   integration-key: 5017f2e9-b8cb-46de-a7fe-777c51aa7ce1
   account-id: d725afd6-e702-4860-b54f-7ef2aeb9b304
-  user-id: 1eb74011-05e3-4074-bd46-e0df78e55685
-  private-key-path: C:/Users/lenkl/IdeaProjects/lenklopper02/src/main/resources/docusign_private.key
+  user-id: 1eb74011-05e3-4074-bd46-e0df78e65685
+  private-key-path: classpath:docusign_private.key
   base-path: https://demo.docusign.net/restapi
 

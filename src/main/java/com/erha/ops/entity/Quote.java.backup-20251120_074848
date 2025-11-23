@@ -62,15 +62,6 @@ public class Quote {
 
     @Column(name = "updated_date")
     private LocalDateTime updatedDate;
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "location", length = 20)
-    private String location;  // SHOP or SITE
-
-    @Column(name = "terms", columnDefinition = "TEXT")
-    private String terms;  // Terms & Conditions
-
 
     
     // DocuSign Integration Fields

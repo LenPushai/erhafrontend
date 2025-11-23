@@ -8,6 +8,10 @@ public class DocuSignConfig {
 
     @Value("${docusign.integration-key}")
     private String integrationKey;
+
+    @Value("${docusign.secret-key}")
+    private String secretKey;
+
     @Value("${docusign.account-id}")
     private String accountId;
 
@@ -20,12 +24,14 @@ public class DocuSignConfig {
     @Value("${docusign.user-id}")
     private String userId;
 
-    @Value("${docusign.private-key}")
-    private String privateKey;
-
     public String getIntegrationKey() {
         return integrationKey;
     }
+
+    public String getSecretKey() {
+        return secretKey;
+    }
+
     public String getAccountId() {
         return accountId;
     }
@@ -40,9 +46,5 @@ public class DocuSignConfig {
 
     public String getUserId() {
         return userId;
-    }
-
-    public String getPrivateKey() {
-        return privateKey;
     }
 }

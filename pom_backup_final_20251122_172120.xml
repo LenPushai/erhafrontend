@@ -154,25 +154,6 @@
             <artifactId>org.apache.oltu.oauth2.common</artifactId>
             <version>1.0.2</version>
         </dependency>
-        
-        <!-- Bouncy Castle for DocuSign JWT -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.78.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.78.1</version>
-        </dependency>
-        
-        <!-- Auth0 JWT for DocuSign Authentication -->
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-            <version>4.4.0</version>
-        </dependency>
     
         <!-- iText PDF Generation -->
         <dependency>

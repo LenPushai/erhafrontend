@@ -124,16 +124,15 @@ public class RfqController {
             }
 
             RFQ created = rfqRepository.save(rfq);
-            logger.info("âœ… Created RFQ: {} - {}", created.getJobNo(), created.getDescription());
+            logger.info("✅ Created RFQ: {} - {}", created.getJobNo(), created.getDescription());
             return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(created);
 
         } catch (Exception e) {
-            logger.error("âŒ Error creating RFQ: {}", e.getMessage(), e);
+            logger.error("❌ Error creating RFQ: {}", e.getMessage(), e);
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // UPDATE RFQ (full update)
     // UPDATE RFQ (full update)
     @PutMapping("/rfqs/{id}")
     public ResponseEntity<RFQ> updateRfq(@PathVariable Long id, @RequestBody RFQ rfqDetails) {
@@ -149,20 +148,13 @@ public class RfqController {
 
             RFQ rfq = existingRfq.get();
 
-            // Update all fields - COMPLETE VERSION
+            // Update all fields
             if (rfqDetails.getJobNo() != null) rfq.setJobNo(rfqDetails.getJobNo());
-            if (rfqDetails.getClientId() != null) rfq.setClientId(rfqDetails.getClientId());
-            if (rfqDetails.getContactPerson() != null) rfq.setContactPerson(rfqDetails.getContactPerson());
-            if (rfqDetails.getContactEmail() != null) rfq.setContactEmail(rfqDetails.getContactEmail());
-            if (rfqDetails.getContactPhone() != null) rfq.setContactPhone(rfqDetails.getContactPhone());
-            if (rfqDetails.getOperatingEntity() != null) rfq.setOperatingEntity(rfqDetails.getOperatingEntity());
             if (rfqDetails.getDescription() != null) rfq.setDescription(rfqDetails.getDescription());
             if (rfqDetails.getDepartment() != null) rfq.setDepartment(rfqDetails.getDepartment());
-            if (rfqDetails.getRequestDate() != null) rfq.setRequestDate(rfqDetails.getRequestDate());
-            if (rfqDetails.getRequiredDate() != null) rfq.setRequiredDate(rfqDetails.getRequiredDate());
-            if (rfqDetails.getPriority() != null) rfq.setPriority(rfqDetails.getPriority());
             if (rfqDetails.getEstimatedValue() != null) rfq.setEstimatedValue(rfqDetails.getEstimatedValue());
             if (rfqDetails.getStatus() != null) rfq.setStatus(rfqDetails.getStatus());
+            if (rfqDetails.getRequiredDate() != null) rfq.setRequiredDate(rfqDetails.getRequiredDate());
             if (rfqDetails.getAssignedTo() != null) rfq.setAssignedTo(rfqDetails.getAssignedTo());
             if (rfqDetails.getIsDeleted() != null) rfq.setIsDeleted(rfqDetails.getIsDeleted());
 
@@ -215,18 +207,18 @@ public class RfqController {
             }
             if (updates.containsKey("assignedTo")) {
                 rfq.setAssignedTo((String) updates.get("assignedTo"));
-                logger.info("ðŸ”„ Reassigning RFQ {} to: {}", rfq.getJobNo(), updates.get("assignedTo"));
+                logger.info("🔄 Reassigning RFQ {} to: {}", rfq.getJobNo(), updates.get("assignedTo"));
             }
             if (updates.containsKey("isDeleted")) {
                 rfq.setIsDeleted((Boolean) updates.get("isDeleted"));
             }
 
             RFQ updatedRfq = rfqRepository.save(rfq);
-            logger.info("âœ… Partial update successful for RFQ: {}", updatedRfq.getJobNo());
+            logger.info("✅ Partial update successful for RFQ: {}", updatedRfq.getJobNo());
             return ResponseEntity.ok(updatedRfq);
 
         } catch (Exception e) {
-            logger.error("âŒ Error in partial update: {}", e.getMessage(), e);
+            logger.error("❌ Error in partial update: {}", e.getMessage(), e);
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -248,7 +240,7 @@ public class RfqController {
             rfq.setIsDeleted(true);
             rfqRepository.save(rfq);
 
-            logger.info("âœ… Soft deleted RFQ: {}", rfq.getJobNo());
+            logger.info("✅ Soft deleted RFQ: {}", rfq.getJobNo());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -259,7 +251,7 @@ public class RfqController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.error("âŒ Error deleting RFQ: {}", e.getMessage(), e);
+            logger.error("❌ Error deleting RFQ: {}", e.getMessage(), e);
             return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

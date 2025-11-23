@@ -1,0 +1,188 @@
+package com.erha.ops.service;
+
+import com.docusign.esign.api.EnvelopesApi;
+import com.docusign.esign.client.ApiClient;
+import com.docusign.esign.client.ApiException;
+import com.docusign.esign.client.auth.OAuth;
+import com.docusign.esign.model.*;
+import com.erha.ops.config.DocuSignConfig;
+import com.erha.ops.entity.Quote;
+import com.erha.ops.repository.QuoteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Base64;
+
+@Service
+public class DocuSignService {
+
+    @Autowired
+    private DocuSignConfig docuSignConfig;
+
+    @Autowired
+    private QuoteRepository quoteRepository;
+
+    private ApiClient apiClient;
+
+    /**
+     * Initialize DocuSign API client with JWT authentication
+     */
+    private void initializeApiClient() throws ApiException, IOException {
+        if (apiClient == null) {
+            apiClient = new ApiClient(docuSignConfig.getBasePath());
+            
+            // JWT authentication
+            byte[] privateKeyBytes = docuSignConfig.getSecretKey().getBytes();
+            
+            OAuth.OAuthToken oAuthToken = apiClient.requestJWTUserToken(
+                docuSignConfig.getIntegrationKey(),
+                docuSignConfig.getUserId(),
+                Arrays.asList(OAuth.Scope_SIGNATURE, OAuth.Scope_IMPERSONATION),
+                privateKeyBytes,
+                3600
+            );
+            
+            apiClient.setAccessToken(oAuthToken.getAccessToken(), oAuthToken.getExpiresIn());
+        }
+    }
+
+    /**
+     * Send quote for signature via DocuSign
+     * 
+     * @param quoteId The quote to send
+     * @param managerEmail Manager who will approve first
+     * @param managerName Manager's name
+     * @param clientEmail Client who will sign second
+     * @param clientName Client's name
+     * @return Envelope ID from DocuSign
+     */
+    public String sendQuoteForSignature(
+            Long quoteId,
+            String managerEmail,
+            String managerName,
+            String clientEmail,
+            String clientName
+    ) throws ApiException, IOException {
+        
+        // Initialize API client
+        initializeApiClient();
+        
+        // Get quote from database
+        Quote quote = quoteRepository.findById(quoteId)
+            .orElseThrow(() -> new RuntimeException("Quote not found: " + quoteId));
+        
+        // Create envelope definition
+        EnvelopeDefinition envelopeDefinition = new EnvelopeDefinition();
+        envelopeDefinition.setEmailSubject("ERHA Quote " + quote.getQuoteNumber() + " - Signature Required");
+        envelopeDefinition.setStatus("sent");
+        
+        // Create document from quote (simplified - in production, generate PDF)
+        Document document = new Document();
+        document.setDocumentBase64(createQuotePdfBase64(quote));
+        document.setName("Quote_" + quote.getQuoteNumber() + ".pdf");
+        document.setFileExtension("pdf");
+        document.setDocumentId("1");
+        envelopeDefinition.setDocuments(Arrays.asList(document));
+        
+        // Create recipients - Manager signs first, then Client
+        Recipients recipients = new Recipients();
+        
+        // Manager (Signer 1)
+        Signer managerSigner = new Signer();
+        managerSigner.setEmail(managerEmail);
+        managerSigner.setName(managerName);
+        managerSigner.setRecipientId("1");
+        managerSigner.setRoutingOrder("1");
+        
+        // Add signature tab for manager
+        SignHere managerSignTab = new SignHere();
+        managerSignTab.setDocumentId("1");
+        managerSignTab.setPageNumber("1");
+        managerSignTab.setXPosition("100");
+        managerSignTab.setYPosition("150");
+        
+        Tabs managerTabs = new Tabs();
+        managerTabs.setSignHereTabs(Arrays.asList(managerSignTab));
+        managerSigner.setTabs(managerTabs);
+        
+        // Client (Signer 2)
+        Signer clientSigner = new Signer();
+        clientSigner.setEmail(clientEmail);
+        clientSigner.setName(clientName);
+        clientSigner.setRecipientId("2");
+        clientSigner.setRoutingOrder("2");
+        
+        // Add signature tab for client
+        SignHere clientSignTab = new SignHere();
+        clientSignTab.setDocumentId("1");
+        clientSignTab.setPageNumber("1");
+        clientSignTab.setXPosition("100");
+        clientSignTab.setYPosition("250");
+        
+        Tabs clientTabs = new Tabs();
+        clientTabs.setSignHereTabs(Arrays.asList(clientSignTab));
+        clientSigner.setTabs(clientTabs);
+        
+        recipients.setSigners(Arrays.asList(managerSigner, clientSigner));
+        envelopeDefinition.setRecipients(recipients);
+        
+        // Send envelope
+        EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
+        EnvelopeSummary envelopeSummary = envelopesApi.createEnvelope(
+            docuSignConfig.getAccountId(),
+            envelopeDefinition
+        );
+        
+        String envelopeId = envelopeSummary.getEnvelopeId();
+        
+        // Update quote with DocuSign info
+        quote.setDocusignEnvelopeId(envelopeId);
+        quote.setSentForSignatureDate(LocalDateTime.now());
+        quote.setQuoteStatus(Quote.QuoteStatus.PENDING_APPROVAL);
+        quoteRepository.save(quote);
+        
+        return envelopeId;
+    }
+    
+    /**
+     * Create a simple PDF representation of the quote
+     * In production, use a proper PDF library like iText or Apache PDFBox
+     */
+    private String createQuotePdfBase64(Quote quote) {
+        // Simplified: Create basic text representation
+        // TODO: Replace with actual PDF generation
+        String quoteText = String.format(
+            "ERHA FABRICATION & CONSTRUCTION\n\n" +
+            "QUOTE: %s\n" +
+            "Date: %s\n\n" +
+            "Value (Excl VAT): R %.2f\n" +
+            "Value (Incl VAT): R %.2f\n\n" +
+            "Manager Signature: ___________________\n\n\n" +
+            "Client Signature: ___________________\n",
+            quote.getQuoteNumber(),
+            quote.getQuoteDate(),
+            quote.getValueExclVat(),
+            quote.getValueInclVat()
+        );
+        
+        return Base64.getEncoder().encodeToString(quoteText.getBytes());
+    }
+    
+    /**
+     * Get envelope status from DocuSign
+     */
+    public String getEnvelopeStatus(String envelopeId) throws ApiException, IOException {
+        initializeApiClient();
+        
+        EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
+        Envelope envelope = envelopesApi.getEnvelope(
+            docuSignConfig.getAccountId(),
+            envelopeId
+        );
+        
+        return envelope.getStatus();
+    }
+}
