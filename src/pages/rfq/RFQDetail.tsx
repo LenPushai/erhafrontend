@@ -1,0 +1,348 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { rfqService } from '../../services/rfqService';
+import PageHeader from '../../components/common/PageHeader';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+
+const RFQDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [rfq, setRfq] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRFQ();
+  }, [id]);
+
+  const fetchRFQ = async () => {
+    if (!id) {
+      setError('No RFQ ID provided');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await rfqService.getRfqById(id);
+      setRfq(data);
+    } catch (err: any) {
+      console.error('Error fetching RFQ:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load RFQ details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!rfq || !window.confirm('Are you sure you want to delete this RFQ?')) {
+      return;
+    }
+
+    try {
+      await rfqService.deleteRFQ(rfq.id);
+      navigate('/rfq');
+    } catch (err: any) {
+      console.error('Error deleting RFQ:', err);
+      alert(err.response?.data?.message || 'Failed to delete RFQ');
+    }
+  };
+
+  const handleCreateQuote = () => {
+    navigate(`/quotes/create?rfqId=${rfq.id}`);
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'Draft': 'bg-secondary',
+      'Under Review': 'bg-warning',
+      'Pending Clarification': 'bg-info',
+      'Completed': 'bg-success',
+      'Cancelled': 'bg-danger'
+    };
+    return statusMap[status] || 'bg-secondary';
+  };
+
+  const getPriorityBadgeClass = (priority: string) => {
+    const priorityMap: Record<string, string> = {
+      'LOW': 'bg-success',
+      'MEDIUM': 'bg-warning',
+      'HIGH': 'bg-danger'
+    };
+    return priorityMap[priority] || 'bg-secondary';
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="container-fluid py-4">
+        <div className="alert alert-danger">
+          <h4 className="alert-heading">Error</h4>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={() => navigate('/rfq')}>
+            Back to RFQs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!rfq) {
+    return (
+      <div className="container-fluid py-4">
+        <div className="alert alert-warning">
+          RFQ not found
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container-fluid py-4">
+      <PageHeader 
+        title="RFQ Details"
+        subtitle="Request for Quotation"
+        breadcrumbs={[
+          { label: 'Home', path: '/' },
+          { label: 'RFq', path: '/rfq' },
+          { label: rfq.id || 'Details', path: '' }
+        ]}
+      />
+
+      {/* Action Buttons */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex gap-2 flex-wrap">
+            <Link 
+              to="/rfq" 
+              className="btn btn-outline-secondary"
+            >
+              ← Back to RFQs
+            </Link>
+            <button
+              onClick={handleCreateQuote}
+              className="btn btn-success"
+            >
+              Create Quote from RFQ
+            </button>
+            <Link
+              to={`/rfq/${rfq.id}/edit`}
+              className="btn btn-primary"
+            >
+              Edit RFQ
+            </Link>
+            <button
+              onClick={handleDelete}
+              className="btn btn-danger"
+            >
+              Delete RFQ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="row">
+        {/* Left Column - RFQ Information */}
+        <div className="col-lg-8">
+          <div className="card shadow-sm mb-4">
+            <div className="card-header bg-primary text-white">
+              <h5 className="mb-0">RFQ Information</h5>
+            </div>
+            <div className="card-body">
+              <div className="row g-3">
+                {/* RFQ Number */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">RFQ Number:</label>
+                  <p className="mb-0">{rfq.jobNo || 'N/A'}</p>
+                </div>
+
+                {/* Status */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Status:</label>
+                  <div>
+                    <span className={`badge ${getStatusBadgeClass(rfq.status)}`}>
+                      {rfq.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Client ID (TODO: Fetch client name from backend) */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Client:</label>
+                  <p className="mb-0">Client ID: {rfq.clientId || 'N/A'}</p>
+                </div>
+
+                {/* Priority */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Priority:</label>
+                  <div>
+                    <span className={`badge ${getPriorityBadgeClass(rfq.priority)}`}>
+                      {rfq.priority || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Operating Entity */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Operating Entity:</label>
+                  <p className="mb-0">{rfq.operatingEntity || 'N/A'}</p>
+                </div>
+
+                {/* Contact Person */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Contact Person:</label>
+                  <p className="mb-0">{rfq.contactPerson || 'N/A'}</p>
+                </div>
+
+                {/* Contact Email */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Contact Email:</label>
+                  <p className="mb-0">{rfq.contactEmail || 'N/A'}</p>
+                </div>
+
+                {/* Contact Phone */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Contact Phone:</label>
+                  <p className="mb-0">{rfq.contactPhone || 'N/A'}</p>
+                </div>
+
+                {/* Description */}
+                <div className="col-12">
+                  <label className="form-label fw-bold text-muted small">Description:</label>
+                  <p className="mb-0">{rfq.description || 'No description'}</p>
+                </div>
+
+                {/* Request Date */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Requested Date:</label>
+                  <p className="mb-0">{rfq.requestDate ? new Date(rfq.requestDate).toLocaleDateString() : 'N/A'}</p>
+                </div>
+
+                {/* Required Date */}
+                <div className="col-md-6">
+                  <label className="form-label fw-bold text-muted small">Required By Date:</label>
+                  <p className="mb-0">{rfq.requiredDate ? new Date(rfq.requiredDate).toLocaleDateString() : 'N/A'}</p>
+                </div>
+
+                {/* Estimated Value */}
+                {rfq.estimatedValue && (
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Estimated Value:</label>
+                    <div>
+                      <p className="mb-0">R {rfq.estimatedValue?.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quotes Section */}
+          {rfq.quotes && rfq.quotes.length > 0 && (
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-success text-white">
+                <h5 className="mb-0">Associated Quotes ({rfq.quotes.length})</h5>
+              </div>
+              <div className="card-body">
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Quote Number</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rfq.quotes.map((quote: any) => (
+                        <tr key={quote.id}>
+                          <td>{quote.quoteNumber}</td>
+                          <td>
+                            <span className={`badge ${getStatusBadgeClass(quote.status)}`}>
+                              {quote.status}
+                            </span>
+                          </td>
+                          <td>R {quote.totalAmount?.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</td>
+                          <td>
+                            <Link
+                              to={`/quotes/${quote.id}`}
+                              className="btn btn-sm btn-primary"
+                            >
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Actions & Metadata */}
+        <div className="col-lg-4">
+          {/* Actions Card */}
+          <div className="card shadow-sm mb-4">
+            <div className="card-header bg-info text-white">
+              <h5 className="mb-0">Actions</h5>
+            </div>
+            <div className="card-body">
+              <div className="d-grid gap-2">
+                <button
+                  onClick={handleCreateQuote}
+                  className="btn btn-success"
+                >
+                  Create Quote from RFQ
+                </button>
+                <Link
+                  to={`/rfq/${rfq.id}/edit`}
+                  className="btn btn-primary"
+                >
+                  Edit RFQ
+                </Link>
+                <button
+                  onClick={handleDelete}
+                  className="btn btn-danger"
+                >
+                  Delete RFQ
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata Card */}
+          <div className="card shadow-sm">
+            <div className="card-header bg-secondary text-white">
+              <h5 className="mb-0">Metadata</h5>
+            </div>
+            <div className="card-body">
+              <div className="small">
+                <p className="mb-2">
+                  <strong>Created:</strong> {rfq.createdAt ? new Date(rfq.createdAt).toLocaleString() : 'N/A'}
+                </p>
+                <p className="mb-2">
+                  <strong>Created By:</strong> {rfq.createdBy || 'N/A'}
+                </p>
+                {rfq.updatedAt && (
+                  <p className="mb-0">
+                    <strong>Last Updated:</strong> {new Date(rfq.updatedAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RFQDetail;

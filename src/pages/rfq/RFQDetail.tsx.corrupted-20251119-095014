@@ -1,0 +1,171 @@
+﻿import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Container, Card, CardContent, Typography, Button, Grid, Chip, Alert, CircularProgress } from '@mui/material';
+import { ArrowBack, Edit, Delete, AddCircleOutline } from '@mui/icons-material';
+import { rfqService, RFQ } from '../../services/rfqService';
+
+const RFQDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [rfq, setRfq] = useState<RFQ | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRFQDetails();
+  }, [id]);
+
+  const fetchRFQDetails = async () => {
+    try {
+      setLoading(true);
+      const data = await rfqService.getRfqById(Number(id));
+      setRfq(data);
+    } catch (err) {
+      setError('Failed to load RFQ details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Delete this RFQ?')) {
+      try {
+        await rfqService.deleteRfq(Number(id));
+        navigate('/rfq');
+      } catch (err) {
+        alert('Failed to delete RFQ');
+      }
+    }
+  };
+
+  if (loading) return <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh"><CircularProgress /></Box>;
+  if (error || !rfq) return <Container maxWidth="lg" sx={{ mt: 4 }}><Alert severity="error">{error || 'RFQ not found'}</Alert><Button startIcon={<ArrowBack />} onClick={() => navigate('/rfq')}>Back</Button></Container>;
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate('/rfq')}>Back</Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button variant="contained" startIcon={<AddCircleOutline />} onClick={() => navigate(`/quotes/create?rfqId=${rfq.id}`)}>Create Quote</Button>
+          <Button variant="outlined" startIcon={<Edit />} onClick={() => navigate(`/rfq/${rfq.id}/edit`)}>Edit</Button>
+          <Button variant="outlined" color="error" startIcon={<Delete />} onClick={handleDelete}>Delete</Button>
+        </Box>
+      </Box>
+
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>RFQ #{rfq.rfqNumber}</Typography>
+      <Typography variant="h6" color="text.secondary" gutterBottom>{rfq.projectName}</Typography>
+      
+      <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
+        <Chip label={`Status: ${rfq.status}`} color="primary" />
+        <Chip label={`Priority: ${rfq.priority}`} color={rfq.priority === 'High' ? 'error' : rfq.priority === 'Medium' ? 'warning' : 'success'} />
+      </Box>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>Client Information</Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Client Name</Typography>
+              <Typography variant="body1">{rfq.clientName}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Operating Entity</Typography>
+              <Typography variant="body1">{rfq.operatingEntity}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Contact Person</Typography>
+              <Typography variant="body1">{rfq.contactPerson}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Phone</Typography>
+              <Typography variant="body1">{rfq.contactPhone}</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Email</Typography>
+              <Typography variant="body1">{rfq.contactEmail}</Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>Project Details</Typography>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Project Name</Typography>
+            <Typography variant="body1">{rfq.projectName}</Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">Description</Typography>
+            <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1, mt: 1, whiteSpace: 'pre-wrap' }}>
+              <Typography variant="body1">{rfq.description}</Typography>
+            </Box>
+          </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Work Location</Typography>
+              <Typography variant="body1">{rfq.workLocation}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Estimated Value</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {rfq.estimatedValue ? `R${rfq.estimatedValue.toLocaleString('en-ZA')}` : 'N/A'}
+              </Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>Status & Timeline</Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">Status</Typography>
+              <Chip label={rfq.status} color="primary" sx={{ mt: 1 }} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">Priority</Typography>
+              <Chip label={rfq.priority} color={rfq.priority === 'High' ? 'error' : 'warning'} sx={{ mt: 1 }} />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">Assigned To</Typography>
+              <Typography variant="body1">{rfq.assignedTo || 'Unassigned'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Received Date</Typography>
+              <Typography variant="body1">{new Date(rfq.receivedDate).toLocaleDateString()}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Required By</Typography>
+              <Typography variant="body1">{new Date(rfq.requiredBy).toLocaleDateString()}</Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {(rfq.createdAt || rfq.updatedAt) && (
+        <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Grid container spacing={2}>
+            {rfq.createdAt && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Created: {new Date(rfq.createdAt).toLocaleDateString()}
+                </Typography>
+              </Grid>
+            )}
+            {rfq.updatedAt && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Last Updated: {new Date(rfq.updatedAt).toLocaleDateString()}
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
+      )}
+    </Container>
+  );
+};
+
+export default RFQDetail;

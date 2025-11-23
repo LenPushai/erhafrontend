@@ -1,0 +1,407 @@
+import React, { useState, useEffect } from 'react';
+import EmptyState from '../../components/common/EmptyState';
+import { Link } from 'react-router-dom';
+import { jobService } from '../../services/jobService';
+import type { Job } from '../../services/jobService';
+import StatusBadge from '../../components/common/StatusBadge';
+import type { JobStatus } from '../../components/common/StatusBadge';
+
+const JobsList: React.FC = () => {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    filterJobs();
+  }, [jobs, searchTerm, statusFilter]);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const data = await jobService.getAllJobs();
+      setJobs(data);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching jobs:', err);
+      setError(err.message || 'Failed to fetch jobs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterJobs = () => {
+    let filtered = [...jobs];
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(
+          (job) =>
+              job.jobNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.clientName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter((job) => job.status === statusFilter);
+    }
+
+    setFilteredJobs(filtered);
+  };
+
+  const getPriorityBadgeClass = (priority: string) => {
+    switch (priority?.toUpperCase()) {
+      case 'HIGH':
+      case 'URGENT':
+        return 'badge bg-danger';
+      case 'MEDIUM':
+        return 'badge bg-warning';
+      case 'LOW':
+        return 'badge bg-secondary';
+      default:
+        return 'badge bg-secondary';
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+    }).format(value);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  if (loading) {
+    return (
+        <div className="container-fluid py-4">
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="container-fluid py-4">
+          <div className="alert alert-danger" role="alert">
+            <h4 className="alert-heading">Error Loading Jobs</h4>
+            <p>{error}</p>
+            <hr />
+            <button className="btn btn-outline-danger" onClick={fetchJobs}>
+              Try Again
+            </button>
+          </div>
+        </div>
+    );
+  }
+
+  return (
+      <div className="container-fluid py-4">
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="mb-1">Jobs</h2>
+            <p className="text-muted mb-0">
+              Manage and track all active jobs
+            </p>
+          </div>
+          <Link to="/jobs/create" className="btn btn-primary">
+            <i className="bi bi-plus-circle me-2"></i>
+            New Job
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="row g-3">
+              <div className="col-md-6">
+                <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-search"></i>
+                </span>
+                  <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search by job number, description, or client..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <select
+                    className="form-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="NOT_STARTED">Not Started</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="ON_HOLD">On Hold</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <button
+                    className="btn btn-outline-secondary w-100"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setStatusFilter('ALL');
+                    }}
+                >
+                  <i className="bi bi-x-circle me-2"></i>
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="row mb-4">
+          <div className="col-md-3">
+            <div className="card border-primary">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="text-muted mb-1">Total Jobs</h6>
+                    <h3 className="mb-0">{jobs.length}</h3>
+                  </div>
+                  <div className="text-primary">
+                    <i className="bi bi-briefcase fs-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card border-success">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="text-muted mb-1">Active</h6>
+                    <h3 className="mb-0">
+                      {jobs.filter((j) => j.status === 'IN_PROGRESS').length}
+                    </h3>
+                  </div>
+                  <div className="text-success">
+                    <i className="bi bi-play-circle fs-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card border-warning">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="text-muted mb-1">Pending</h6>
+                    <h3 className="mb-0">
+                      {jobs.filter((j) => j.status === 'NOT_STARTED').length}
+                    </h3>
+                  </div>
+                  <div className="text-warning">
+                    <i className="bi bi-clock-history fs-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3">
+            <div className="card border-info">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="text-muted mb-1">Completed</h6>
+                    <h3 className="mb-0">
+                      {jobs.filter((j) => j.status === 'COMPLETED').length}
+                    </h3>
+                  </div>
+                  <div className="text-info">
+                    <i className="bi bi-check-circle fs-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Jobs List */}
+        <div className="card">
+          <div className="card-body">
+            {filteredJobs.length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="bi bi-inbox fs-1 text-muted"></i>
+                  <p className="text-muted mt-3">No jobs found</p>
+                </div>
+            ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                    <tr>
+                      <th>Job Number</th>
+                      <th>Description</th>
+                      <th>Client</th>
+                      <th>Value</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Progress</th>
+                      <th>Quote/RFQ</th>
+                      <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {filteredJobs.map((job) => (
+                        <tr key={job.jobId}>
+                          <td>
+                            <Link
+                                to={`/jobs/${job.jobId}`}
+                                className="text-decoration-none fw-bold"
+                            >
+                              {job.jobNumber}
+                            </Link>
+                          </td>
+                          <td>
+                            <div className="text-truncate" style={{ maxWidth: '250px' }}>
+                              {job.description || 'N/A'}
+                            </div>
+                          </td>
+                          <td>{job.clientName || 'N/A'}</td>
+                          <td>{formatCurrency(job.orderValueIncl || 0)}</td>
+                          <td>
+                            <StatusBadge status={job.status as JobStatus} />
+                          </td>
+                          <td>
+                            {job.priority && (
+                                <span className={getPriorityBadgeClass(job.priority)}>
+                            {job.priority}
+                          </span>
+                            )}
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <div className="progress flex-grow-1 me-2" style={{ height: '8px', minWidth: '60px' }}>
+                                <div
+                                    className="progress-bar"
+                                    role="progressbar"
+                                    style={{ width: `${job.progressPercentage || 0}%` }}
+                                    aria-valuenow={job.progressPercentage || 0}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                ></div>
+                              </div>
+                              <small className="text-muted">{job.progressPercentage || 0}%</small>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex flex-column gap-1">
+                              {job.quoteId && (
+                                  <Link
+                                      to={`/quotes/${job.quoteId}`}
+                                      className="badge bg-info text-decoration-none"
+                                  >
+                                    Quote #{job.quoteId}
+                                  </Link>
+                              )}
+                              {job.rfqId && (
+                                  <Link
+                                      to={`/rfqs/${job.rfqId}`}
+                                      className="badge bg-secondary text-decoration-none"
+                                  >
+                                    RFQ #{job.rfqId}
+                                  </Link>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="btn-group btn-group-sm" role="group">
+                              <Link
+                                  to={`/jobs/${job.jobId}`}
+                                  className="btn btn-sm btn-outline-primary"
+                                  title="View Details"
+                              >
+                                <i className="bi bi-eye me-1"></i>
+                                View
+                              </Link>
+                              <Link
+                                  to={`/jobs/${job.jobId}/edit`}
+                                  className="btn btn-sm btn-outline-secondary"
+                                  title="Edit"
+                              >
+                                <i className="bi bi-pencil me-1"></i>
+                                Edit
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                  </table>
+                </div>
+            )}
+          </div>
+        </div>
+
+        {/* Summary Footer */}
+        {filteredJobs.length > 0 && (
+            <div className="card mt-3">
+              <div className="card-body">
+                <div className="row text-center">
+                  <div className="col-md-4">
+                    <small className="text-muted">Showing</small>
+                    <h5 className="mb-0">{filteredJobs.length} of {jobs.length}</h5>
+                    <small className="text-muted">jobs</small>
+                  </div>
+                  <div className="col-md-4">
+                    <small className="text-muted">Total Value</small>
+                    <h5 className="mb-0">
+                      {formatCurrency(
+                          filteredJobs.reduce((sum, job) => sum + (job.orderValueIncl || 0), 0)
+                      )}
+                    </h5>
+                    <small className="text-muted">incl. VAT</small>
+                  </div>
+                  <div className="col-md-4">
+                    <small className="text-muted">Average Progress</small>
+                    <h5 className="mb-0">
+                      {filteredJobs.length > 0
+                          ? Math.round(
+                              filteredJobs.reduce((sum, job) => sum + (job.progressPercentage || 0), 0) /
+                              filteredJobs.length
+                          )
+                          : 0}
+                      %
+                    </h5>
+                    <small className="text-muted">completion</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+        )}
+      </div>
+  );
+};
+
+export default JobsList;

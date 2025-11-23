@@ -1,0 +1,383 @@
+﻿// src/pages/rfq/RFQDetail.tsx
+// ERHA OPS - RFQ Detail View
+// CLEAN VERSION - No PowerShell Corruption
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Phone,
+  Mail,
+  Building,
+  Calendar,
+  User,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  FileText,
+  MapPin
+} from 'lucide-react';
+
+interface RFQ {
+  id: number;
+  rfqNumber: string;
+  clientName: string;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  projectName: string;
+  description: string;
+  receivedDate: string;
+  requiredBy: string;
+  priority: string;
+  status: string;
+  operatingEntity: string;
+  workLocation: string;
+  estimatedValue?: number;
+  assignedTo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function RFQDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [rfq, setRfq] = useState<RFQ | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRFQ = async () => {
+      if (!id) {
+        setError('No RFQ ID provided');
+        setLoading(false);
+        return;
+      }
+
+      const numId = parseInt(id);
+      if (isNaN(numId) || numId <= 0) {
+        setError(`Invalid RFQ ID: ${id}`);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8080/api/v1/rfqs/${numId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError(`RFQ #${numId} not found`);
+          } else {
+            setError(`Failed to load RFQ: ${response.statusText}`);
+          }
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        setRfq(data);
+      } catch (err) {
+        setError('Failed to connect to server. Please ensure backend is running.');
+        console.error('Error fetching RFQ:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRFQ();
+  }, [id]);
+
+  const handleDelete = async () => {
+    if (!rfq || !window.confirm(`Are you sure you want to delete RFQ #${rfq.rfqNumber}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('RFQ deleted successfully!');
+        navigate('/rfqs');
+      } else {
+        alert('Failed to delete RFQ');
+      }
+    } catch (err) {
+      console.error('Error deleting RFQ:', err);
+      alert('Error deleting RFQ');
+    }
+  };
+
+  if (loading) {
+    return (
+        <div className="container-fluid">
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="container-fluid">
+          <div className="alert alert-danger">
+            <AlertCircle size={20} className="me-2" />
+            <strong>Error:</strong> {error}
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/rfqs')}>
+            <ArrowLeft size={16} className="me-2" />
+            Back to RFQs
+          </button>
+        </div>
+    );
+  }
+
+  if (!rfq) {
+    return (
+        <div className="container-fluid">
+          <div className="alert alert-warning">
+            <AlertCircle size={20} className="me-2" />
+            No RFQ data available
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate('/rfqs')}>
+            <ArrowLeft size={16} className="me-2" />
+            Back to RFQs
+          </button>
+        </div>
+    );
+  }
+
+  const getPriorityBadge = (priority: string) => {
+    const badges: { [key: string]: string } = {
+      'URGENT': 'danger',
+      'HIGH': 'warning',
+      'MEDIUM': 'info',
+      'LOW': 'secondary'
+    };
+    return badges[priority] || 'secondary';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: { [key: string]: string } = {
+      'NEW': 'primary',
+      'IN_PROGRESS': 'info',
+      'QUOTED': 'success',
+      'WON': 'success',
+      'LOST': 'danger',
+      'CANCELLED': 'secondary'
+    };
+    return badges[status] || 'secondary';
+  };
+
+  return (
+      <div className="container-fluid">
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex align-items-center">
+            <button
+                className="btn btn-link text-decoration-none me-3"
+                onClick={() => navigate('/rfqs')}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="mb-1">RFQ #{rfq.rfqNumber}</h2>
+              <p className="text-muted mb-0">{rfq.projectName}</p>
+            </div>
+          </div>
+          <div className="d-flex gap-2">
+            <button className="btn btn-primary" onClick={() => navigate(`/rfqs/edit/${rfq.id}`)}>
+              <Edit size={16} className="me-2" />
+              Edit
+            </button>
+            <button className="btn btn-danger" onClick={handleDelete}>
+              <Trash2 size={16} className="me-2" />
+              Delete
+            </button>
+          </div>
+        </div>
+
+        {/* Status Badges */}
+        <div className="mb-4">
+        <span className={`badge bg-${getStatusBadge(rfq.status)} me-2`}>
+          {rfq.status}
+        </span>
+          <span className={`badge bg-${getPriorityBadge(rfq.priority)} me-2`}>
+          {rfq.priority} Priority
+        </span>
+          <span className={`badge ${rfq.operatingEntity === 'ERHA FC' ? 'bg-primary' : 'bg-success'}`}>
+          {rfq.operatingEntity}
+        </span>
+        </div>
+
+        <div className="row">
+          {/* Left Column - Main Details */}
+          <div className="col-lg-8">
+            {/* Client Information */}
+            <div className="card mb-4">
+              <div className="card-header bg-light">
+                <h5 className="mb-0">
+                  <Building size={20} className="me-2" />
+                  Client Information
+                </h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="text-muted small">Company Name</label>
+                    <p className="mb-0 fw-bold">{rfq.clientName}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="text-muted small">Contact Person</label>
+                    <p className="mb-0">{rfq.contactPerson}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="text-muted small">
+                      <Mail size={14} className="me-1" />
+                      Email
+                    </label>
+                    <p className="mb-0">
+                      <a href={`mailto:${rfq.contactEmail}`}>{rfq.contactEmail}</a>
+                    </p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="text-muted small">
+                      <Phone size={14} className="me-1" />
+                      Phone
+                    </label>
+                    <p className="mb-0">
+                      <a href={`tel:${rfq.contactPhone}`}>{rfq.contactPhone}</a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Details */}
+            <div className="card mb-4">
+              <div className="card-header bg-light">
+                <h5 className="mb-0">
+                  <FileText size={20} className="me-2" />
+                  Project Details
+                </h5>
+              </div>
+              <div className="card-body">
+                <div className="mb-3">
+                  <label className="text-muted small">Project Name</label>
+                  <p className="mb-0 fw-bold">{rfq.projectName}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="text-muted small">Description</label>
+                  <p className="mb-0">{rfq.description}</p>
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="text-muted small">
+                      <MapPin size={14} className="me-1" />
+                      Work Location
+                    </label>
+                    <p className="mb-0">{rfq.workLocation}</p>
+                  </div>
+                  {rfq.estimatedValue && (
+                      <div className="col-md-6">
+                        <label className="text-muted small">Estimated Value</label>
+                        <p className="mb-0 fw-bold text-success">
+                          R {rfq.estimatedValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Timeline & Status */}
+          <div className="col-lg-4">
+            {/* Timeline */}
+            <div className="card mb-4">
+              <div className="card-header bg-light">
+                <h5 className="mb-0">
+                  <Calendar size={20} className="me-2" />
+                  Timeline
+                </h5>
+              </div>
+              <div className="card-body">
+                <div className="mb-3">
+                  <label className="text-muted small">Received Date</label>
+                  <p className="mb-0">
+                    <Clock size={14} className="me-1" />
+                    {new Date(rfq.receivedDate).toLocaleDateString('en-ZA')}
+                  </p>
+                </div>
+                <div className="mb-3">
+                  <label className="text-muted small">Required By</label>
+                  <p className="mb-0">
+                    <Calendar size={14} className="me-1" />
+                    {new Date(rfq.requiredBy).toLocaleDateString('en-ZA')}
+                  </p>
+                </div>
+                <div className="mb-3">
+                  <label className="text-muted small">Created</label>
+                  <p className="mb-0 small">
+                    {new Date(rfq.createdAt).toLocaleString('en-ZA')}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-muted small">Last Updated</label>
+                  <p className="mb-0 small">
+                    {new Date(rfq.updatedAt).toLocaleString('en-ZA')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment */}
+            {rfq.assignedTo && (
+                <div className="card mb-4">
+                  <div className="card-header bg-light">
+                    <h5 className="mb-0">
+                      <User size={20} className="me-2" />
+                      Assignment
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    <p className="mb-0">
+                      <strong>Assigned to:</strong> {rfq.assignedTo}
+                    </p>
+                  </div>
+                </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="card">
+              <div className="card-header bg-light">
+                <h5 className="mb-0">Quick Actions</h5>
+              </div>
+              <div className="card-body">
+                <div className="d-grid gap-2">
+                  <button className="btn btn-success">
+                    <CheckCircle size={16} className="me-2" />
+                    Create Quote
+                  </button>
+                  <button className="btn btn-outline-primary">
+                    <FileText size={16} className="me-2" />
+                    View History
+                  </button>
+                  <button className="btn btn-outline-secondary">
+                    <Mail size={16} className="me-2" />
+                    Email Client
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  );
+}
