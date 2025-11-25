@@ -48,6 +48,13 @@ export interface QuoteCreateRequest {
   createdBy?: string;
 }
 
+export interface ApprovalPinResponse {
+  pin: string;
+  expiresAt: string;
+  quoteNumber: string;
+  quoteId: number;
+}
+
 // ============================================================================
 // SERVICE FUNCTIONS
 // ============================================================================
@@ -134,13 +141,54 @@ export const quoteService = {
     }
   },
 
-  // PIN Approval Methods
-  async checkPinStatus(quoteId: number): Promise<string> {
-    const response = await axios.get(`${API_BASE_URL}/quotes/${quoteId}/pin-status`);
-    return response.data;
-  },  // <-- ADD THIS COMMA!
+  // ============================================================================
+  // PIN APPROVAL METHODS
+  // ============================================================================
 
-  // DocuSign Integration Methods
+  async generateApprovalPin(quoteId: number): Promise<ApprovalPinResponse> {
+    try {
+      console.log(`Generating approval PIN for quote: ${quoteId}`);
+      const response = await axios.post(`${API_BASE_URL}/quotes/${quoteId}/generate-approval-pin`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error generating approval PIN:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    }
+  },
+
+  async approveWithPin(quoteNumber: string, pin: string): Promise<Quote> {
+    try {
+      console.log(`Approving quote ${quoteNumber} with PIN`);
+      const response = await axios.post(`${API_BASE_URL}/quotes/approve-with-pin`, { quoteNumber, pin });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving with PIN:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    }
+  },
+
+  async checkPinStatus(quoteId: number): Promise<string> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/quotes/${quoteId}/pin-status`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking PIN status:', error);
+      throw error;
+    }
+  },
+
+  // ============================================================================
+  // DOCUSIGN INTEGRATION METHODS
+  // ============================================================================
+
   async sendForSignature(quoteId: number, data: { managerEmail: string; managerName: string }) {
     try {
       const response = await axios.post(`${API_BASE_URL}/docusign/send-quote`, { quoteId, ...data });
@@ -185,9 +233,3 @@ export const quoteService = {
     }
   }
 };
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-
-

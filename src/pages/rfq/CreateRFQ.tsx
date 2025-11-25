@@ -1,60 +1,153 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Phone, Mail, Building, Package, Calendar, DollarSign, AlertCircle, FileText, Users } from 'lucide-react';
+import { ArrowLeft, Save, Phone, Mail, Building, Package, Calendar, DollarSign, AlertCircle, FileText, Users, Loader } from 'lucide-react';
 
-type RFQType = 'INCOMING' | 'OUTGOING';
-type Priority = 'Low' | 'Normal' | 'High' | 'Urgent';
-type WorkLocation = 'SHOP' | 'SITE';
-type ReceivedVia = 'PHONE' | 'EMAIL' | 'WALK_IN' | 'DIRECT_CONTACT';
-
-interface IncomingRFQ {
-  rfqType: 'INCOMING';
-  clientName?: string;
+interface Client {
+  clientId: number;
+  clientCode: string;
+  clientName: string;
   contactPerson?: string;
   contactEmail?: string;
   contactPhone?: string;
-  projectName?: string;
-  description?: string;
-  receivedDate?: string;
-  receivedVia?: ReceivedVia;
-  requiredBy?: string;
-  priority?: Priority;
-  workLocation?: WorkLocation;
-  operatingEntity?: string;
-  estimatedValue?: number;
-  assignedTo?: string;
 }
+
+const API_BASE = 'http://localhost:8080/api/v1';
 
 export default function CreateRFQ() {
   const navigate = useNavigate();
-  const [rfqType, setRfqType] = useState<RFQType | null>(null);
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [rfqType, setRfqType] = useState<'INCOMING' | 'OUTGOING' | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-  const [incomingData, setIncomingData] = useState<Partial<IncomingRFQ>>({
-    rfqType: 'INCOMING',
-    receivedDate: new Date().toISOString().split('T')[0],
-    receivedVia: 'PHONE',
-    priority: 'Normal',
+  // Clients from API
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
+  // Form data - aligned with backend RFQ entity
+  const [formData, setFormData] = useState({
+    // Client info
+    clientId: null as number | null,
+    contactPerson: '',
+    contactEmail: '',
+    contactPhone: '',
+    // RFQ details
+    operatingEntity: '',
+    projectName: '',
+    description: '',
+    requestDate: new Date().toISOString().split('T')[0],
+    requiredDate: '2025-12-24',
+    priority: 'MEDIUM',
+    estimatedValue: 0,
+    // Assignment
+    assignedTo: '',
+    // Meta
     workLocation: 'SHOP',
-    operatingEntity: ''
+    receivedVia: 'PHONE'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    setLoadingClients(true);
+    try {
+      const response = await fetch(`${API_BASE}/clients`);
+      if (response.ok) {
+        const data = await response.json();
+        setClients(Array.isArray(data) ? data : (data.content || []));
+      }
+    } catch (err) {
+      console.error('Error fetching clients:', err);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const handleClientSelect = (clientIdStr: string) => {
+    const clientId = parseInt(clientIdStr);
+    const client = clients.find(c => c.clientId === clientId);
+    if (client) {
+      setFormData(prev => ({
+        ...prev,
+        clientId: client.clientId,
+        contactPerson: client.contactPerson || prev.contactPerson,
+        contactEmail: client.contactEmail || prev.contactEmail,
+        contactPhone: client.contactPhone || prev.contactPhone
+      }));
+    }
+  };
+
+  const updateForm = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateJobNo = () => {
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const rand = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+    return `RFQ-${year}${month}${day}-${rand}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Creating RFQ:', incomingData);
-    alert('RFQ Created Successfully! (Mock)');
-    setTimeout(() => navigate('/rfqs'), 1500);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Build payload matching backend RFQ entity exactly
+      const rfqPayload = {
+        jobNo: generateJobNo(),
+        clientId: formData.clientId || 1,
+        contactPerson: formData.contactPerson || 'Not specified',
+        contactEmail: formData.contactEmail || null,
+        contactPhone: formData.contactPhone || null,
+        operatingEntity: formData.operatingEntity || 'ERHA FC',
+        description: formData.description || formData.projectName || 'No description',
+        requestDate: formData.requestDate,
+        requiredDate: formData.requiredDate,
+        priority: formData.priority,
+        estimatedValue: formData.estimatedValue || 0,
+        assignedTo: formData.assignedTo || null,
+        notes: `Project: ${formData.projectName}\nWork Location: ${formData.workLocation}\nReceived Via: ${formData.receivedVia}`
+      };
+
+      console.log('Submitting RFQ:', rfqPayload);
+
+      const response = await fetch(`${API_BASE}/rfqs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rfqPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Server error:', errorData);
+        throw new Error('Failed to create RFQ - check server logs');
+      }
+
+      const created = await response.json();
+      console.log('RFQ Created:', created);
+      alert(`RFQ Created Successfully!\n\nJob No: ${created.jobNo}`);
+      navigate('/rfq');
+
+    } catch (err: any) {
+      console.error('Error:', err);
+      setError(err.message || 'Failed to create RFQ');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const updateIncoming = (field: keyof IncomingRFQ, value: any) => {
-    setIncomingData(prev => ({ ...prev, [field]: value }));
-  };
-
+  // RFQ Type Selection Screen
   if (!rfqType) {
     return (
       <div className="container-fluid">
         <div className="d-flex align-items-center mb-4">
-          <button className="btn btn-link text-decoration-none me-3" onClick={() => navigate('/rfqs')}>
+          <button className="btn btn-link text-decoration-none me-3" onClick={() => navigate('/rfq')}>
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -65,19 +158,21 @@ export default function CreateRFQ() {
 
         <div className="row g-4 justify-content-center">
           <div className="col-lg-5">
-            <div className="card h-100 border-primary" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => { setRfqType('INCOMING'); setCurrentStep(1); }}>
+            <div 
+              className="card h-100 border-primary" 
+              style={{ cursor: 'pointer' }} 
+              onClick={() => { setRfqType('INCOMING'); setCurrentStep(1); }}
+            >
               <div className="card-body p-5 text-center">
-                <div className="mb-4">
-                  <Phone size={60} className="text-primary" />
-                </div>
-                <h3 className="card-title text-primary mb-3">Incoming RFQ</h3>
-                <h5 className="text-muted mb-4">Client ? ERHA</h5>
-                <p className="card-text mb-4">Client requests a quote from ERHA for fabrication, repair, or manufacturing work.</p>
+                <Phone size={60} className="text-primary mb-4" />
+                <h3 className="text-primary mb-3">Incoming RFQ</h3>
+                <h5 className="text-muted mb-4">Client â†’ ERHA</h5>
+                <p className="mb-4">Client requests a quote from ERHA for fabrication, repair, or manufacturing work.</p>
                 <ul className="list-unstyled text-start">
-                  <li className="mb-2">? External client inquiry</li>
-                  <li className="mb-2">? ERHA provides quote</li>
-                  <li className="mb-2">? Creates job if won</li>
-                  <li className="mb-2">? Revenue-generating</li>
+                  <li className="mb-2">âœ“ External client inquiry</li>
+                  <li className="mb-2">âœ“ ERHA provides quote</li>
+                  <li className="mb-2">âœ“ Creates job if won</li>
+                  <li className="mb-2">âœ“ Revenue-generating</li>
                 </ul>
                 <button className="btn btn-primary btn-lg mt-3 w-100">Create Incoming RFQ</button>
               </div>
@@ -85,33 +180,32 @@ export default function CreateRFQ() {
           </div>
 
           <div className="col-lg-5">
-            <div className="card h-100 border-success" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => { setRfqType('OUTGOING'); setCurrentStep(1); }}>
+            <div 
+              className="card h-100 border-success" 
+              style={{ cursor: 'pointer' }} 
+              onClick={() => { setRfqType('OUTGOING'); setCurrentStep(1); }}
+            >
               <div className="card-body p-5 text-center">
-                <div className="mb-4">
-                  <Package size={60} className="text-success" />
-                </div>
-                <h3 className="card-title text-success mb-3">Outgoing RFQ</h3>
-                <h5 className="text-muted mb-4">ERHA ? Supplier</h5>
-                <p className="card-text mb-4">ERHA requests a quote from supplier for materials, services, or equipment needed for a job.</p>
+                <Package size={60} className="text-success mb-4" />
+                <h3 className="text-success mb-3">Outgoing RFQ</h3>
+                <h5 className="text-muted mb-4">ERHA â†’ Supplier</h5>
+                <p className="mb-4">ERHA requests a quote from supplier for materials, services, or equipment.</p>
                 <ul className="list-unstyled text-start">
-                  <li className="mb-2">? Supplier inquiry</li>
-                  <li className="mb-2">? ERHA receives quote</li>
-                  <li className="mb-2">? Links to job/project</li>
-                  <li className="mb-2">? Cost management</li>
+                  <li className="mb-2">âœ“ Supplier inquiry</li>
+                  <li className="mb-2">âœ“ ERHA receives quote</li>
+                  <li className="mb-2">âœ“ Links to job/project</li>
+                  <li className="mb-2">âœ“ Cost management</li>
                 </ul>
                 <button className="btn btn-success btn-lg mt-3 w-100">Create Outgoing RFQ</button>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="text-center mt-4">
-          <small className="text-muted">Choose the type of RFQ based on the direction of the request</small>
-        </div>
       </div>
     );
   }
 
+  // Incoming RFQ Form
   if (rfqType === 'INCOMING') {
     return (
       <div className="container-fluid">
@@ -122,16 +216,26 @@ export default function CreateRFQ() {
           <div className="flex-grow-1">
             <h2 className="mb-1">
               <Phone size={24} className="text-primary me-2" />
-              Incoming RFQ (Client ? ERHA)
+              Incoming RFQ (Client â†’ ERHA)
             </h2>
             <p className="text-muted mb-0">Capture client inquiry details</p>
           </div>
           <span className="badge bg-primary fs-6">Step {currentStep} of 5</span>
         </div>
 
+        {error && (
+          <div className="alert alert-danger d-flex align-items-center mb-4">
+            <AlertCircle size={20} className="me-2" />
+            {error}
+            <button className="btn-close ms-auto" onClick={() => setError(null)}></button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-lg-8">
+              
+              {/* Step 1: Client */}
               {currentStep === 1 && (
                 <div className="card mb-4">
                   <div className="card-header bg-primary text-white">
@@ -139,73 +243,120 @@ export default function CreateRFQ() {
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
-                      <div className="col-md-6">
-                        <label className="form-label">Client Company Name *</label>
-                        <input type="text" className="form-control" required value={incomingData.clientName || ''} onChange={(e) => updateIncoming('clientName', e.target.value)} placeholder="e.g., CG-MILLS, SASOL" />
+                      <div className="col-12">
+                        <label className="form-label fw-bold">Select Client *</label>
+                        <select 
+                          className="form-select form-select-lg" 
+                          value={formData.clientId || ''} 
+                          onChange={(e) => handleClientSelect(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Select a Client --</option>
+                          {loadingClients && <option disabled>Loading...</option>}
+                          {clients.map(client => (
+                            <option key={client.clientId} value={client.clientId}>
+                              {client.clientCode} - {client.clientName}
+                            </option>
+                          ))}
+                        </select>
                       </div>
+                      <div className="col-12"><hr /></div>
                       <div className="col-md-6">
                         <label className="form-label">Contact Person *</label>
-                        <input type="text" className="form-control" required value={incomingData.contactPerson || ''} onChange={(e) => updateIncoming('contactPerson', e.target.value)} placeholder="Full name" />
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          required 
+                          value={formData.contactPerson} 
+                          onChange={(e) => updateForm('contactPerson', e.target.value)} 
+                          placeholder="Full name" 
+                        />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label"><Mail size={16} className="me-1" />Contact Email *</label>
-                        <input type="email" className="form-control" required value={incomingData.contactEmail || ''} onChange={(e) => updateIncoming('contactEmail', e.target.value)} placeholder="email@company.co.za" />
+                        <label className="form-label"><Mail size={16} className="me-1" />Email</label>
+                        <input 
+                          type="email" 
+                          className="form-control" 
+                          value={formData.contactEmail} 
+                          onChange={(e) => updateForm('contactEmail', e.target.value)} 
+                          placeholder="email@company.co.za" 
+                        />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label"><Phone size={16} className="me-1" />Contact Phone *</label>
-                        <input type="tel" className="form-control" required value={incomingData.contactPhone || ''} onChange={(e) => updateIncoming('contactPhone', e.target.value)} placeholder="016 970 1234" />
+                        <label className="form-label"><Phone size={16} className="me-1" />Phone</label>
+                        <input 
+                          type="tel" 
+                          className="form-control" 
+                          value={formData.contactPhone} 
+                          onChange={(e) => updateForm('contactPhone', e.target.value)} 
+                          placeholder="016 970 1234" 
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Step 2: Project */}
               {currentStep === 2 && (
                 <div className="card mb-4">
                   <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0"><FileText size={20} className="me-2" />Step 2: Project Details & Operating Entity</h5>
+                    <h5 className="mb-0"><FileText size={20} className="me-2" />Step 2: Project Details</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
-                      <div className="col-12">
-                        <div className="alert alert-info mb-3">
-                          <Building size={18} className="me-2" />
-                          <strong>Select Operating Entity First</strong> - Determines which ERHA division handles this RFQ
-                        </div>
-                      </div>
                       <div className="col-md-6">
-                        <label className="form-label"><Building size={16} className="me-1" />Operating Entity *</label>
-                        <select className="form-select form-select-lg" required value={incomingData.operatingEntity || ''} onChange={(e) => updateIncoming('operatingEntity', e.target.value)}>
-                          <option value="">Select Operating Entity</option>
+                        <label className="form-label fw-bold">Operating Entity *</label>
+                        <select 
+                          className="form-select form-select-lg" 
+                          required 
+                          value={formData.operatingEntity} 
+                          onChange={(e) => updateForm('operatingEntity', e.target.value)}
+                        >
+                          <option value="">Select Entity</option>
                           <option value="ERHA FC">ERHA FC (Fabrication & Construction)</option>
                           <option value="ERHA SS">ERHA SS (Steel Supplies)</option>
                         </select>
-                        <small className="text-muted">Which ERHA division will handle this RFQ?</small>
                       </div>
                       <div className="col-md-6">
-                        <div className="card bg-light border-0 h-100">
-                          <div className="card-body">
-                            <small className="text-muted d-block mb-2">Entity Info:</small>
-                            {incomingData.operatingEntity === 'ERHA FC' && (<div><strong className="text-primary">ERHA Fabrication & Construction</strong><p className="small mb-0 mt-1">Manufacturing, repairs, refurbishment, site work</p></div>)}
-                            {incomingData.operatingEntity === 'ERHA SS' && (<div><strong className="text-success">ERHA Steel Supplies</strong><p className="small mb-0 mt-1">Steel sales, material supply, warehouse</p></div>)}
-                            {!incomingData.operatingEntity && (<p className="small text-muted mb-0">Select entity to see details</p>)}
-                          </div>
-                        </div>
+                        <label className="form-label">Work Location</label>
+                        <select 
+                          className="form-select" 
+                          value={formData.workLocation} 
+                          onChange={(e) => updateForm('workLocation', e.target.value)}
+                        >
+                          <option value="SHOP">Shop (Workshop)</option>
+                          <option value="SITE">Site (Client Location)</option>
+                        </select>
                       </div>
-                      <div className="col-12"><hr /></div>
                       <div className="col-12">
                         <label className="form-label">Project Name *</label>
-                        <input type="text" className="form-control" required value={incomingData.projectName || ''} onChange={(e) => updateIncoming('projectName', e.target.value)} placeholder="e.g., Stopper Guide Block Refurbishment" />
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          required 
+                          value={formData.projectName} 
+                          onChange={(e) => updateForm('projectName', e.target.value)} 
+                          placeholder="e.g., Stopper Guide Block Refurbishment" 
+                        />
                       </div>
                       <div className="col-12">
-                        <label className="form-label">Detailed Description *</label>
-                        <textarea className="form-control" rows={5} required value={incomingData.description || ''} onChange={(e) => updateIncoming('description', e.target.value)} placeholder="Provide comprehensive project description..." />
+                        <label className="form-label">Description *</label>
+                        <textarea 
+                          className="form-control" 
+                          rows={4} 
+                          required 
+                          value={formData.description} 
+                          onChange={(e) => updateForm('description', e.target.value)} 
+                          placeholder="Detailed project description..." 
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Step 3: Timeline */}
               {currentStep === 3 && (
                 <div className="card mb-4">
                   <div className="card-header bg-primary text-white">
@@ -215,19 +366,49 @@ export default function CreateRFQ() {
                     <div className="row g-3">
                       <div className="col-md-6">
                         <label className="form-label">Date Received *</label>
-                        <input type="date" className="form-control" required value={incomingData.receivedDate || ''} onChange={(e) => updateIncoming('receivedDate', e.target.value)} />
+                        <input 
+                          type="date" 
+                          className="form-control" 
+                          required 
+                          value={formData.requestDate} 
+                          onChange={(e) => updateForm('requestDate', e.target.value)} 
+                        />
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Required By Date *</label>
-                        <input type="date" className="form-control" required value={incomingData.requiredBy || ''} onChange={(e) => updateIncoming('requiredBy', e.target.value)} />
+                        <input 
+                          type="date" 
+                          className="form-control" 
+                          required 
+                          value={formData.requiredDate} 
+                          onChange={(e) => updateForm('requiredDate', e.target.value)} 
+                        />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label">Priority Level *</label>
-                        <select className="form-select" required value={incomingData.priority || ''} onChange={(e) => updateIncoming('priority', e.target.value as Priority)}>
-                          <option value="Low">Low</option>
-                          <option value="Normal">Normal</option>
-                          <option value="High">High</option>
-                          <option value="Urgent">Urgent</option>
+                        <label className="form-label">Priority *</label>
+                        <select 
+                          className="form-select" 
+                          required 
+                          value={formData.priority} 
+                          onChange={(e) => updateForm('priority', e.target.value)}
+                        >
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                          <option value="URGENT">Urgent</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">Received Via</label>
+                        <select 
+                          className="form-select" 
+                          value={formData.receivedVia} 
+                          onChange={(e) => updateForm('receivedVia', e.target.value)}
+                        >
+                          <option value="PHONE">Phone Call</option>
+                          <option value="EMAIL">Email</option>
+                          <option value="WALK_IN">Walk-in</option>
+                          <option value="DIRECT_CONTACT">Direct Contact</option>
                         </select>
                       </div>
                     </div>
@@ -235,32 +416,45 @@ export default function CreateRFQ() {
                 </div>
               )}
 
+              {/* Step 4: Commercial */}
               {currentStep === 4 && (
                 <div className="card mb-4">
                   <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0"><DollarSign size={20} className="me-2" />Step 4: Technical & Commercial Details</h5>
+                    <h5 className="mb-0"><DollarSign size={20} className="me-2" />Step 4: Commercial Details</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
                       <div className="col-md-6">
                         <label className="form-label">Estimated Value (R)</label>
-                        <input type="number" className="form-control" value={incomingData.estimatedValue || ''} onChange={(e) => updateIncoming('estimatedValue', parseFloat(e.target.value))} placeholder="0.00" step="0.01" />
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          value={formData.estimatedValue || ''} 
+                          onChange={(e) => updateForm('estimatedValue', parseFloat(e.target.value) || 0)} 
+                          placeholder="0.00" 
+                          step="0.01" 
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Step 5: Assignment */}
               {currentStep === 5 && (
                 <div className="card mb-4">
                   <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0"><Users size={20} className="me-2" />Step 5: Internal Assignment</h5>
+                    <h5 className="mb-0"><Users size={20} className="me-2" />Step 5: Assignment</h5>
                   </div>
                   <div className="card-body">
                     <div className="row g-3">
                       <div className="col-md-6">
                         <label className="form-label">Assign to Estimator</label>
-                        <select className="form-select" value={incomingData.assignedTo || ''} onChange={(e) => updateIncoming('assignedTo', e.target.value)}>
+                        <select 
+                          className="form-select" 
+                          value={formData.assignedTo} 
+                          onChange={(e) => updateForm('assignedTo', e.target.value)}
+                        >
                           <option value="">Assign later</option>
                           <option value="Juanic">Juanic</option>
                           <option value="Wessie">Wessie</option>
@@ -271,12 +465,30 @@ export default function CreateRFQ() {
                 </div>
               )}
 
+              {/* Navigation */}
               <div className="d-flex justify-content-between mb-4">
-                {currentStep > 1 && (<button type="button" className="btn btn-outline-secondary" onClick={() => setCurrentStep(currentStep - 1)}>Previous</button>)}
-                {currentStep < 5 ? (<button type="button" className="btn btn-primary ms-auto" onClick={() => setCurrentStep(currentStep + 1)}>Next Step</button>) : (<button type="submit" className="btn btn-success ms-auto"><Save size={18} className="me-2" />Create RFQ</button>)}
+                {currentStep > 1 && (
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setCurrentStep(currentStep - 1)}>
+                    Previous
+                  </button>
+                )}
+                {currentStep < 5 ? (
+                  <button type="button" className="btn btn-primary ms-auto" onClick={() => setCurrentStep(currentStep + 1)}>
+                    Next Step
+                  </button>
+                ) : (
+                  <button type="submit" className="btn btn-success btn-lg ms-auto" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <><span className="spinner-border spinner-border-sm me-2"></span>Creating...</>
+                    ) : (
+                      <><Save size={18} className="me-2" />Create RFQ</>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
+            {/* Summary Sidebar */}
             <div className="col-lg-4">
               <div className="card sticky-top" style={{ top: '20px' }}>
                 <div className="card-header bg-light">
@@ -287,10 +499,37 @@ export default function CreateRFQ() {
                     <small className="text-muted">Type</small>
                     <p className="mb-0 fw-bold text-primary"><Phone size={16} className="me-1" />INCOMING</p>
                   </div>
-                  {incomingData.operatingEntity && (<div className="mb-3"><small className="text-muted">Operating Entity</small><p className="mb-0"><span className={'badge ' + (incomingData.operatingEntity === 'ERHA FC' ? 'bg-primary' : 'bg-success')}>{incomingData.operatingEntity}</span></p></div>)}
-                  {incomingData.clientName && (<div className="mb-3"><small className="text-muted">Client</small><p className="mb-0 fw-bold">{incomingData.clientName}</p></div>)}
-                  {incomingData.projectName && (<div className="mb-3"><small className="text-muted">Project</small><p className="mb-0">{incomingData.projectName}</p></div>)}
-                  <div className="alert alert-info small mt-4"><strong>Progress:</strong> Step {currentStep} of 5</div>
+                  {formData.operatingEntity && (
+                    <div className="mb-3">
+                      <small className="text-muted">Entity</small>
+                      <p className="mb-0"><span className={`badge ${formData.operatingEntity === 'ERHA FC' ? 'bg-primary' : 'bg-success'}`}>{formData.operatingEntity}</span></p>
+                    </div>
+                  )}
+                  {formData.clientId && (
+                    <div className="mb-3">
+                      <small className="text-muted">Client</small>
+                      <p className="mb-0 fw-bold">{clients.find(c => c.clientId === formData.clientId)?.clientName}</p>
+                    </div>
+                  )}
+                  {formData.projectName && (
+                    <div className="mb-3">
+                      <small className="text-muted">Project</small>
+                      <p className="mb-0">{formData.projectName}</p>
+                    </div>
+                  )}
+                  {formData.priority && (
+                    <div className="mb-3">
+                      <small className="text-muted">Priority</small>
+                      <p className="mb-0">
+                        <span className={`badge bg-${formData.priority === 'URGENT' ? 'danger' : formData.priority === 'HIGH' ? 'warning' : 'secondary'}`}>
+                          {formData.priority}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                  <div className="alert alert-info small mt-4">
+                    <strong>Progress:</strong> Step {currentStep} of 5
+                  </div>
                 </div>
               </div>
             </div>
@@ -300,12 +539,47 @@ export default function CreateRFQ() {
     );
   }
 
+  // Outgoing RFQ Placeholder
   return (
     <div className="container-fluid">
-      <div className="alert alert-info">
-        <h4>Outgoing RFQ Form</h4>
-        <p>ERHA ? Supplier RFQ form will be implemented here.</p>
-        <button className="btn btn-primary" onClick={() => setRfqType(null)}>Go Back</button>
+      <div className="d-flex align-items-center mb-4">
+        <button className="btn btn-link text-decoration-none me-3" onClick={() => setRfqType(null)}>
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h2 className="mb-1"><Package size={24} className="text-success me-2" />Outgoing RFQ (ERHA â†’ Supplier)</h2>
+          <p className="text-muted mb-0">Request quotes from suppliers</p>
+        </div>
+      </div>
+
+      <div className="card border-success">
+        <div className="card-body p-5 text-center">
+          <Package size={80} className="text-success mb-4" />
+          <h3 className="text-success mb-3">Procurement Module - Phase 2</h3>
+          <p className="text-muted mb-4">This module will enable the Procurement Officer to send RFQs to suppliers, collect quotes, compare prices, and generate Purchase Orders.</p>
+          
+          <div className="row justify-content-center mb-4">
+            <div className="col-md-8">
+              <div className="card bg-light">
+                <div className="card-body">
+                  <h5 className="mb-3">Coming Features:</h5>
+                  <ul className="list-unstyled text-start">
+                    <li className="mb-2">âœ… Supplier Database (10 suppliers ready)</li>
+                    <li className="mb-2">âœ… Send RFQs to multiple suppliers</li>
+                    <li className="mb-2">âœ… Quote comparison matrix</li>
+                    <li className="mb-2">âœ… Purchase Order generation</li>
+                    <li className="mb-2">âœ… Link materials to jobs</li>
+                    <li className="mb-2">âœ… Pastel accounting integration</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button className="btn btn-outline-success btn-lg" onClick={() => setRfqType(null)}>
+            <ArrowLeft size={18} className="me-2" />Back to RFQ Selection
+          </button>
+        </div>
       </div>
     </div>
   );

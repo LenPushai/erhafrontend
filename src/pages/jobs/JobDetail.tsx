@@ -123,7 +123,10 @@ const JobDetail: React.FC = () => {
                 <i className="bi bi-pencil me-2"></i>
                 Edit Job
               </Link>
-              <button className="btn btn-outline-secondary">
+              <button 
+                className="btn btn-outline-secondary"
+                onClick={() => window.open(`http://localhost:8080/api/v1/jobs/${job.jobId}/job-card-pdf`, '_blank')}
+              >
                 <i className="bi bi-printer me-2"></i>
                 Print Job Card
               </button>
@@ -153,7 +156,7 @@ const JobDetail: React.FC = () => {
             <div className="d-flex align-items-center gap-3">
               {job.rfqId && (
                   <>
-                    <Link to={`/rfqs/${job.rfqId}`} className="btn btn-outline-secondary">
+                    <Link to={`/rfq/${job.rfqId}`} className="btn btn-outline-secondary">
                       <i className="bi bi-file-earmark-text me-2"></i>
                       RFQ #{job.rfqId}
                     </Link>
@@ -384,7 +387,7 @@ const JobDetail: React.FC = () => {
                 <div className="d-flex flex-column gap-2">
                   {job.rfqId && (
                       <Link
-                          to={`/rfqs/${job.rfqId}`}
+                          to={`/rfq/${job.rfqId}`}
                           className="btn btn-outline-secondary w-100"
                       >
                         <i className="bi bi-file-earmark-text me-2"></i>
@@ -400,7 +403,10 @@ const JobDetail: React.FC = () => {
                         View Quote #{job.quoteId}
                       </Link>
                   )}
-                  <button className="btn btn-outline-info w-100">
+                  <button 
+                    className="btn btn-outline-info w-100"
+                    onClick={() => window.open(`http://localhost:8080/api/v1/jobs/${job.jobId}/job-card-pdf`, '_blank')}
+                  >
                     <i className="bi bi-printer me-2"></i>
                     Print Job Card
                   </button>

@@ -14,6 +14,10 @@ const QuotesList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // ðŸ†• PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   useEffect(() => {
     fetchQuotes();
   }, []);
@@ -21,6 +25,11 @@ const QuotesList: React.FC = () => {
   useEffect(() => {
     filterQuotes();
   }, [quotes, searchTerm, statusFilter]);
+
+  // ðŸ†• Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, itemsPerPage]);
 
   const fetchQuotes = async () => {
     try {
@@ -55,6 +64,22 @@ const QuotesList: React.FC = () => {
     }
 
     setFilteredQuotes(filtered);
+  };
+
+  // ðŸ†• PAGINATION CALCULATIONS
+  const totalPages = Math.ceil(filteredQuotes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentQuotes = filteredQuotes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
   };
 
   const formatCurrency = (value: number) => {
@@ -119,12 +144,13 @@ const QuotesList: React.FC = () => {
         {/* Filters */}
         <div className="card mb-4">
           <div className="card-body">
-            <div className="row g-3">
-              <div className="col-md-6">
+            <div className="row g-3 align-items-end">
+              <div className="col-md-5">
+                <label className="form-label small text-muted mb-1">Search</label>
                 <div className="input-group">
-                <span className="input-group-text">
-                  <i className="bi bi-search"></i>
-                </span>
+                  <span className="input-group-text">
+                    <i className="bi bi-search"></i>
+                  </span>
                   <input
                       type="text"
                       className="form-control"
@@ -135,6 +161,7 @@ const QuotesList: React.FC = () => {
                 </div>
               </div>
               <div className="col-md-3">
+                <label className="form-label small text-muted mb-1">Status</label>
                 <select
                     className="form-select"
                     value={statusFilter}
@@ -150,7 +177,21 @@ const QuotesList: React.FC = () => {
                   <option value="REJECTED">Rejected</option>
                 </select>
               </div>
-              <div className="col-md-3">
+              {/* ðŸ†• ITEMS PER PAGE SELECTOR */}
+              <div className="col-md-2">
+                <label className="form-label small text-muted mb-1">Show</label>
+                <select
+                    className="form-select"
+                    value={itemsPerPage}
+                    onChange={handleItemsPerPageChange}
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+              <div className="col-md-2">
                 <button
                     className="btn btn-outline-secondary w-100"
                     onClick={() => {
@@ -159,8 +200,20 @@ const QuotesList: React.FC = () => {
                     }}
                 >
                   <i className="bi bi-x-circle me-2"></i>
-                  Clear Filters
+                  Clear
                 </button>
+              </div>
+            </div>
+            {/* ðŸ†• SHOWING INFO */}
+            <div className="mt-3 pt-3 border-top">
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="text-muted small">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredQuotes.length)} of {filteredQuotes.length} quotes
+                  {filteredQuotes.length !== quotes.length && ` (filtered from ${quotes.length} total)`}
+                </span>
+                <span className="badge bg-primary">
+                  Total Value: {formatCurrency(filteredQuotes.reduce((sum, q) => sum + (q.valueInclVat || 0), 0))}
+                </span>
               </div>
             </div>
           </div>
@@ -261,7 +314,8 @@ const QuotesList: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {filteredQuotes.map((quote) => (
+                    {/* ðŸ†• USING currentQuotes INSTEAD OF filteredQuotes */}
+                    {currentQuotes.map((quote) => (
                         <tr key={quote.quoteId}>
                           <td>
                             <Link
@@ -287,7 +341,7 @@ const QuotesList: React.FC = () => {
                             <div className="d-flex flex-column gap-1">
                               {quote.rfqId && (
                                   <Link
-                                      to={`/rfqs/${quote.rfqId}`}
+                                      to={`/rfq/${quote.rfqId}`}
                                       className="badge bg-secondary text-decoration-none"
                                   >
                                     RFQ #{quote.rfqId}
@@ -330,31 +384,71 @@ const QuotesList: React.FC = () => {
                 </div>
             )}
           </div>
-        </div>
 
-        {/* Summary Footer */}
-        {filteredQuotes.length > 0 && (
-            <div className="card mt-3">
-              <div className="card-body">
-                <div className="row text-center">
-                  <div className="col-md-6">
-                    <small className="text-muted">Showing</small>
-                    <h5 className="mb-0">{filteredQuotes.length} of {quotes.length}</h5>
-                    <small className="text-muted">quotes</small>
-                  </div>
-                  <div className="col-md-6">
-                    <small className="text-muted">Total Value</small>
-                    <h5 className="mb-0">
-                      {formatCurrency(
-                          filteredQuotes.reduce((sum, quote) => sum + (quote.valueInclVat || 0), 0)
-                      )}
-                    </h5>
-                    <small className="text-muted">incl. VAT</small>
-                  </div>
-                </div>
+          {/* ðŸ†• PAGINATION CONTROLS */}
+          {filteredQuotes.length > 0 && totalPages > 1 && (
+              <div className="card-footer">
+                <nav>
+                  <ul className="pagination pagination-sm justify-content-center mb-0">
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                      <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                      >
+                        <i className="bi bi-chevron-left"></i> Previous
+                      </button>
+                    </li>
+
+                    {/* Page Numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      const showPage =
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 2 && page <= currentPage + 2);
+
+                      if (!showPage) {
+                        // Show ellipsis
+                        if (page === currentPage - 3 || page === currentPage + 3) {
+                          return (
+                              <li key={page} className="page-item disabled">
+                                <span className="page-link">...</span>
+                              </li>
+                          );
+                        }
+                        return null;
+                      }
+
+                      return (
+                          <li
+                              key={page}
+                              className={`page-item ${currentPage === page ? 'active' : ''}`}
+                          >
+                            <button
+                                className="page-link"
+                                onClick={() => handlePageChange(page)}
+                            >
+                              {page}
+                            </button>
+                          </li>
+                      );
+                    })}
+
+                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                      <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                      >
+                        Next <i className="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
-            </div>
-        )}
+          )}
+        </div>
       </div>
   );
 };
