@@ -1,0 +1,624 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { rfqService } from '../../services/rfqService';
+import PageHeader from '../../components/common/PageHeader';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+
+const RFQDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [rfq, setRfq] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchRFQ();
+  }, [id]);
+
+  const fetchRFQ = async () => {
+    if (!id) {
+      setError('No RFQ ID provided');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await rfqService.getRfqById(id);
+      setRfq(data);
+    } catch (err: any) {
+      console.error('Error fetching RFQ:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load RFQ details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!rfq || !window.confirm('Are you sure you want to delete this RFQ?')) {
+      return;
+    }
+
+    try {
+      await rfqService.deleteRFQ(rfq.id);
+      navigate('/rfq');
+    } catch (err: any) {
+      console.error('Error deleting RFQ:', err);
+      alert(err.response?.data?.message || 'Failed to delete RFQ');
+    }
+  };
+
+  const handleExportToPastel = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/export/pastel/rfqs/${rfq.id}`);
+      const csvData = await response.text();
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PASTEL_RFQ_${rfq.jobNo}_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      alert('RFQ exported to Pastel CSV!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export RFQ');
+    }
+  };
+
+  const handleUploadQuotePdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}/upload-quote-pdf`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      alert('Quote PDF uploaded successfully!');
+      fetchRFQ(); // Refresh to show updated data
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload Quote PDF: ' + error.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSendForSignature = async () => {
+    if (!rfq.quotePdfPath) {
+      alert('Please upload a Quote PDF first');
+      return;
+    }
+
+    if (!rfq.contactEmail) {
+      alert('Contact email is required for DocuSign');
+      return;
+    }
+
+    if (!window.confirm('Send this quote for signature via DocuSign?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}/send-for-signature`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          managerEmail: 'manager@erha.co.za',
+          managerName: 'ERHA Manager'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send for signature');
+      }
+
+      alert('Quote sent for signature via DocuSign!');
+      fetchRFQ(); // Refresh to show updated status
+    } catch (error: any) {
+      console.error('DocuSign send failed:', error);
+      alert('Failed to send for signature: ' + error.message);
+    }
+  };
+
+  const handleCreateJob = () => {
+    navigate(`/jobs/create?rfqId=${rfq.id}`);
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'DRAFT': 'bg-secondary',
+      'PENDING': 'bg-warning',
+      'QUOTED': 'bg-info',
+      'ACCEPTED': 'bg-success',
+      'REJECTED': 'bg-danger',
+      'COMPLETED': 'bg-success',
+      'CANCELLED': 'bg-danger'
+    };
+    return statusMap[status] || 'bg-secondary';
+  };
+
+  const getPriorityBadgeClass = (priority: string) => {
+    const priorityMap: Record<string, string> = {
+      'LOW': 'bg-success',
+      'MEDIUM': 'bg-warning',
+      'HIGH': 'bg-danger'
+    };
+    return priorityMap[priority] || 'bg-secondary';
+  };
+
+  const getQuoteStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'DRAFT': 'bg-secondary',
+      'SENT': 'bg-info',
+      'ACCEPTED': 'bg-success',
+      'REJECTED': 'bg-danger'
+    };
+    return statusMap[status] || 'bg-secondary';
+  };
+
+  const getDocuSignStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'NOT_SENT': 'bg-secondary',
+      'PENDING': 'bg-warning',
+      'SIGNED': 'bg-success',
+      'DECLINED': 'bg-danger'
+    };
+    return statusMap[status] || 'bg-secondary';
+  };
+
+  const getInvoiceStatusBadgeClass = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'PENDING': 'bg-warning',
+      'SENT': 'bg-info',
+      'PAID': 'bg-success'
+    };
+    return statusMap[status] || 'bg-secondary';
+  };
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
+    return `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-ZA');
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+        <div className="container-fluid py-4">
+          <div className="alert alert-danger">
+            <h4 className="alert-heading">Error</h4>
+            <p>{error}</p>
+            <button className="btn btn-primary" onClick={() => navigate('/rfq')}>
+              Back to RFQs
+            </button>
+          </div>
+        </div>
+    );
+  }
+
+  if (!rfq) {
+    return (
+        <div className="container-fluid py-4">
+          <div className="alert alert-warning">
+            RFQ not found
+          </div>
+        </div>
+    );
+  }
+
+  return (
+      <div className="container-fluid py-4">
+        <PageHeader
+            title="RFQ Details"
+            subtitle="Request for Quotation"
+            breadcrumbs={[
+              { label: 'Home', path: '/' },
+              { label: 'RFQs', path: '/rfq' },
+              { label: rfq.jobNo || 'Details', path: '' }
+            ]}
+        />
+
+        {/* Action Buttons */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="d-flex gap-2 flex-wrap">
+              <Link to="/rfq" className="btn btn-outline-secondary">
+                Back to RFQs
+              </Link>
+              <button onClick={handleExportToPastel} className="btn btn-info">
+                Export to Pastel
+              </button>
+              <Link to={`/rfq/${rfq.id}/edit`} className="btn btn-primary">
+                Edit RFQ
+              </Link>
+              <button onClick={handleDelete} className="btn btn-danger">
+                Delete RFQ
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="row">
+          {/* Left Column - RFQ Information */}
+          <div className="col-lg-8">
+            {/* RFQ Information Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">RFQ Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">RFQ Number:</label>
+                    <p className="mb-0">{rfq.jobNo || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Status:</label>
+                    <div>
+                    <span className={`badge ${getStatusBadgeClass(rfq.status)}`}>
+                      {rfq.status}
+                    </span>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Client:</label>
+                    <p className="mb-0">Client ID: {rfq.clientId || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Priority:</label>
+                    <div>
+                    <span className={`badge ${getPriorityBadgeClass(rfq.priority)}`}>
+                      {rfq.priority || 'N/A'}
+                    </span>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Operating Entity:</label>
+                    <p className="mb-0">{rfq.operatingEntity || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Contact Person:</label>
+                    <p className="mb-0">{rfq.contactPerson || 'Not specified'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Contact Email:</label>
+                    <p className="mb-0">{rfq.contactEmail || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Contact Phone:</label>
+                    <p className="mb-0">{rfq.contactPhone || 'N/A'}</p>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label fw-bold text-muted small">Description:</label>
+                    <p className="mb-0">{rfq.description || 'No description'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Requested Date:</label>
+                    <p className="mb-0">{formatDate(rfq.requestDate)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Required By Date:</label>
+                    <p className="mb-0">{formatDate(rfq.requiredDate)}</p>
+                  </div>
+                  {rfq.estimatedValue && (
+                      <div className="col-md-6">
+                        <label className="form-label fw-bold text-muted small">Estimated Value:</label>
+                        <p className="mb-0">{formatCurrency(rfq.estimatedValue)}</p>
+                      </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quote Information Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-success text-white">
+                <h5 className="mb-0">Quote Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Quote Number:</label>
+                    <p className="mb-0">{rfq.quoteNumber || 'Not yet quoted'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Quote Status:</label>
+                    <div>
+                      {rfq.quoteStatus ? (
+                          <span className={`badge ${getQuoteStatusBadgeClass(rfq.quoteStatus)}`}>
+                        {rfq.quoteStatus}
+                      </span>
+                      ) : (
+                          <span className="text-muted">N/A</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Quote Value (Excl VAT):</label>
+                    <p className="mb-0">{formatCurrency(rfq.quoteValueExclVat)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Quote Value (Incl VAT):</label>
+                    <p className="mb-0 fw-bold text-success">{formatCurrency(rfq.quoteValueInclVat)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Quote Date:</label>
+                    <p className="mb-0">{formatDate(rfq.quoteDate)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Valid Until:</label>
+                    <p className="mb-0">{formatDate(rfq.quoteValidUntil)}</p>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label fw-bold text-muted small">Quote PDF:</label>
+                    <div>
+                      {rfq.quotePdfPath ? (
+                          <a
+                              href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-success"
+                          >
+                            <i className="bi bi-file-pdf me-1"></i> View Quote PDF
+                          </a>
+                      ) : (
+                          <span className="text-muted">No PDF uploaded</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* DocuSign Status Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-warning text-dark">
+                <h5 className="mb-0">DocuSign Status</h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">DocuSign Status:</label>
+                    <div>
+                      {rfq.docusignStatus ? (
+                          <span className={`badge ${getDocuSignStatusBadgeClass(rfq.docusignStatus)}`}>
+                        {rfq.docusignStatus}
+                      </span>
+                      ) : (
+                          <span className="badge bg-secondary">NOT_SENT</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Signed Date:</label>
+                    <p className="mb-0">{formatDate(rfq.signedDate)}</p>
+                  </div>
+                  {rfq.docusignEnvelopeId && (
+                      <div className="col-12">
+                        <label className="form-label fw-bold text-muted small">Envelope ID:</label>
+                        <p className="mb-0 font-monospace small">{rfq.docusignEnvelopeId}</p>
+                      </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Order Information Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-info text-white">
+                <h5 className="mb-0">Order Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Order Number:</label>
+                    <p className="mb-0">{rfq.orderNumber || 'No order yet'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Order Date:</label>
+                    <p className="mb-0">{formatDate(rfq.orderDate)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice Information Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-secondary text-white">
+                <h5 className="mb-0">Invoice Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Invoice Number:</label>
+                    <p className="mb-0">{rfq.invoiceNumber || 'Not invoiced'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Invoice Status:</label>
+                    <div>
+                      {rfq.invoiceStatus ? (
+                          <span className={`badge ${getInvoiceStatusBadgeClass(rfq.invoiceStatus)}`}>
+                        {rfq.invoiceStatus}
+                      </span>
+                      ) : (
+                          <span className="text-muted">N/A</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold text-muted small">Invoice Date:</label>
+                    <p className="mb-0">{formatDate(rfq.invoiceDate)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Actions & Metadata */}
+          <div className="col-lg-4">
+            {/* Actions Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">Actions</h5>
+              </div>
+              <div className="card-body">
+                <div className="d-grid gap-2">
+                  {/* Export to Pastel */}
+                  <button onClick={handleExportToPastel} className="btn btn-info">
+                    <i className="bi bi-download me-2"></i>Export to Pastel
+                  </button>
+
+                  {/* Upload Quote PDF */}
+                  <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleUploadQuotePdf}
+                      accept=".pdf"
+                      style={{ display: 'none' }}
+                  />
+                  <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn btn-success"
+                      disabled={uploading}
+                  >
+                    <i className="bi bi-upload me-2"></i>
+                    {uploading ? 'Uploading...' : 'Upload Quote PDF'}
+                  </button>
+
+                  {/* Send for Signature */}
+                  <button
+                      onClick={handleSendForSignature}
+                      className="btn btn-warning"
+                      disabled={!rfq.quotePdfPath || rfq.docusignStatus === 'PENDING' || rfq.docusignStatus === 'SIGNED'}
+                  >
+                    <i className="bi bi-pen me-2"></i>
+                    {rfq.docusignStatus === 'PENDING' ? 'Awaiting Signature' :
+                        rfq.docusignStatus === 'SIGNED' ? 'Already Signed' : 'Send for Signature'}
+                  </button>
+
+                  {/* Create Job - only show when quote is accepted */}
+                  {(rfq.quoteStatus === 'ACCEPTED' || rfq.docusignStatus === 'SIGNED') && !rfq.orderNumber && (
+                      <button onClick={handleCreateJob} className="btn btn-success">
+                        <i className="bi bi-briefcase me-2"></i>Create Job
+                      </button>
+                  )}
+
+                  <hr />
+
+                  {/* Edit RFQ */}
+                  <Link to={`/rfq/${rfq.id}/edit`} className="btn btn-outline-primary">
+                    <i className="bi bi-pencil me-2"></i>Edit RFQ
+                  </Link>
+
+                  {/* Delete RFQ */}
+                  <button onClick={handleDelete} className="btn btn-outline-danger">
+                    <i className="bi bi-trash me-2"></i>Delete RFQ
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Workflow Status Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-dark text-white">
+                <h5 className="mb-0">Workflow Progress</h5>
+              </div>
+              <div className="card-body">
+                <div className="d-flex flex-column gap-2">
+                  <div className={`p-2 rounded ${rfq.jobNo ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.jobNo ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    RFQ Created
+                  </div>
+                  <div className={`p-2 rounded ${rfq.quoteNumber ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.quoteNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Quote Added
+                  </div>
+                  <div className={`p-2 rounded ${rfq.quotePdfPath ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.quotePdfPath ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    PDF Uploaded
+                  </div>
+                  <div className={`p-2 rounded ${rfq.docusignStatus === 'SIGNED' ? 'bg-success text-white' : rfq.docusignStatus === 'PENDING' ? 'bg-warning' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.docusignStatus === 'SIGNED' ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Customer Signed
+                  </div>
+                  <div className={`p-2 rounded ${rfq.orderNumber ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.orderNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Order Received
+                  </div>
+                  <div className={`p-2 rounded ${rfq.invoiceNumber ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.invoiceNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Invoiced
+                  </div>
+                  <div className={`p-2 rounded ${rfq.invoiceStatus === 'PAID' ? 'bg-success text-white' : 'bg-light'}`}>
+                    <i className={`bi ${rfq.invoiceStatus === 'PAID' ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Payment Received
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Metadata Card */}
+            <div className="card shadow-sm">
+              <div className="card-header bg-secondary text-white">
+                <h5 className="mb-0">Metadata</h5>
+              </div>
+              <div className="card-body">
+                <div className="small">
+                  <p className="mb-2">
+                    <strong>Created:</strong> {rfq.createdAt ? new Date(rfq.createdAt).toLocaleString() : 'N/A'}
+                  </p>
+                  <p className="mb-2">
+                    <strong>Created By:</strong> {rfq.createdBy || 'N/A'}
+                  </p>
+                  {rfq.updatedAt && (
+                      <p className="mb-0">
+                        <strong>Last Updated:</strong> {new Date(rfq.updatedAt).toLocaleString()}
+                      </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  );
+};
+
+export default RFQDetail;

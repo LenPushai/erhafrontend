@@ -270,7 +270,6 @@ const RFQDetail: React.FC = () => {
 
         <div className="row">
           <div className="col-md-8">
-            {/* RFQ Information Card */}
             <div className="card mb-4">
               <div className="card-header bg-dark text-white">
                 <h5 className="mb-0">RFQ Information</h5>
@@ -329,7 +328,6 @@ const RFQDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Quote Information Card */}
             <div className="card mb-4">
               <div className="card-header bg-info text-white">
                 <h5 className="mb-0">Quote Information</h5>
@@ -372,48 +370,109 @@ const RFQDetail: React.FC = () => {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Order Information Card */}
-            <div className="card mb-4">
-              <div className="card-header bg-warning text-dark">
-                <h5 className="mb-0">Order Information</h5>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Order Number:</strong><br />
+                {rfq.orderNumber ? (
+                  <span className="badge bg-success">{rfq.orderNumber}</span>
+                ) : (
+                  <span className="text-muted">Not yet ordered</span>
+                )}
               </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>Order Number:</strong><br />
-                    {rfq.orderNumber || <span className="text-muted">Not yet ordered</span>}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Order Date:</strong><br />
-                    {rfq.orderDate ? formatDate(rfq.orderDate) : <span className="text-muted">N/A</span>}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Invoice Information Card */}
-            <div className="card mb-4">
-              <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
-                <h5 className="mb-0">Invoice Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>Invoice Number:</strong><br />
-                    {rfq.invoiceNumber || <span className="text-muted">Not yet invoiced</span>}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Invoice Date:</strong><br />
-                    {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : <span className="text-muted">N/A</span>}
-                  </div>
-                </div>
+              <div className="col-md-6 mb-3">
+                <strong>Order Date:</strong><br />
+                {rfq.orderDate ? formatDate(rfq.orderDate) : <span className="text-muted">N/A</span>}
               </div>
             </div>
           </div>
+        {/* Order Information Card */}
+        <div className="card mb-4">
+          <div className="card-header bg-warning text-dark">
+            <h5 className="mb-0">Order Information</h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Order Number:</strong><br />
+                {rfq.orderNumber || <span className="text-muted">Not yet ordered</span>}
+              </div>
+              <div className="col-md-6 mb-3">
+                <strong>Order Date:</strong><br />
+                {rfq.orderDate ? formatDate(rfq.orderDate) : <span className="text-muted">N/A</span>}
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {/* Sidebar */}
+        {/* Invoice Information Card */}
+        <div className="card mb-4">
+          <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
+            <h5 className="mb-0">Invoice Information</h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Number:</strong><br />
+                {rfq.invoiceNumber || <span className="text-muted">Not yet invoiced</span>}
+              </div>
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Date:</strong><br />
+                {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : <span className="text-muted">N/A</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Number:</strong><br />
+                {rfq.invoiceNumber ? (
+                  <span className="badge" style={{backgroundColor: '#6f42c1', color: 'white'}}>{rfq.invoiceNumber}</span>
+                ) : (
+                  <span className="text-muted">Not yet invoiced</span>
+                )}
+              </div>
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Date:</strong><br />
+                {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : <span className="text-muted">N/A</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <strong>Order Number:</strong><br />
+                        {rfq.orderNumber || 'Not yet ordered'}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <strong>Order Date:</strong><br />
+                        {rfq.orderDate ? formatDate(rfq.orderDate) : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <strong>Invoice Number:</strong><br />
+                        {rfq.invoiceNumber || 'Not yet invoiced'}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <strong>Invoice Date:</strong><br />
+                        {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+
           <div className="col-md-4">
             <div className="card mb-4">
               <div className="card-header bg-dark text-white">
@@ -468,116 +527,115 @@ const RFQDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* DocuSign Modal */}
         {showDocuSignModal && (
-            <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-              <div className="modal-dialog modal-lg modal-dialog-scrollable">
-                <div className="modal-content">
-                  <div className="modal-header bg-success text-white">
-                    <h5 className="modal-title">Send Quote for Signature</h5>
-                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowDocuSignModal(false)}></button>
-                  </div>
-                  <div className="modal-body">
-                    <div className="alert alert-info">
-                      <strong>Signing Order:</strong> Managers sign first (in order), then clients sign (in order).
-                    </div>
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">Send Quote for Signature</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDocuSignModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info">
+                  <strong>Signing Order:</strong> Managers sign first (in order), then clients sign (in order).
+                </div>
 
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h6 className="text-primary mb-0">Managers (Sign First)</h6>
-                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={addManager}>+ Add Manager</button>
-                      </div>
-                      {managers.map((manager, index) => (
-                          <div key={index} className="card mb-2">
-                            <div className="card-body py-2">
-                              <div className="row g-2 align-items-center">
-                                <div className="col-md-1">
-                                  <span className="badge bg-primary">{index + 1}</span>
-                                </div>
-                                <div className="col-md-4">
-                                  <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Manager Name"
-                                      value={manager.name}
-                                      onChange={(e) => updateManager(index, 'name', e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-5">
-                                  <input
-                                      type="email"
-                                      className={`form-control form-control-sm ${manager.email && !isValidEmail(manager.email) ? 'is-invalid' : ''}`}
-                                      placeholder="manager@erha.co.za"
-                                      value={manager.email}
-                                      onChange={(e) => updateManager(index, 'email', e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-2">
-                                  {managers.length > 1 && (
-                                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeManager(index)}>Remove</button>
-                                  )}
-                                </div>
-                              </div>
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-primary mb-0">Managers (Sign First)</h6>
+                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={addManager}>+ Add Manager</button>
+                  </div>
+                  {managers.map((manager, index) => (
+                      <div key={index} className="card mb-2">
+                        <div className="card-body py-2">
+                          <div className="row g-2 align-items-center">
+                            <div className="col-md-1">
+                              <span className="badge bg-primary">{index + 1}</span>
+                            </div>
+                            <div className="col-md-4">
+                              <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  placeholder="Manager Name"
+                                  value={manager.name}
+                                  onChange={(e) => updateManager(index, 'name', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-5">
+                              <input
+                                  type="email"
+                                  className={`form-control form-control-sm ${manager.email && !isValidEmail(manager.email) ? 'is-invalid' : ''}`}
+                                  placeholder="manager@erha.co.za"
+                                  value={manager.email}
+                                  onChange={(e) => updateManager(index, 'email', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-2">
+                              {managers.length > 1 && (
+                                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeManager(index)}>Remove</button>
+                              )}
                             </div>
                           </div>
-                      ))}
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h6 className="text-success mb-0">Clients (Sign Second)</h6>
-                        <button type="button" className="btn btn-sm btn-outline-success" onClick={addClient}>+ Add Client</button>
+                        </div>
                       </div>
-                      {clients.map((client, index) => (
-                          <div key={index} className="card mb-2 border-success">
-                            <div className="card-body py-2">
-                              <div className="row g-2 align-items-center">
-                                <div className="col-md-1">
-                                  <span className="badge bg-success">{index + 1}</span>
-                                </div>
-                                <div className="col-md-4">
-                                  <input
-                                      type="text"
-                                      className="form-control form-control-sm"
-                                      placeholder="Client Name (optional)"
-                                      value={client.name}
-                                      onChange={(e) => updateClient(index, 'name', e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-5">
-                                  <input
-                                      type="email"
-                                      className={`form-control form-control-sm ${client.email && !isValidEmail(client.email) ? 'is-invalid' : ''}`}
-                                      placeholder="client@company.co.za"
-                                      value={client.email}
-                                      onChange={(e) => updateClient(index, 'email', e.target.value)}
-                                  />
-                                </div>
-                                <div className="col-md-2">
-                                  {clients.length > 1 && (
-                                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeClient(index)}>Remove</button>
-                                  )}
-                                </div>
-                              </div>
+                  ))}
+                </div>
+
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-success mb-0">Clients (Sign Second)</h6>
+                    <button type="button" className="btn btn-sm btn-outline-success" onClick={addClient}>+ Add Client</button>
+                  </div>
+                  {clients.map((client, index) => (
+                      <div key={index} className="card mb-2 border-success">
+                        <div className="card-body py-2">
+                          <div className="row g-2 align-items-center">
+                            <div className="col-md-1">
+                              <span className="badge bg-success">{index + 1}</span>
+                            </div>
+                            <div className="col-md-4">
+                              <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  placeholder="Client Name (optional)"
+                                  value={client.name}
+                                  onChange={(e) => updateClient(index, 'name', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-5">
+                              <input
+                                  type="email"
+                                  className={`form-control form-control-sm ${client.email && !isValidEmail(client.email) ? 'is-invalid' : ''}`}
+                                  placeholder="client@company.co.za"
+                                  value={client.email}
+                                  onChange={(e) => updateClient(index, 'email', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-2">
+                              {clients.length > 1 && (
+                                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeClient(index)}>Remove</button>
+                              )}
                             </div>
                           </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowDocuSignModal(false)}>Cancel</button>
-                    <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={handleSendForSignature}
-                        disabled={sending || !canSend()}
-                    >
-                      {sending ? 'Sending...' : `Send to DocuSign (${totalSigners} signers)`}
-                    </button>
-                  </div>
+                        </div>
+                      </div>
+                  ))}
                 </div>
               </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDocuSignModal(false)}>Cancel</button>
+                <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={handleSendForSignature}
+                    disabled={sending || !canSend()}
+                >
+                  {sending ? 'Sending...' : `Send to DocuSign (${totalSigners} signers)`}
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
         )}
       </div>
   );

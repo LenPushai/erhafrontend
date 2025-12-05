@@ -209,7 +209,7 @@ export const quoteService = {
     }
   },
 
-  async downloadSignedDocument(quoteId: number): Promise<Blob> {
+  async downloadSignedDocument(qunoteId: number): Promise<Blob> {
     try {
       const response = await axios.get(`${API_BASE_URL}/quotes/${quoteId}/signed-document`, {
         responseType: 'blob'

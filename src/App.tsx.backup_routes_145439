@@ -47,7 +47,7 @@ function App() {
             <Route path="rfq" element={<RFQList />} />
             <Route path="rfq/create" element={<CreateRFQ />} />
             <Route path="rfq/:id" element={<RFQDetail />} />
-            <Route path="rfq/:id/edit" element={<RFQEdit />} />
+            <Route path="/rfqs/:id/edit" element={<RFQEdit />} />
             
             {/* Quotes Routes - create before :id */}
             <Route path="quotes" element={<QuotesList />} />

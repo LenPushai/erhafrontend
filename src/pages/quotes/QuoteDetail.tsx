@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { quoteService } from '../../services/quoteService';
 import PinModal from '../../components/quotes/PinModal';
@@ -244,6 +244,30 @@ const QuoteDetail: React.FC = () => {
                                         <p className="mb-0">
                                             <Link to={`/jobs/${quote.jobId}`}>Job #{quote.jobId}</Link>
                                         </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <strong>Order Number:</strong>
+                                    <p className="mb-0">{quote.orderNumber || 'Not yet ordered'}</p>
+                                </div>
+                                <div className="col-md-6">
+                                    <strong>Invoice Number:</strong>
+                                    <p className="mb-0">{quote.invoiceNumber || 'Not yet invoiced'}</p>
+                                </div>
+                            </div>
+
+                            {quote.orderDate && (
+                                <div className="row mb-3">
+                                    <div className="col-md-6">
+                                        <strong>Order Date:</strong>
+                                        <p className="mb-0">{new Date(quote.orderDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <strong>Invoice Date:</strong>
+                                        <p className="mb-0">{quote.invoiceDate ? new Date(quote.invoiceDate).toLocaleDateString() : 'N/A'}</p>
                                     </div>
                                 </div>
                             )}

@@ -1,6 +1,6 @@
 ﻿// src/pages/rfq/RFQEdit.tsx
 // ERHA OPS - RFQ Edit Page
-// CLEAN VERSION - Safe null handling for dates
+// FIXED: Handle "new" RFQ creation without API call
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -28,9 +28,29 @@ export default function RFQEdit() {
     workLocation: 'SHOP',
     estimatedValue: '',
     assignedTo: '',
+    // Quote fields
+    quoteNumber: '',
+    quoteValueExclVat: '',
+    quoteValueInclVat: '',
+    quoteDate: '',
+    quoteValidUntil: '',
+    quoteStatus: '',
+    // Order fields
+    orderNumber: '',
+    orderDate: '',
+    // Invoice fields
+    invoiceNumber: '',
+    invoiceDate: '',
+    invoiceStatus: '',
   });
 
   useEffect(() => {
+    // CRITICAL FIX: Don't fetch if creating new RFQ
+    if (id === 'new') {
+      setLoading(false);
+      return;
+    }
+
     const fetchRfq = async () => {
       if (!id) {
         setError('No RFQ ID provided');
@@ -52,21 +72,35 @@ export default function RFQEdit() {
         };
 
         setFormData({
-          rfqNumber: data.rfqNumber || '',
+          rfqNumber: data.jobNo || data.rfqNumber || '',
           clientName: data.clientName || '',
           contactPerson: data.contactPerson || '',
           contactEmail: data.contactEmail || '',
           contactPhone: data.contactPhone || '',
           projectName: data.projectName || '',
           description: data.description || '',
-          receivedDate: formatDate(data.receivedDate),
-          requiredBy: formatDate(data.requiredBy),
+          receivedDate: formatDate(data.requestDate || data.receivedDate),
+          requiredBy: formatDate(data.requiredDate || data.requiredBy),
           priority: data.priority || 'MEDIUM',
           status: data.status || 'NEW',
           operatingEntity: data.operatingEntity || 'ERHA FC',
           workLocation: data.workLocation || 'SHOP',
           estimatedValue: data.estimatedValue?.toString() || '',
           assignedTo: data.assignedTo || '',
+          // Quote fields
+          quoteNumber: data.quoteNumber || '',
+          quoteValueExclVat: data.quoteValueExclVat?.toString() || '',
+          quoteValueInclVat: data.quoteValueInclVat?.toString() || '',
+          quoteDate: formatDate(data.quoteDate),
+          quoteValidUntil: formatDate(data.quoteValidUntil),
+          quoteStatus: data.quoteStatus || '',
+          // Order fields
+          orderNumber: data.orderNumber || '',
+          orderDate: formatDate(data.orderDate),
+          // Invoice fields
+          invoiceNumber: data.invoiceNumber || '',
+          invoiceDate: formatDate(data.invoiceDate),
+          invoiceStatus: data.invoiceStatus || '',
         });
       } catch (err: any) {
         console.error('Error fetching RFQ:', err);
@@ -84,46 +118,117 @@ export default function RFQEdit() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Auto-calculate VAT
+  const handleQuoteValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    if (name === 'quoteValueExclVat' && value) {
+      const excl = parseFloat(value);
+      const incl = (excl * 1.15).toFixed(2);
+      setFormData(prev => ({ ...prev, quoteValueExclVat: value, quoteValueInclVat: incl }));
+    } else if (name === 'quoteValueInclVat' && value) {
+      const incl = parseFloat(value);
+      const excl = (incl / 1.15).toFixed(2);
+      setFormData(prev => ({ ...prev, quoteValueInclVat: value, quoteValueExclVat: excl }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!id) return;
-
     try {
-      const updateData: any = {
-        ...formData,
-        estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
-      };
+      if (id === 'new') {
+        // CREATE new RFQ
+        const createData: any = {
+          jobNo: formData.rfqNumber,
+          contactPerson: formData.contactPerson,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          description: formData.description,
+          operatingEntity: formData.operatingEntity,
+          priority: formData.priority,
+          status: formData.status,
+          requestDate: formData.receivedDate || undefined,
+          requiredDate: formData.requiredBy || undefined,
+          assignedTo: formData.assignedTo || undefined,
+          estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
+          // Quote fields
+          quoteNumber: formData.quoteNumber || undefined,
+          quoteValueExclVat: formData.quoteValueExclVat ? parseFloat(formData.quoteValueExclVat) : undefined,
+          quoteValueInclVat: formData.quoteValueInclVat ? parseFloat(formData.quoteValueInclVat) : undefined,
+          quoteDate: formData.quoteDate || undefined,
+          quoteValidUntil: formData.quoteValidUntil || undefined,
+          quoteStatus: formData.quoteStatus || undefined,
+          // Order fields
+          orderNumber: formData.orderNumber || undefined,
+          orderDate: formData.orderDate || undefined,
+          // Invoice fields
+          invoiceNumber: formData.invoiceNumber || undefined,
+          invoiceDate: formData.invoiceDate || undefined,
+          invoiceStatus: formData.invoiceStatus || undefined,
+        };
 
-      await rfqService.updateRfq(Number(id), updateData);
-      alert('RFQ updated successfully!');
-      navigate(`/rfq/${id}`);
+        await rfqService.createRfq(createData);
+        alert('RFQ created successfully!');
+        navigate('/rfqs');
+      } else {
+        // UPDATE existing RFQ
+        const updateData: any = {
+          jobNo: formData.rfqNumber,
+          contactPerson: formData.contactPerson,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          description: formData.description,
+          operatingEntity: formData.operatingEntity,
+          priority: formData.priority,
+          status: formData.status,
+          requestDate: formData.receivedDate || undefined,
+          requiredDate: formData.requiredBy || undefined,
+          assignedTo: formData.assignedTo || undefined,
+          estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
+          // Quote fields
+          quoteNumber: formData.quoteNumber || undefined,
+          quoteValueExclVat: formData.quoteValueExclVat ? parseFloat(formData.quoteValueExclVat) : undefined,
+          quoteValueInclVat: formData.quoteValueInclVat ? parseFloat(formData.quoteValueInclVat) : undefined,
+          quoteDate: formData.quoteDate || undefined,
+          quoteValidUntil: formData.quoteValidUntil || undefined,
+          quoteStatus: formData.quoteStatus || undefined,
+          // Order fields
+          orderNumber: formData.orderNumber || undefined,
+          orderDate: formData.orderDate || undefined,
+          // Invoice fields
+          invoiceNumber: formData.invoiceNumber || undefined,
+          invoiceDate: formData.invoiceDate || undefined,
+          invoiceStatus: formData.invoiceStatus || undefined,
+        };
+
+        await rfqService.updateRfq(Number(id), updateData);
+        alert('RFQ updated successfully!');
+        navigate(`/rfqs/${id}`);
+      }
     } catch (err: any) {
-      console.error('Error updating RFQ:', err);
-      alert('Failed to update RFQ: ' + err.message);
+      console.error('Error saving RFQ:', err);
+      alert(err.message || 'Failed to save RFQ');
     }
   };
 
   if (loading) {
     return (
-        <div className="container-fluid">
-          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-lg">Loading...</div>
         </div>
     );
   }
 
   if (error) {
     return (
-        <div className="container-fluid">
-          <div className="alert alert-danger">
-            <strong>Error:</strong> {error}
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/rfq')}>
-            <ArrowLeft size={16} className="me-2" />
+          <button onClick={() => navigate('/rfqs')} className="mt-4 btn btn-primary">
             Back to RFQs
           </button>
         </div>
@@ -131,261 +236,322 @@ export default function RFQEdit() {
   }
 
   return (
-      <div className="container-fluid">
-        {/* Header */}
+      <div className="container-fluid px-4 py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <div className="d-flex align-items-center">
-            <button
-                className="btn btn-link text-decoration-none me-3"
-                onClick={() => navigate(`/rfq/${id}`)}
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h2 className="mb-1">Edit RFQ #{formData.rfqNumber}</h2>
-              <p className="text-muted mb-0">Update RFQ information</p>
-            </div>
-          </div>
+          <h1>{id === 'new' ? 'Create New RFQ' : 'Edit RFQ'}</h1>
+          <button onClick={() => navigate('/rfqs')} className="btn btn-outline-secondary">
+            <ArrowLeft className="me-2" size={18} />
+            Back to List
+          </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           <div className="row">
-            <div className="col-lg-8">
-              {/* Client Information */}
-              <div className="card mb-4">
-                <div className="card-header bg-light">
-                  <h5 className="mb-0">Client Information</h5>
-                </div>
-                <div className="card-body">
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">RFQ Number</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="rfqNumber"
-                          value={formData.rfqNumber}
-                          onChange={handleChange}
-                          disabled
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Operating Entity *</label>
-                      <select
-                          className="form-select"
-                          name="operatingEntity"
-                          value={formData.operatingEntity}
-                          onChange={handleChange}
-                          required
-                      >
-                        <option value="ERHA FC">ERHA FC</option>
-                        <option value="ERHA SS">ERHA SS</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Client Name *</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="clientName"
-                          value={formData.clientName}
-                          onChange={handleChange}
-                          required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Contact Person *</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="contactPerson"
-                          value={formData.contactPerson}
-                          onChange={handleChange}
-                          required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Email *</label>
-                      <input
-                          type="email"
-                          className="form-control"
-                          name="contactEmail"
-                          value={formData.contactEmail}
-                          onChange={handleChange}
-                          required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Phone *</label>
-                      <input
-                          type="tel"
-                          className="form-control"
-                          name="contactPhone"
-                          value={formData.contactPhone}
-                          onChange={handleChange}
-                          required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Project Details */}
-              <div className="card mb-4">
-                <div className="card-header bg-light">
-                  <h5 className="mb-0">Project Details</h5>
-                </div>
-                <div className="card-body">
-                  <div className="row g-3">
-                    <div className="col-12">
-                      <label className="form-label">Project Name *</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          name="projectName"
-                          value={formData.projectName}
-                          onChange={handleChange}
-                          required
-                      />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">Description *</label>
-                      <textarea
-                          className="form-control"
-                          name="description"
-                          value={formData.description}
-                          onChange={handleChange}
-                          rows={4}
-                          required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Work Location *</label>
-                      <select
-                          className="form-select"
-                          name="workLocation"
-                          value={formData.workLocation}
-                          onChange={handleChange}
-                          required
-                      >
-                        <option value="SHOP">Shop</option>
-                        <option value="SITE">Site</option>
-                        <option value="BOTH">Both</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Estimated Value (R)</label>
-                      <input
-                          type="number"
-                          step="0.01"
-                          className="form-control"
-                          name="estimatedValue"
-                          value={formData.estimatedValue}
-                          onChange={handleChange}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-lg-4">
-              {/* Status & Timeline */}
-              <div className="card mb-4">
-                <div className="card-header bg-light">
-                  <h5 className="mb-0">Status & Timeline</h5>
+            {/* Basic Information */}
+            <div className="col-md-6 mb-4">
+              <div className="card">
+                <div className="card-header bg-dark text-white">
+                  <h5 className="mb-0">Basic Information</h5>
                 </div>
                 <div className="card-body">
                   <div className="mb-3">
-                    <label className="form-label">Status *</label>
+                    <label className="form-label">RFQ Number</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="rfqNumber"
+                        value={formData.rfqNumber}
+                        onChange={handleChange}
+                        placeholder="Auto-generated if left blank"
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Contact Person</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="contactPerson"
+                        value={formData.contactPerson}
+                        onChange={handleChange}
+                        required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Contact Email</label>
+                    <input
+                        type="email"
+                        className="form-control"
+                        name="contactEmail"
+                        value={formData.contactEmail}
+                        onChange={handleChange}
+                        required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Contact Phone</label>
+                    <input
+                        type="tel"
+                        className="form-control"
+                        name="contactPhone"
+                        value={formData.contactPhone}
+                        onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Description</label>
+                    <textarea
+                        className="form-control"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        rows={4}
+                        required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Operating Entity</label>
                     <select
-                          className="form-select"
-                          name="status"
-                          value={formData.status}
-                          onChange={handleChange}
-                          required
-                      >
-                        <option value="">Select Status</option>
-                        <option value="Draft">Draft</option>
-                        <option value="Under Review">Under Review</option>
-                        <option value="Pending Clarification">Pending Clarification</option>
-                        <option value="Ready for Quote">Ready for Quote</option>
-                        <option value="Quoted">Quoted</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
+                        className="form-select"
+                        name="operatingEntity"
+                        value={formData.operatingEntity}
+                        onChange={handleChange}
+                    >
+                      <option value="ERHA FC">ERHA FC</option>
+                      <option value="ERHA SC">ERHA SC</option>
+                    </select>
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label">Priority *</label>
+                    <label className="form-label">Priority</label>
                     <select
                         className="form-select"
                         name="priority"
                         value={formData.priority}
                         onChange={handleChange}
-                        required
                     >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="URGENT">Urgent</option>
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Urgent">Urgent</option>
                     </select>
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label">Received Date *</label>
+                    <label className="form-label">Status</label>
+                    <select
+                        className="form-select"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Pending Clarification">Pending Clarification</option>
+                      <option value="Under Review">Under Review</option>
+                      <option value="Quoted">Quoted</option>
+                      <option value="Accepted">Accepted</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Received Date</label>
                     <input
                         type="date"
                         className="form-control"
                         name="receivedDate"
                         value={formData.receivedDate}
                         onChange={handleChange}
-                        required
                     />
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label">Required By *</label>
+                    <label className="form-label">Required By</label>
                     <input
                         type="date"
                         className="form-control"
                         name="requiredBy"
                         value={formData.requiredBy}
                         onChange={handleChange}
-                        required
                     />
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label">Assigned To</label>
+                    <label className="form-label">Estimated Value</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        name="estimatedValue"
+                        value={formData.estimatedValue}
+                        onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quote, Order, Invoice Information */}
+            <div className="col-md-6 mb-4">
+              {/* Quote Information */}
+              <div className="card mb-4">
+                <div className="card-header bg-info text-white">
+                  <h5 className="mb-0">Quote Information</h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="form-label">Quote Number</label>
                     <input
                         type="text"
                         className="form-control"
-                        name="assignedTo"
-                        value={formData.assignedTo}
+                        name="quoteNumber"
+                        value={formData.quoteNumber}
+                        onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Quote Value (Excl VAT)</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        name="quoteValueExclVat"
+                        value={formData.quoteValueExclVat}
+                        onChange={handleQuoteValueChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Quote Value (Incl VAT)</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        name="quoteValueInclVat"
+                        value={formData.quoteValueInclVat}
+                        onChange={handleQuoteValueChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Quote Date</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        name="quoteDate"
+                        value={formData.quoteDate}
+                        onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Valid Until</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        name="quoteValidUntil"
+                        value={formData.quoteValidUntil}
+                        onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Quote Status</label>
+                    <select
+                        className="form-select"
+                        name="quoteStatus"
+                        value={formData.quoteStatus}
+                        onChange={handleChange}
+                    >
+                      <option value="">Not Quoted</option>
+                      <option value="DRAFT">Draft</option>
+                      <option value="SENT">Sent</option>
+                      <option value="ACCEPTED">Accepted</option>
+                      <option value="REJECTED">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Information */}
+              <div className="card mb-4">
+                <div className="card-header bg-warning text-dark">
+                  <h5 className="mb-0">Order Information</h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="form-label">Order Number</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="orderNumber"
+                        value={formData.orderNumber}
+                        onChange={handleChange}
+                        placeholder="Client's PO number"
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Order Date</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        name="orderDate"
+                        value={formData.orderDate}
                         onChange={handleChange}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="card">
+              {/* Invoice Information */}
+              <div className="card mb-4">
+                <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
+                  <h5 className="mb-0">Invoice Information</h5>
+                </div>
                 <div className="card-body">
-                  <div className="d-grid gap-2">
-                    <button type="submit" className="btn btn-primary">
-                      <Save size={16} className="me-2" />
-                      Save Changes
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={() => navigate(`/rfq/${id}`)}
-                    >
-                      <X size={16} className="me-2" />
-                      Cancel
-                    </button>
+                  <div className="mb-3">
+                    <label className="form-label">Invoice Number</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="invoiceNumber"
+                        value={formData.invoiceNumber}
+                        onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Invoice Date</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        name="invoiceDate"
+                        value={formData.invoiceDate}
+                        onChange={handleChange}
+                    />
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="d-flex justify-content-end gap-2 mb-4">
+            <button type="button" onClick={() => navigate('/rfqs')} className="btn btn-secondary">
+              <X size={18} className="me-2" />
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-success">
+              <Save size={18} className="me-2" />
+              {id === 'new' ? 'Create RFQ' : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>

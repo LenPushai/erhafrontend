@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -99,14 +99,14 @@ const RFQList: React.FC = () => {
   // Status configuration
   const getStatusConfig = (status: string) => {
     const configs: { [key: string]: { class: string; icon: string; } } = {
-      'Draft': { class: 'bg-secondary text-white', icon: '' },
-      'Pending Clarification': { class: 'bg-warning text-dark', icon: '' },
-      'Under Review': { class: 'bg-info text-white', icon: '' },
-      'Approved': { class: 'bg-success text-white', icon: '' },
-      'Ready to Quote': { class: 'bg-primary text-white', icon: '' },
-      'Completed': { class: 'bg-success text-white', icon: '' },
-      'Won': { class: 'bg-success text-white', icon: '' },
-      'Lost': { class: 'bg-danger text-white', icon: '' }
+      'Draft': { class: 'bg-secondary text-white', icon: '📝' },
+      'Pending Clarification': { class: 'bg-warning text-dark', icon: '⏳' },
+      'Under Review': { class: 'bg-info text-white', icon: '🔍' },
+      'Approved': { class: 'bg-success text-white', icon: '✅' },
+      'Ready to Quote': { class: 'bg-primary text-white', icon: '📋' },
+      'Completed': { class: 'bg-success text-white', icon: '🎉' },
+      'Won': { class: 'bg-success text-white', icon: '🏆' },
+      'Lost': { class: 'bg-danger text-white', icon: '❌' }
     };
     return configs[status] || configs['Draft'];
   };
@@ -114,10 +114,10 @@ const RFQList: React.FC = () => {
   // Priority configuration
   const getPriorityConfig = (priority: string) => {
     const configs: { [key: string]: { class: string; icon: string; } } = {
-      'Low': { class: 'bg-info text-white', icon: '' },
-      'Medium': { class: 'bg-warning text-dark', icon: '' },
-      'High': { class: 'bg-orange text-white', icon: '' },
-      'Urgent': { class: 'bg-danger text-white', icon: '' }
+      'Low': { class: 'bg-info text-white', icon: '🔵' },
+      'Medium': { class: 'bg-warning text-dark', icon: '🟡' },
+      'High': { class: 'bg-orange text-white', icon: '🟠' },
+      'Urgent': { class: 'bg-danger text-white', icon: '🔴' }
     };
     return configs[priority] || configs['Medium'];
   };
@@ -271,11 +271,11 @@ const RFQList: React.FC = () => {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
-      return <span className="text-muted ms-1"></span>;
+      return <span className="text-muted ms-1">⇅</span>;
     }
     return sortDirection === 'asc' ?
-        <span className="text-primary ms-1 fw-bold"></span> :
-        <span className="text-primary ms-1 fw-bold"></span>;
+        <span className="text-primary ms-1 fw-bold">↑</span> :
+        <span className="text-primary ms-1 fw-bold">↓</span>;
   };
 
   if (loading) {
@@ -299,13 +299,13 @@ const RFQList: React.FC = () => {
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
                 <h1 className="display-5 fw-bold mb-2">
-                  <span className="fs-1 me-2"></span>
+                  <span className="fs-1 me-2">📋</span>
                   RFQ Dashboard
                 </h1>
                 <p className="mb-0 opacity-75">Request for Quotation Management System</p>
               </div>
               <button
-                  onClick={() => navigate('/rfq/create')}
+                  onClick={() => navigate('/rfq/new')}
                   className="btn btn-light btn-lg fw-semibold shadow"
                   style={{ borderRadius: '12px' }}
               >
@@ -324,7 +324,7 @@ const RFQList: React.FC = () => {
                         <p className="small mb-1 opacity-75">Total RFQs</p>
                         <h2 className="display-6 fw-bold mb-0">{metrics.total}</h2>
                       </div>
-                      <div className="fs-1 opacity-75"></div>
+                      <div className="fs-1 opacity-75">📊</div>
                     </div>
                   </div>
                 </div>
@@ -339,7 +339,7 @@ const RFQList: React.FC = () => {
                         <p className="small mb-1 opacity-75">Total Value</p>
                         <h3 className="h4 fw-bold mb-0">{formatCurrency(metrics.totalValue)}</h3>
                       </div>
-                      <div className="fs-1 opacity-75"></div>
+                      <div className="fs-1 opacity-75">💰</div>
                     </div>
                   </div>
                 </div>
@@ -355,7 +355,7 @@ const RFQList: React.FC = () => {
                         <h2 className="display-6 fw-bold mb-0">{metrics.urgent}</h2>
                         <p className="small mb-0 opacity-75">+{metrics.high} High</p>
                       </div>
-                      <div className="fs-1 opacity-75"></div>
+                      <div className="fs-1 opacity-75">🔴</div>
                     </div>
                   </div>
                 </div>
@@ -370,7 +370,7 @@ const RFQList: React.FC = () => {
                         <p className="small mb-1 opacity-75">Avg. Value</p>
                         <h3 className="h4 fw-bold mb-0">{formatCurrency(metrics.avgValue)}</h3>
                       </div>
-                      <div className="fs-1 opacity-75"></div>
+                      <div className="fs-1 opacity-75">📈</div>
                     </div>
                   </div>
                 </div>
@@ -390,7 +390,7 @@ const RFQList: React.FC = () => {
                       <p className="text-secondary small fw-semibold mb-1">Draft</p>
                       <h2 className="h3 fw-bold text-secondary mb-0">{metrics.draft}</h2>
                     </div>
-                    <span className="fs-1"></span>
+                    <span className="fs-1">📝</span>
                   </div>
                 </div>
               </div>
@@ -404,7 +404,7 @@ const RFQList: React.FC = () => {
                       <p className="text-warning small fw-semibold mb-1">Pending</p>
                       <h2 className="h3 fw-bold text-warning mb-0">{metrics.pending}</h2>
                     </div>
-                    <span className="fs-1"></span>
+                    <span className="fs-1">⏳</span>
                   </div>
                 </div>
               </div>
@@ -418,7 +418,7 @@ const RFQList: React.FC = () => {
                       <p className="text-success small fw-semibold mb-1">Approved</p>
                       <h2 className="h3 fw-bold text-success mb-0">{metrics.approved}</h2>
                     </div>
-                    <span className="fs-1"></span>
+                    <span className="fs-1">✅</span>
                   </div>
                 </div>
               </div>
@@ -432,7 +432,7 @@ const RFQList: React.FC = () => {
                       <p className="text-success small fw-semibold mb-1">Completed</p>
                       <h2 className="h3 fw-bold text-success mb-0">{metrics.completed}</h2>
                     </div>
-                    <span className="fs-1"></span>
+                    <span className="fs-1">🎉</span>
                   </div>
                 </div>
               </div>
@@ -444,7 +444,7 @@ const RFQList: React.FC = () => {
             <div className="card-body p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="mb-0 fw-bold">
-                  <span className="me-2"></span>Filters & Search
+                  <span className="me-2">🔍</span>Filters & Search
                 </h5>
                 <div className="btn-group" role="group">
                   <button
@@ -452,14 +452,14 @@ const RFQList: React.FC = () => {
                       className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
                       onClick={() => setViewMode('table')}
                   >
-                     Table
+                    📊 Table
                   </button>
                   <button
                       type="button"
                       className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-secondary'}`}
                       onClick={() => setViewMode('cards')}
                   >
-                     Cards
+                    🗂️ Cards
                   </button>
                 </div>
               </div>
@@ -467,7 +467,7 @@ const RFQList: React.FC = () => {
               <div className="row g-3">
                 <div className="col-md-3">
                   <div className="input-group">
-                    <span className="input-group-text bg-light border-end-0"></span>
+                    <span className="input-group-text bg-light border-end-0">🔍</span>
                     <input
                         type="text"
                         className="form-control border-start-0 ps-0"
@@ -484,11 +484,11 @@ const RFQList: React.FC = () => {
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
                   >
-                    <option value="all"> All Statuses</option>
-                    <option value="Draft"> Draft</option>
-                    <option value="Pending Clarification"> Pending Clarification</option>
-                    <option value="Approved"> Approved</option>
-                    <option value="Completed"> Completed</option>
+                    <option value="all">📋 All Statuses</option>
+                    <option value="Draft">📝 Draft</option>
+                    <option value="Pending Clarification">⏳ Pending Clarification</option>
+                    <option value="Approved">✅ Approved</option>
+                    <option value="Completed">🎉 Completed</option>
                   </select>
                 </div>
 
@@ -498,11 +498,11 @@ const RFQList: React.FC = () => {
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
                   >
-                    <option value="all"> All Priorities</option>
-                    <option value="Low"> Low</option>
-                    <option value="Medium"> Medium</option>
-                    <option value="High"> High</option>
-                    <option value="Urgent"> Urgent</option>
+                    <option value="all">🎯 All Priorities</option>
+                    <option value="Low">🔵 Low</option>
+                    <option value="Medium">🟡 Medium</option>
+                    <option value="High">🟠 High</option>
+                    <option value="Urgent">🔴 Urgent</option>
                   </select>
                 </div>
 
@@ -512,9 +512,9 @@ const RFQList: React.FC = () => {
                       value={entityFilter}
                       onChange={(e) => setEntityFilter(e.target.value)}
                   >
-                    <option value="all"> All Entities</option>
-                    <option value="ERHA FC"> ERHA FC</option>
-                    <option value="ERHA SS"> ERHA SS</option>
+                    <option value="all">🏢 All Entities</option>
+                    <option value="ERHA FC">🏭 ERHA FC</option>
+                    <option value="ERHA SS">⚙️ ERHA SS</option>
                   </select>
                 </div>
               </div>
@@ -528,7 +528,7 @@ const RFQList: React.FC = () => {
                           onClick={handleBulkExport}
                           className="btn btn-info btn-sm fw-semibold"
                       >
-                         Export to Pastel
+                        📤 Export to Pastel
                       </button>
                     </div>
                     <button
@@ -584,7 +584,7 @@ const RFQList: React.FC = () => {
                         <tr>
                           <td colSpan={9} className="text-center py-5">
                             <div className="text-muted">
-                              <div className="fs-1 mb-3"></div>
+                              <div className="fs-1 mb-3">🔍</div>
                               <p className="fw-semibold">No RFQs found matching your filters</p>
                             </div>
                           </td>
@@ -637,14 +637,14 @@ const RFQList: React.FC = () => {
                                         className="btn btn-sm btn-outline-primary"
                                         title="View"
                                     >
-                                      
+                                      👁️
                                     </button>
                                     <button
                                         onClick={() => navigate(`/rfq/${rfq.id}/edit`)}
                                         className="btn btn-sm btn-outline-secondary"
                                         title="Edit"
                                     >
-                                      
+                                      ✏️
                                     </button>
                                     {canExport(rfq.status) ? (
                                         <button
@@ -652,11 +652,11 @@ const RFQList: React.FC = () => {
                                             className="btn btn-sm btn-outline-info"
                                             title="Export"
                                         >
-                                          
+                                          📤
                                         </button>
                                     ) : (
                                         <button className="btn btn-sm btn-outline-secondary disabled" title="Cannot export">
-                                          
+                                          📤
                                         </button>
                                     )}
                                   </div>
@@ -685,7 +685,7 @@ const RFQList: React.FC = () => {
                                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                 disabled={currentPage === 1}
                             >
-                               Previous
+                              ← Previous
                             </button>
                           </li>
                           <li className="page-item active">
@@ -699,7 +699,7 @@ const RFQList: React.FC = () => {
                                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                 disabled={currentPage === totalPages}
                             >
-                              Next 
+                              Next →
                             </button>
                           </li>
                         </ul>
@@ -781,7 +781,7 @@ const RFQList: React.FC = () => {
                                       onClick={() => handleExportToPastel(rfq.id)}
                                       className="btn btn-outline-info btn-sm"
                                   >
-                                    
+                                    📤
                                   </button>
                               )}
                             </div>

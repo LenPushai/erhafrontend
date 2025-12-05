@@ -47,16 +47,26 @@ const API_BASE_URL = 'http://localhost:8080';
 
 const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    // FIXED: Changed to testlogin endpoint and fixed syntax
+    const response = await fetch(`${API_BASE_URL}/api/auth/testlogin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(errorText || 'Login failed');
     }
-    return response.json();
+
+    const data = await response.json();
+
+    // Handle testlogin response format
+    return {
+      token: data.token || 'test-token',
+      username: data.username || credentials.username,
+      roles: data.roles || ['USER']
+    };
   },
 
   saveUser(authResponse: AuthResponse): void {

@@ -16,6 +16,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { clientService } from '../../services/clientService';
+import { PastelExportButton } from '../../components/common/PastelExportButton';
 
 interface Client {
   id: number;
@@ -179,6 +180,7 @@ const ClientsList: React.FC = () => {
             {filteredClients.length} of {clients.length} clients
           </p>
         </div>
+        <PastelExportButton exportType="allClients" variant="success" className="me-2" />
         <button
           className="btn btn-primary"
           onClick={() => navigate('/clients/new')}
