@@ -1,0 +1,30 @@
+﻿// Job interface - central type definition
+export type Job = {
+  jobId: number;
+  jobNumber: string;
+  fullJobNumber?: string;
+  rfqId?: number;
+  parentJobId?: number;
+  jobSequence?: string;
+  isParentJob: boolean;
+  billingType: string;
+  creationSource: string;
+  jobType: string;
+  description: string;
+  location: string;
+  clientId: number;
+  department: string;
+  orderNumber?: string;
+  orderReceivedDate?: string;
+  orderValueExcl?: number;
+  orderValueIncl?: number;
+  expectedDeliveryDate?: string;
+  status: string;
+  priority: string;
+  progressPercentage: number;
+  createdBy: string;
+  createdDate: string;
+  lastModifiedBy: string;
+  lastModifiedDate: string;
+  childJob: boolean;
+};

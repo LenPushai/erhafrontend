@@ -12,7 +12,7 @@ export interface RFQ {
   contactEmail: string;
   contactPhone: string;
   projectName: string;
-  description: string;
+  description: string;q
   receivedDate: string;
   requiredBy: string;
   priority: string;

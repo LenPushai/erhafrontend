@@ -15,8 +15,7 @@ import {
   ChevronDown,
   LogOut
 } from 'lucide-react';
-import { quoteService } from '../../services/quoteService';
-import { jobService } from '../../services/jobService';
+import jobService from '../../services/jobService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface NavItem {
@@ -37,8 +36,7 @@ const MainLayout: React.FC = () => {
   // Dynamic counts state
   const [counts, setCounts] = useState({
     activeRfqs: 0,
-    activeQuotes: 0,
-    activeJobs: 0
+        activeJobs: 0
   });
 
   // Fetch counts on mount and periodically
@@ -51,18 +49,16 @@ const MainLayout: React.FC = () => {
   const fetchCounts = async () => {
     try {
       // Fetch all data in parallel
-      const [rfqs, quotes, jobs] = await Promise.all([
+      const [rfqs, jobs] = await Promise.all([
         fetch('http://localhost:8080/api/v1/rfqs').then(r => r.json()).then(data => Array.isArray(data) ? data : (data.content || [])).catch(() => []),
-        quoteService.getAllQuotes().catch(() => []),
-        jobService.getAllJobs().catch(() => [])
+                jobService.getAllJobs().catch(() => [])
       ]);
 
       // Count TOTAL items
       const activeRfqs = rfqs.length;
-      const activeQuotes = quotes.length;
-      const activeJobs = jobs.length;
+            const activeJobs = jobs.length;
 
-      setCounts({ activeRfqs, activeQuotes, activeJobs });
+      setCounts({ activeRfqs, activeJobs });
     } catch (error) {
       console.error('Error fetching counts:', error);
     }
@@ -105,14 +101,7 @@ const MainLayout: React.FC = () => {
       label: 'RFQs',
       badge: counts.activeRfqs,
       badgeColor: 'primary'
-    },
-    {
-      path: '/quotes',
-      icon: <FileSpreadsheet size={20} />,
-      label: 'Quotes',
-      badge: counts.activeQuotes,
-      badgeColor: 'info'
-    },
+    },
     {
       path: '/jobs',
       icon: <Briefcase size={20} />,
@@ -314,7 +303,7 @@ const MainLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Sidebar Overlay for Mobile */}
+      {/* Sidebar Overlay for Mobile */},
       {sidebarOpen && (
         <div
           className="d-md-none"
@@ -330,8 +319,8 @@ const MainLayout: React.FC = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Click outside to close user menu */}
+,
+      {/* Click outside to close user menu */},
       {userMenuOpen && (
         <div
           style={{
@@ -345,7 +334,7 @@ const MainLayout: React.FC = () => {
           onClick={() => setUserMenuOpen(false)}
         />
       )}
-
+,
       {/* Custom Styles */}
       <style>{`
         .hover-bg-secondary:hover {

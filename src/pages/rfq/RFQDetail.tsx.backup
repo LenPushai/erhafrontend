@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -96,20 +96,20 @@ const RFQDetail: React.FC = () => {
   };
 
   const handleCreateJob = async () => {
-    if (!window.confirm('Create a new Job Card from this RFQ? This will start the production workflow.')) return;
+    if (!window.confirm('Create a new Job from this RFQ? This will start the production workflow.')) return;
 
     try {
       setCreatingJob(true);
       const response = await axios.post(`http://localhost:8080/api/v1/jobs/from-rfq/${id}`);
       const jobId = response.data.id || response.data.jobId;
 
-      alert('Job Card created successfully!');
+      alert('Job created successfully!');
       fetchRfq(); // Refresh to show job link
 
       // Navigate to job card
       navigate(`/jobs/${jobId}`);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create Job Card');
+      alert(err.response?.data?.message || 'Failed to create Job');
       console.error(err);
     } finally {
       setCreatingJob(false);
@@ -444,7 +444,7 @@ const RFQDetail: React.FC = () => {
                       <div className="col-12">
                         <Link to={`/jobs/${rfq.jobId}`} className="btn btn-primary">
                           <i className="bi bi-eye me-2"></i>
-                          View Job Card
+                          View Job
                         </Link>
                       </div>
                     </div>
@@ -511,10 +511,10 @@ const RFQDetail: React.FC = () => {
                             disabled={creatingJob}
                         >
                           <i className="bi bi-plus-circle me-2"></i>
-                          {creatingJob ? 'Creating...' : 'Create Job Card'}
+                          {creatingJob ? 'Creating...' : 'Create New Job'}
                         </button>
                         <small className="text-muted text-center">
-                          Order received - ready to start production
+                          Order received - ready to create job
                         </small>
                       </>
                   )}
@@ -525,7 +525,7 @@ const RFQDetail: React.FC = () => {
                         <hr />
                         <Link to={`/jobs/${rfq.jobId}`} className="btn btn-primary btn-lg">
                           <i className="bi bi-briefcase me-2"></i>
-                          View Job Card
+                          View Job
                         </Link>
                       </>
                   )}

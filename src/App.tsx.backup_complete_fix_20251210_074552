@@ -8,8 +8,10 @@ import MainLayout from './components/layout/MainLayout'
 import AdminDashboard from './components/dashboard/roles/AdminDashboard'
 import RFQList from './pages/rfq/RFQList'
 import CreateRFQ from './pages/rfq/CreateRFQ'
+import ApproveQuote from './pages/quotes/ApproveQuote'
 import RFQDetail from './pages/rfq/RFQDetail'
 import RFQEdit from './pages/rfq/RFQEdit'
+import QuotesList from './pages/quotes/QuotesList'
 import JobsList from './pages/jobs/JobsList'
 import JobDetail from './pages/jobs/JobDetail'
 import JobEdit from './pages/jobs/JobEdit'
@@ -44,7 +46,14 @@ function App() {
             <Route path="rfq/:id" element={<RFQDetail />} />
             <Route path="rfq/:id/edit" element={<RFQEdit />} />
             
-            {/* Quotes Routes - create before :id */}            {/* Jobs Routes */}
+            {/* Quotes Routes - create before :id */}
+            <Route path="quotes" element={<QuotesList />} />
+            <Route path="quotes/approve" element={<ApproveQuote />} />
+            <Route path="quotes/create" element={<CreateQuote />} />
+            <Route path="quotes/:id" element={<QuoteDetail />} />
+            <Route path="quotes/:id/edit" element={<QuoteEdit />} />
+            
+            {/* Jobs Routes */}
             <Route path="jobs" element={<JobsList />} />
             <Route path="jobs/:id" element={<JobDetail />} />
             <Route path="jobs/:id/edit" element={<JobEdit />} />

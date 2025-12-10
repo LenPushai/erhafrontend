@@ -88,7 +88,7 @@ const RFQList: React.FC = () => {
       totalValue,
       draft: statusCounts['Draft'] || 0,
       pending: statusCounts['Pending Clarification'] || 0,
-      approved: statusCounts['Approved'] || 0,
+      approved: statusCounts['Ready for Quote'] || 0,
       completed: statusCounts['Completed'] || 0,
       urgent: priorityCounts['Urgent'] || 0,
       high: priorityCounts['High'] || 0,
@@ -102,8 +102,8 @@ const RFQList: React.FC = () => {
       'Draft': { class: 'bg-secondary text-white', icon: '' },
       'Pending Clarification': { class: 'bg-warning text-dark', icon: '' },
       'Under Review': { class: 'bg-info text-white', icon: '' },
-      'Approved': { class: 'bg-success text-white', icon: '' },
-      'Ready to Quote': { class: 'bg-primary text-white', icon: '' },
+      'Ready for Quote': { class: 'bg-primary text-white', icon: '' },
+      'Quoted': { class: 'bg-success text-white', icon: '' },
       'Completed': { class: 'bg-success text-white', icon: '' },
       'Won': { class: 'bg-success text-white', icon: '' },
       'Lost': { class: 'bg-danger text-white', icon: '' }
@@ -123,7 +123,11 @@ const RFQList: React.FC = () => {
   };
 
   const canExport = (status: string) => {
-    return ['Approved', 'Ready to Quote', 'Completed'].includes(status);
+    // Match Java enum display names (via @JsonValue toString())
+    // READY_FOR_QUOTE → "Ready for Quote"
+    // QUOTED → "Quoted"
+    // COMPLETED → "Completed"
+    return ['Ready for Quote', 'Quoted', 'Completed'].includes(status);
   };
 
   const handleSort = (field: SortField) => {
@@ -415,7 +419,7 @@ const RFQList: React.FC = () => {
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
-                      <p className="text-success small fw-semibold mb-1">Approved</p>
+                      <p className="text-success small fw-semibold mb-1">Ready to Quote</p>
                       <h2 className="h3 fw-bold text-success mb-0">{metrics.approved}</h2>
                     </div>
                     <span className="fs-1"></span>
@@ -452,14 +456,14 @@ const RFQList: React.FC = () => {
                       className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'}`}
                       onClick={() => setViewMode('table')}
                   >
-                     Table
+                    Table
                   </button>
                   <button
                       type="button"
                       className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-outline-secondary'}`}
                       onClick={() => setViewMode('cards')}
                   >
-                     Cards
+                    Cards
                   </button>
                 </div>
               </div>
@@ -487,7 +491,8 @@ const RFQList: React.FC = () => {
                     <option value="all"> All Statuses</option>
                     <option value="Draft"> Draft</option>
                     <option value="Pending Clarification"> Pending Clarification</option>
-                    <option value="Approved"> Approved</option>
+                    <option value="Ready for Quote"> Ready for Quote</option>
+                    <option value="Quoted"> Quoted</option>
                     <option value="Completed"> Completed</option>
                   </select>
                 </div>
@@ -528,7 +533,7 @@ const RFQList: React.FC = () => {
                           onClick={handleBulkExport}
                           className="btn btn-info btn-sm fw-semibold"
                       >
-                         Export to Pastel
+                        Export to Pastel
                       </button>
                     </div>
                     <button
@@ -637,14 +642,14 @@ const RFQList: React.FC = () => {
                                         className="btn btn-sm btn-outline-primary"
                                         title="View"
                                     >
-                                      
+
                                     </button>
                                     <button
                                         onClick={() => navigate(`/rfq/${rfq.id}/edit`)}
                                         className="btn btn-sm btn-outline-secondary"
                                         title="Edit"
                                     >
-                                      
+
                                     </button>
                                     {canExport(rfq.status) ? (
                                         <button
@@ -652,11 +657,11 @@ const RFQList: React.FC = () => {
                                             className="btn btn-sm btn-outline-info"
                                             title="Export"
                                         >
-                                          
+
                                         </button>
                                     ) : (
                                         <button className="btn btn-sm btn-outline-secondary disabled" title="Cannot export">
-                                          
+
                                         </button>
                                     )}
                                   </div>
@@ -685,7 +690,7 @@ const RFQList: React.FC = () => {
                                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                 disabled={currentPage === 1}
                             >
-                               Previous
+                              Previous
                             </button>
                           </li>
                           <li className="page-item active">
@@ -699,7 +704,7 @@ const RFQList: React.FC = () => {
                                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                 disabled={currentPage === totalPages}
                             >
-                              Next 
+                              Next
                             </button>
                           </li>
                         </ul>
@@ -781,7 +786,7 @@ const RFQList: React.FC = () => {
                                       onClick={() => handleExportToPastel(rfq.id)}
                                       className="btn btn-outline-info btn-sm"
                                   >
-                                    
+
                                   </button>
                               )}
                             </div>

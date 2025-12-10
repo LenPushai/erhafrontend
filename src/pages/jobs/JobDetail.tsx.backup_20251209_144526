@@ -1,0 +1,398 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Chip,
+  Button,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  LinearProgress
+} from '@mui/material';
+import {
+  Edit as EditIcon,
+  Add as AddIcon,
+  Assignment as AssignmentIcon
+} from '@mui/icons-material';
+import * as jobServiceModule from '../../services/jobService';
+import { templateService } from '../../services/templateService';
+
+// Wrap jobService
+const jobService = {
+  getJobById: jobServiceModule.getJobById,
+  getChildJobs: jobServiceModule.getChildJobs,
+  createChildJobs: jobServiceModule.createChildJobs,
+  addTasksToJob: jobServiceModule.addTasksToJob
+};
+
+interface Job {
+  jobId: number;
+  jobNumber: string;
+  fullJobNumber?: string;
+  rfqId?: number;
+  quoteId?: number;
+  clientId?: number;
+  description: string;
+  department: string;
+  location: string;
+  jobType?: string;
+  status: string;
+  priority: string;
+  progressPercentage: number;
+  orderNumber?: string;
+  orderValue?: number;
+  expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  remarks?: string;
+  isParentJob?: boolean;
+  parentJobId?: number;
+}
+
+interface ChildJob {
+  description: string;
+  department: string;
+  location: string;
+  priority: string;
+}
+
+interface TaskTemplate {
+  id: number;
+  name: string;
+  category: string;
+  estimatedHours: number;
+  tasks: TemplateTask[];
+}
+
+interface TemplateTask {
+  taskName: string;
+  description: string;
+  estimatedHours: number;
+  sequence: number;
+}
+
+const JobDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  // CRITICAL FIX: Redirect /jobs/create to /jobs
+  if (id === 'create') {
+    return <Navigate to="/jobs" replace />;
+  }
+
+  // CRITICAL FIX: Validate ID is a positive number
+  const jobId = parseInt(id || '', 10);
+
+  if (isNaN(jobId) || jobId <= 0) {
+    return (
+      <Box p={3}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Invalid Job ID "{id}" - must be a positive number
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/jobs')}>
+          Back to Jobs List
+        </Button>
+      </Box>
+    );
+  }
+
+  const [job, setJob] = useState<Job | null>(null);
+  const [childJobs, setChildJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [openChildDialog, setOpenChildDialog] = useState(false);
+  const [openTemplateDialog, setOpenTemplateDialog] = useState(false);
+  const [childJobCount, setChildJobCount] = useState(1);
+  const [childJobsData, setChildJobsData] = useState<ChildJob[]>([{
+    description: '',
+    department: 'FABRICATION',
+    location: 'SASOLBURG',
+    priority: 'MEDIUM'
+  }]);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadJobData();
+  }, [jobId]);
+
+  const loadJobData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [jobData, childJobsData] = await Promise.all([
+        jobService.getJobById(jobId),
+        jobService.getChildJobs(jobId)
+      ]);
+
+      setJob(jobData);
+      setChildJobs(childJobsData || []);
+    } catch (err: any) {
+      console.error('Error loading job:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load job details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const data = await templateService.getAllTemplates();
+      setTemplates(data);
+    } catch (err) {
+      console.error('Error loading templates:', err);
+    }
+  };
+
+  const handleOpenChildDialog = () => {
+    setChildJobCount(1);
+    setChildJobsData([{
+      description: '',
+      department: 'FABRICATION',
+      location: 'SASOLBURG',
+      priority: 'MEDIUM'
+    }]);
+    setOpenChildDialog(true);
+  };
+
+  const handleOpenTemplateDialog = () => {
+    loadTemplates();
+    setOpenTemplateDialog(true);
+  };
+
+  const handleChildJobCountChange = (count: number) => {
+    const validCount = Math.min(Math.max(1, count), 50);
+    setChildJobCount(validCount);
+
+    const newData = Array(validCount).fill(null).map((_, index) => ({
+      description: childJobsData[index]?.description || `${job?.description} - Part ${index + 1}`,
+      department: childJobsData[index]?.department || 'FABRICATION',
+      location: childJobsData[index]?.location || 'SASOLBURG',
+      priority: childJobsData[index]?.priority || 'MEDIUM'
+    }));
+
+    setChildJobsData(newData);
+  };
+
+  const handleChildJobChange = (index: number, field: keyof ChildJob, value: string) => {
+    const newData = [...childJobsData];
+    newData[index] = { ...newData[index], [field]: value };
+    setChildJobsData(newData);
+  };
+
+  const handleCreateChildJobs = async () => {
+    try {
+      await jobService.createChildJobs(jobId, childJobsData);
+      setOpenChildDialog(false);
+      loadJobData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to create child jobs');
+    }
+  };
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) return;
+
+    try {
+      const template = templates.find(t => t.id === selectedTemplate);
+      if (!template) return;
+
+      const tasks = template.tasks.map(t => ({
+        taskName: t.taskName,
+        description: t.description,
+        estimatedHours: t.estimatedHours,
+        sequence: t.sequence,
+        status: 'PENDING'
+      }));
+
+      await jobService.addTasksToJob(jobId, tasks);
+      setOpenTemplateDialog(false);
+      alert('Template applied successfully!');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to apply template');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'NOT_STARTED': return 'default';
+      case 'IN_PROGRESS': return 'primary';
+      case 'ON_HOLD': return 'warning';
+      case 'COMPLETED': return 'success';
+      case 'CANCELLED': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'LOW': return 'success';
+      case 'MEDIUM': return 'warning';
+      case 'HIGH': return 'error';
+      case 'URGENT': return 'error';
+      default: return 'default';
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box p={3}>
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        <Button variant="contained" onClick={() => navigate('/jobs')}>
+          Back to Jobs List
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!job) {
+    return (
+      <Box p={3}>
+        <Alert severity="warning" sx={{ mb: 2 }}>Job not found</Alert>
+        <Button variant="contained" onClick={() => navigate('/jobs')}>
+          Back to Jobs List
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <Box p={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">
+          Job Details: {job.fullJobNumber || job.jobNumber}
+        </Typography>
+        <Button variant="contained" onClick={() => navigate('/jobs')}>
+          Back to List
+        </Button>
+      </Box>
+
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Job Information</Typography>
+              <Box mb={2}>
+                <Typography variant="body2" color="text.secondary">Description</Typography>
+                <Typography variant="body1">{job.description}</Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant="body2" color="text.secondary">Department</Typography>
+                <Typography variant="body1">{job.department}</Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant="body2" color="text.secondary">Location</Typography>
+                <Typography variant="body1">{job.location}</Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant="body2" color="text.secondary">Status</Typography>
+                <Chip label={job.status} color={getStatusColor(job.status)} size="small" />
+              </Box>
+              <Box mb={2}>
+                <Typography variant="body2" color="text.secondary">Priority</Typography>
+                <Chip label={job.priority} color={getPriorityColor(job.priority)} size="small" />
+              </Box>
+              <Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Progress: {job.progressPercentage}%
+                </Typography>
+                <LinearProgress variant="determinate" value={job.progressPercentage} sx={{ height: 8, borderRadius: 4 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Additional Details</Typography>
+              {job.orderNumber && (
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">Order Number</Typography>
+                  <Typography variant="body1">{job.orderNumber}</Typography>
+                </Box>
+              )}
+              {job.orderValue && (
+                <Box mb={2}>
+                  <Typography variant="body2" color="text.secondary">Order Value</Typography>
+                  <Typography variant="body1">R {job.orderValue.toLocaleString()}</Typography>
+                </Box>
+              )}
+              {job.remarks && (
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Remarks</Typography>
+                  <Typography variant="body1">{job.remarks}</Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Box mt={4}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h5">Child Jobs ({childJobs.length})</Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenChildDialog}>
+            Create Child Jobs
+          </Button>
+        </Box>
+
+        {childJobs.length > 0 ? (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Job Number</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Progress</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {childJobs.map((child) => (
+                  <TableRow key={child.jobId}>
+                    <TableCell>{child.fullJobNumber || child.jobNumber}</TableCell>
+                    <TableCell>{child.description}</TableCell>
+                    <TableCell>
+                      <Chip label={child.status} color={getStatusColor(child.status)} size="small" />
+                    </TableCell>
+                    <TableCell>{child.progressPercentage}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Alert severity="info">No child jobs yet.</Alert>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default JobDetail;

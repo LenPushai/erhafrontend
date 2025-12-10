@@ -166,7 +166,7 @@ const JobDetail: React.FC = () => {
               </div>
               <div className="d-flex gap-2">
                 <button
-                    onClick={() => navigate(`/jobs/${job.jobId}/edit`)}
+                    onClick={() => navigate(`/jobs/${job.id}/edit`)}
                     className="btn btn-warning fw-semibold"
                     style={{ borderRadius: '8px' }}
                 >
@@ -373,7 +373,7 @@ const JobDetail: React.FC = () => {
                 <div className="card-body">
                   <div className="d-grid gap-2">
                     <button
-                        onClick={() => navigate(`/jobs/${job.jobId}/edit`)}
+                        onClick={() => navigate(`/jobs/${job.id}/edit`)}
                         className="btn btn-outline-primary"
                     >
                       ✏️ Edit Job Details
@@ -422,5 +422,3 @@ const JobDetail: React.FC = () => {
 };
 
 export default JobDetail;
-
-

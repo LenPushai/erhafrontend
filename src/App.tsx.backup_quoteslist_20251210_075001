@@ -44,7 +44,14 @@ function App() {
             <Route path="rfq/:id" element={<RFQDetail />} />
             <Route path="rfq/:id/edit" element={<RFQEdit />} />
             
-            {/* Quotes Routes - create before :id */}            {/* Jobs Routes */}
+            {/* Quotes Routes - create before :id */}
+            <Route path="quotes" element={<QuotesList />} />
+            <Route path="quotes/approve" element={<ApproveQuote />} />
+            <Route path="quotes/create" element={<CreateQuote />} />
+            <Route path="quotes/:id" element={<QuoteDetail />} />
+            <Route path="quotes/:id/edit" element={<QuoteEdit />} />
+            
+            {/* Jobs Routes */}
             <Route path="jobs" element={<JobsList />} />
             <Route path="jobs/:id" element={<JobDetail />} />
             <Route path="jobs/:id/edit" element={<JobEdit />} />

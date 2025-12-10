@@ -206,7 +206,7 @@ export default function RFQEdit() {
 
         await rfqService.updateRfq(Number(id), updateData);
         alert('RFQ updated successfully!');
-        navigate(`/rfq/${id}`);
+        navigate(`/rfqs/${id}`);
       }
     } catch (err: any) {
       console.error('Error saving RFQ:', err);
