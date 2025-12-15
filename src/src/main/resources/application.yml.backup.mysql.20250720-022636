@@ -1,0 +1,151 @@
+# ERHA OPS Quote Management Module Configuration
+# Enhanced for Quality & Safety Integration
+
+spring:
+  application:
+    name: erha-ops-quote-management
+    version: 7.0.0
+
+  profiles:
+    active: development
+
+  # Development profile uses H2 for easy setup
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+    
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+server:
+  port: 8082
+  servlet:
+    context-path: /api/v1
+
+logging:
+  level:
+    com.erha.quote: DEBUG
+    com.erha.ops: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/quote-management.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  jwt:
+    secret: erha-ops-quote-management-jwt-secret-key-2025-safety-first
+    expiration: 86400000 # 24 hours
+
+# ERHA OPS Specific Configuration
+erha:
+  ops:
+    quote:
+      auto-numbering:
+        enabled: true
+        prefix: "QUO"
+        format: "QUO-{year}-{sequence:05d}"
+      quality:
+        default-percentage: 5.0
+        risk-multiplier:
+          low: 1.0
+          medium: 1.5
+          high: 2.0
+          critical: 3.0
+      safety:
+        assessment:
+          enabled: true
+          auto-calculate: true
+          thresholds:
+            low: 25
+            medium: 50
+            high: 75
+            critical: 90
+      approval:
+        workflow:
+          enabled: true
+          levels:
+            - technical
+            - quality
+            - safety
+            - financial
+            - management
+        timeout-hours: 48
+
+---
+# Production profile with PostgreSQL
+spring:
+  config:
+    activate:
+      on-profile: production
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/erha_ops_quotes
+    username: erha_user
+    password: erha_secure_password
+    driver-class-name: org.postgresql.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    com.erha.quote: INFO
+    com.erha.ops: INFO
+    org.springframework.security: WARN
+
+---
+# Test profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false

@@ -1,4 +1,4 @@
-﻿// ProtectedRoute.tsx - Component to protect routes requiring authentication
+// ProtectedRoute.tsx - Component to protect routes requiring authentication
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';

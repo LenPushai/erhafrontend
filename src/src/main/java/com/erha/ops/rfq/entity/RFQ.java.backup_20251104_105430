@@ -1,0 +1,127 @@
+package com.erha.ops.rfq.entity;
+
+import com.erha.ops.rfq.enums.RfqStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+@Entity
+@Table(name = "rfqs", indexes = {
+        @Index(name = "idx_rfq_status", columnList = "status"),
+        @Index(name = "idx_rfq_job_no", columnList = "job_no")
+})
+public class RFQ {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "job_no", unique = true, nullable = false, length = 20)
+    private String jobNo;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "estimated_value", precision = 19, scale = 2)
+    private BigDecimal estimatedValue;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    private RfqStatus status = RfqStatus.DRAFT;
+
+    @Column(name = "department", length = 100)
+    private String department;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    @Column(name = "required_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private java.time.LocalDate requiredDate;
+    @Column(name = "assigned_to", length = 100)
+    private String assignedTo;
+
+    // Default constructor
+    public RFQ() {}
+
+    // Constructor with key fields
+    public RFQ(String jobNo, String description, BigDecimal estimatedValue, RfqStatus status) {
+        this.jobNo = jobNo;
+        this.description = description;
+        this.estimatedValue = estimatedValue;
+        this.status = status;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
+    }
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getJobNo() { return jobNo; }
+    public void setJobNo(String jobNo) { this.jobNo = jobNo; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public BigDecimal getEstimatedValue() { return estimatedValue; }
+    public void setEstimatedValue(BigDecimal estimatedValue) { this.estimatedValue = estimatedValue; }
+
+    public RfqStatus getStatus() { return status; }
+    public void setStatus(RfqStatus status) { this.status = status; }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public java.time.LocalDate getRequiredDate() { return requiredDate; }
+    public void setRequiredDate(java.time.LocalDate requiredDate) { this.requiredDate = requiredDate; }
+
+    
+    public String getAssignedTo() { return assignedTo; }
+    public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RFQ rfq = (RFQ) o;
+        return Objects.equals(id, rfq.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RFQ{id=%d, jobNo='%s', status=%s, value=%s, desc='%s'}",
+                id, jobNo, status, estimatedValue,
+                description != null ? description.substring(0, Math.min(50, description.length())) : "null");
+    }
+}
+
+

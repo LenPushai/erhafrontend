@@ -1,1 +1,1 @@
-﻿[... paste Step 1 content ...]
+[... paste Step 1 content ...]

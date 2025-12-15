@@ -1,0 +1,375 @@
+package com.erha.ops.controller;
+
+import com.erha.ops.entity.Quote;
+import com.erha.ops.entity.Job;
+import com.erha.ops.service.QuoteService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import com.erha.ops.dto.ApprovalPinResponse;
+import com.erha.ops.dto.ApprovePinRequest;
+import com.erha.ops.service.QuoteApprovalService;
+
+@RestController
+@RequestMapping("/api/v1/quotes")
+@CrossOrigin(origins = "*")
+public class QuoteController {
+
+    private static final Logger logger = LoggerFactory.getLogger(QuoteController.class);
+
+    @Autowired
+    private QuoteService quoteService;
+    @Autowired
+    private QuoteApprovalService quoteApprovalService;
+
+    // Get all quotes
+    @GetMapping
+    public ResponseEntity<List<Quote>> getAllQuotes() {
+        logger.info("Fetching all quotes");
+        try {
+            List<Quote> quotes = quoteService.getAllQuotes();
+            logger.info("Found {} quotes", quotes.size());
+            return ResponseEntity.ok(quotes);
+        } catch (Exception e) {
+            logger.error("Error fetching quotes: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quote by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Quote> getQuoteById(@PathVariable Long id) {
+        logger.info("Fetching quote by ID: {}", id);
+        try {
+            Optional<Quote> quote = quoteService.getQuoteById(id);
+            if (quote.isPresent()) {
+                logger.info("Found quote: {}", quote.get().getQuoteNumber());
+                return ResponseEntity.ok(quote.get());
+            } else {
+                logger.warn("Quote not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching quote: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quote by quote number
+    @GetMapping("/number/{quoteNumber}")
+    public ResponseEntity<Quote> getQuoteByNumber(@PathVariable String quoteNumber) {
+        logger.info("Fetching quote by number: {}", quoteNumber);
+        try {
+            Optional<Quote> quote = quoteService.getQuoteByNumber(quoteNumber);
+            if (quote.isPresent()) {
+                logger.info("Found quote: {}", quote.get().getQuoteNumber());
+                return ResponseEntity.ok(quote.get());
+            } else {
+                logger.warn("Quote not found with number: {}", quoteNumber);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching quote: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quotes by RFQ ID
+    @GetMapping("/rfq/{rfqId}")
+    public ResponseEntity<List<Quote>> getQuotesByRfqId(@PathVariable Long rfqId) {
+        logger.info("Fetching quotes for RFQ ID: {}", rfqId);
+        try {
+            List<Quote> quotes = quoteService.getQuotesByRfqId(rfqId);
+            logger.info("Found {} quotes for RFQ {}", quotes.size(), rfqId);
+            return ResponseEntity.ok(quotes);
+        } catch (Exception e) {
+            logger.error("Error fetching quotes by RFQ: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quotes by client ID
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<Quote>> getQuotesByClientId(@PathVariable Long clientId) {
+        logger.info("Fetching quotes for client ID: {}", clientId);
+        try {
+            List<Quote> quotes = quoteService.getQuotesByClientId(clientId);
+            logger.info("Found {} quotes for client {}", quotes.size(), clientId);
+            return ResponseEntity.ok(quotes);
+        } catch (Exception e) {
+            logger.error("Error fetching quotes by client: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quotes by status
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Quote>> getQuotesByStatus(@PathVariable String status) {
+        logger.info("Fetching quotes by status: {}", status);
+        try {
+            Quote.QuoteStatus quoteStatus = Quote.QuoteStatus.valueOf(status.toUpperCase());
+            List<Quote> quotes = quoteService.getQuotesByStatus(quoteStatus);
+            logger.info("Found {} quotes with status {}", quotes.size(), quoteStatus);
+            return ResponseEntity.ok(quotes);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid status '{}': {}", status, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("Error fetching quotes by status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Create new quote
+    @PostMapping
+    public ResponseEntity<Quote> createQuote(@RequestBody Quote quote) {
+        logger.info("Creating new quote: {}", quote.getQuoteNumber());
+        try {
+            Quote createdQuote = quoteService.createQuote(quote);
+            logger.info("? Created quote: {} for RFQ {}", createdQuote.getQuoteNumber(), createdQuote.getRfqId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdQuote);
+        } catch (Exception e) {
+            logger.error("? Error creating quote: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Update quote (full update)
+    @PutMapping("/{id}")
+    public ResponseEntity<Quote> updateQuote(@PathVariable Long id, @RequestBody Quote quote) {
+        logger.info("Updating quote with ID: {}", id);
+        try {
+            Quote updatedQuote = quoteService.updateQuote(id, quote);
+            logger.info("? Updated quote: {}", updatedQuote.getQuoteNumber());
+            return ResponseEntity.ok(updatedQuote);
+        } catch (RuntimeException e) {
+            logger.warn("Quote not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("? Error updating quote: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Partial update quote (for status changes, etc.)
+    @PatchMapping("/{id}")
+    public ResponseEntity<Quote> partialUpdateQuote(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        logger.info("Partial update quote with ID: {} - Fields: {}", id, updates.keySet());
+
+        try {
+            Optional<Quote> existingQuote = quoteService.getQuoteById(id);
+
+            if (existingQuote.isEmpty()) {
+                logger.warn("Quote not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            Quote quote = existingQuote.get();
+
+            // Update only provided fields
+            if (updates.containsKey("quoteNumber")) {
+                quote.setQuoteNumber((String) updates.get("quoteNumber"));
+            }
+            if (updates.containsKey("rfqId")) {
+                quote.setRfqId(Long.valueOf(updates.get("rfqId").toString()));
+            }
+            if (updates.containsKey("clientId")) {
+                quote.setClientId(Long.valueOf(updates.get("clientId").toString()));
+            }
+            if (updates.containsKey("quoteDate")) {
+                String dateStr = (String) updates.get("quoteDate");
+                quote.setQuoteDate(LocalDate.parse(dateStr));
+            }
+            if (updates.containsKey("validUntilDate")) {
+                String dateStr = (String) updates.get("validUntilDate");
+                quote.setValidUntilDate(LocalDate.parse(dateStr));
+            }
+            if (updates.containsKey("valueExclVat")) {
+                Object value = updates.get("valueExclVat");
+                quote.setValueExclVat(new BigDecimal(value.toString()));
+            }
+            if (updates.containsKey("valueInclVat")) {
+                Object value = updates.get("valueInclVat");
+                quote.setValueInclVat(new BigDecimal(value.toString()));
+            }
+            if (updates.containsKey("quoteStatus")) {
+                String statusStr = (String) updates.get("quoteStatus");
+                quote.setQuoteStatus(Quote.QuoteStatus.valueOf(statusStr.toUpperCase()));
+                logger.info("?? Changing quote {} status to: {}", quote.getQuoteNumber(), statusStr);
+            }
+            if (updates.containsKey("notes")) {
+                quote.setNotes((String) updates.get("notes"));
+            }
+            if (updates.containsKey("jobId")) {
+                quote.setJobId(Long.valueOf(updates.get("jobId").toString()));
+                logger.info("?? Linking quote {} to job ID: {}", quote.getQuoteNumber(), updates.get("jobId"));
+            }
+
+            Quote updatedQuote = quoteService.updateQuote(id, quote);
+            logger.info("? Partial update successful for quote: {}", updatedQuote.getQuoteNumber());
+            return ResponseEntity.ok(updatedQuote);
+
+        } catch (Exception e) {
+            logger.error("? Error in partial update: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Delete quote
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteQuote(@PathVariable Long id) {
+        logger.info("Deleting quote with ID: {}", id);
+        try {
+            Optional<Quote> quote = quoteService.getQuoteById(id);
+            if (quote.isEmpty()) {
+                logger.warn("Quote not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            quoteService.deleteQuote(id);
+            logger.info("? Deleted quote: {}", quote.get().getQuoteNumber());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Quote deleted successfully");
+            response.put("quoteId", id);
+            response.put("quoteNumber", quote.get().getQuoteNumber());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("? Error deleting quote: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Get quote statistics
+    @GetMapping("/statistics")
+    public ResponseEntity<QuoteService.QuoteStatistics> getQuoteStatistics() {
+        logger.info("Fetching quote statistics");
+        try {
+            QuoteService.QuoteStatistics stats = quoteService.getQuoteStatistics();
+            logger.info("Statistics: Total={}, Draft={}, Submitted={}, Accepted={}, Rejected={}",
+                    stats.getTotalQuotes(), stats.getDraftQuotes(),
+                    stats.getSubmittedQuotes(), stats.getAcceptedQuotes(),
+                    stats.getRejectedQuotes());
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("Error fetching statistics: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Create quote revision (new quote based on existing one)
+    @PostMapping("/{id}/revisions")
+    public ResponseEntity<Quote> createRevision(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> changes) {
+        logger.info("Creating revision for quote ID: {}", id);
+
+        try {
+            Optional<Quote> existingQuote = quoteService.getQuoteById(id);
+
+            if (existingQuote.isEmpty()) {
+                logger.warn("Quote not found with ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+
+            Quote originalQuote = existingQuote.get();
+
+            // Create new quote based on original
+            Quote revision = new Quote();
+            revision.setQuoteNumber(originalQuote.getQuoteNumber() + "-R" + System.currentTimeMillis() % 1000);
+            revision.setRfqId(originalQuote.getRfqId());
+            revision.setClientId(originalQuote.getClientId());
+            revision.setQuoteDate(LocalDate.now());
+            revision.setValidUntilDate(LocalDate.now().plusDays(30));
+            revision.setValueExclVat(originalQuote.getValueExclVat());
+            revision.setValueInclVat(originalQuote.getValueInclVat());
+            revision.setQuoteStatus(Quote.QuoteStatus.DRAFT);
+            revision.setNotes("Revision of " + originalQuote.getQuoteNumber() +
+                    (originalQuote.getNotes() != null ? "\n\n" + originalQuote.getNotes() : ""));
+
+            // Apply any changes from request
+            if (changes != null) {
+                if (changes.containsKey("valueExclVat")) {
+                    revision.setValueExclVat(new BigDecimal(changes.get("valueExclVat").toString()));
+                }
+                if (changes.containsKey("valueInclVat")) {
+                    revision.setValueInclVat(new BigDecimal(changes.get("valueInclVat").toString()));
+                }
+                if (changes.containsKey("notes")) {
+                    revision.setNotes(changes.get("notes") + "\n\nRevision of " + originalQuote.getQuoteNumber());
+                }
+            }
+
+            Quote createdRevision = quoteService.createQuote(revision);
+            logger.info("? Created revision: {} from {}", createdRevision.getQuoteNumber(), originalQuote.getQuoteNumber());
+
+            // Update original to SUPERSEDED
+            Map<String, Object> statusUpdate = new HashMap<>();
+            statusUpdate.put("quoteStatus", "SUPERSEDED");
+            partialUpdateQuote(id, statusUpdate);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdRevision);
+
+        } catch (Exception e) {
+            logger.error("? Error creating revision: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<Map<String, Object>> acceptQuote(@PathVariable Long id) {
+        logger.info("Accepting quote ID: {}", id);
+        
+        try {
+            Job job = quoteService.acceptQuote(id);
+            
+            logger.info("Quote {} accepted! Generated Job: {}", id, job.getJobNumber());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Quote accepted and job created successfully");
+            response.put("quoteId", id);
+            response.put("jobId", job.getJobId());
+            response.put("jobNumber", job.getJobNumber());
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (RuntimeException e) {
+            logger.error("Error accepting quote: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("quoteId", id);
+            
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+
+    // PIN Approval Endpoints
+    @PostMapping("/{id}/generate-approval-pin")
+    public ResponseEntity<ApprovalPinResponse> generateApprovalPin(@PathVariable Long id) {
+        return ResponseEntity.ok(quoteApprovalService.generateApprovalPin(id));
+    }
+
+    @PostMapping("/approve-with-pin")
+    public ResponseEntity<Quote> approveWithPin(@RequestBody ApprovePinRequest request) {
+        return ResponseEntity.ok(quoteApprovalService.approveWithPin(request));
+    }
+
+    @GetMapping("/{id}/pin-status")
+    public ResponseEntity<String> checkPinStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(quoteApprovalService.checkPinStatus(id));
+    }
+}

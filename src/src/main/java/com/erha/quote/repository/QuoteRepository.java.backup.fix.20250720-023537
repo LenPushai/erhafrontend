@@ -1,0 +1,57 @@
+package com.erha.quote.repository;
+
+import com.erha.quote.model.Quote;
+import com.erha.quote.model.QuoteStatus;
+import com.erha.quote.model.QuotePriority;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+public interface QuoteRepository extends JpaRepository<Quote, Long> {
+    
+    // Status operations
+    List<Quote> findByStatus(QuoteStatus status);
+    Page<Quote> findByStatus(QuoteStatus status, Pageable pageable);
+    Long countByStatus(QuoteStatus status);
+    
+    // Priority operations
+    List<Quote> findByPriority(QuotePriority priority);
+    
+    // Client operations
+    List<Quote> findByClientNameContainingIgnoreCase(String clientName);
+    
+    // Financial operations
+    List<Quote> findByTotalAmountGreaterThan(BigDecimal amount);
+    List<Quote> findByTotalAmountBetween(BigDecimal min, BigDecimal max);
+    
+    // Date operations
+    List<Quote> findByValidUntilBefore(LocalDateTime dateTime);
+    List<Quote> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    
+    // Advanced queries
+    @Query("SELECT q FROM Quote q WHERE q.validUntil < CURRENT_TIMESTAMP")
+    List<Quote> findExpiredQuotes();
+    
+    @Query("SELECT q FROM Quote q WHERE q.totalAmount >= :threshold ORDER BY q.totalAmount DESC")
+    List<Quote> findHighValueQuotes(@Param("threshold") BigDecimal threshold);
+    
+    @Query("SELECT q FROM Quote q ORDER BY q.createdAt DESC")
+    List<Quote> findRecentQuotes(Pageable pageable);
+    
+    @Query("SELECT SUM(q.totalAmount) FROM Quote q WHERE q.status = 'APPROVED'")
+    BigDecimal getTotalApprovedValue();
+    
+    @Query("SELECT AVG(q.totalAmount) FROM Quote q WHERE q.status = 'APPROVED'")
+    BigDecimal getAverageQuoteValue();
+    
+    @Query("SELECT q.status, COUNT(q) FROM Quote q GROUP BY q.status")
+    List<Object[]> getStatusCounts();
+}

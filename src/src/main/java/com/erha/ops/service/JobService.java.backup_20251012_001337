@@ -1,0 +1,259 @@
+package com.erha.ops.service;
+
+import com.erha.ops.entity.Job;
+import com.erha.ops.entity.Quote;
+import com.erha.ops.entity.WorkProgress;
+import com.erha.ops.repository.JobRepository;
+import com.erha.ops.repository.QuoteRepository;
+import com.erha.ops.repository.WorkProgressRepository;
+import com.erha.ops.dto.ConvertQuoteToJobRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Year;
+import java.util.*;
+
+@Service
+@Transactional
+public class JobService {
+    
+    @Autowired
+    private JobRepository jobRepository;
+    
+    @Autowired
+    private QuoteRepository quoteRepository;
+    
+    @Autowired
+    private WorkProgressRepository workProgressRepository;
+    
+    @Autowired
+    private NumberingSequenceService sequenceService;
+
+    public String generateJobNumber() {
+        int year = Year.now().getValue();
+        String yearPrefix = String.valueOf(year).substring(2);
+        String nextNumber = sequenceService.generateNextNumber("JOB");
+        return String.format("%s-%03d", yearPrefix, nextNumber);
+    }
+
+    public Job convertQuoteToJob(ConvertQuoteToJobRequest request) {
+        // Fetch the quote
+        Quote quote = quoteRepository.findById(request.getQuoteId())
+            .orElseThrow(() -> new RuntimeException("Quote not found with ID: " + request.getQuoteId()));
+        
+        // Check if job already exists for this quote
+        if (jobRepository.existsByQuoteId(request.getQuoteId())) {
+            throw new RuntimeException("Job already exists for this quote");
+        }
+        
+        // Update quote status
+        quote.setQuoteStatus(Quote.QuoteStatus.ACCEPTED);
+        quoteRepository.save(quote);
+        
+        // Create new job
+        Job job = new Job();
+        job.setJobNumber(generateJobNumber());
+        job.setQuoteId(quote.getQuoteId());
+        job.setRfqId(quote.getRfqId());
+        job.setClientId(request.getClientId());
+        job.setDescription(request.getDescription());
+        job.setJobType(request.getJobType());
+        job.setLocation(request.getLocation());
+        job.setPriority(request.getPriority());
+        job.setOrderNumber(request.getOrderNumber());
+        job.setOrderReceivedDate(request.getOrderReceivedDate());
+        job.setOrderValueExcl(quote.getValueExclVat());
+        job.setOrderValueIncl(quote.getValueInclVat());
+        job.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
+        job.setStatus(Job.JobStatus.NEW);
+        job.setProgressPercentage(0);
+        job.setRemarks(request.getRemarks());
+        job.setCreatedBy(request.getCreatedBy());
+        job.setDepartment(request.getDepartment());
+        
+        Job savedJob = jobRepository.save(job);
+        
+        // Create initial progress entry
+        WorkProgress initialProgress = new WorkProgress();
+        initialProgress.setJobId(savedJob.getJobId());
+        initialProgress.setProgressDate(LocalDate.now());
+        initialProgress.setNewStatus("NEW");
+        initialProgress.setProgressPercentage(0);
+        initialProgress.setNotes("Job created from Quote: " + quote.getQuoteNumber());
+        workProgressRepository.save(initialProgress);
+        
+        return savedJob;
+    }
+
+    public Job getJobById(Long jobId) {
+        return jobRepository.findById(jobId)
+            .orElseThrow(() -> new RuntimeException("Job not found with ID: " + jobId));
+    }
+
+    public List<Job> getFilteredJobs(String status, String priority, Long clientId) {
+        Specification<Job> spec = Specification.where(null);
+        
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and((root, query, cb) -> 
+                cb.equal(root.get("status"), Job.JobStatus.valueOf(status)));
+        }
+        
+        if (priority != null && !priority.isEmpty()) {
+            spec = spec.and((root, query, cb) -> 
+                cb.equal(root.get("priority"), Job.JobPriority.valueOf(priority)));
+        }
+        
+        if (clientId != null) {
+            spec = spec.and((root, query, cb) -> 
+                cb.equal(root.get("clientId"), clientId));
+        }
+        
+        return jobRepository.findAll(spec);
+    }
+
+    public Job updateJobProgress(Long jobId, Integer progressPercentage, String notes) {
+        Job job = getJobById(jobId);
+        
+        // Save old status
+        String oldStatus = job.getStatus().toString();
+        
+        // Update progress
+        job.setProgressPercentage(progressPercentage);
+        
+        // Update status based on progress
+        if (progressPercentage == 100) {
+            job.setStatus(Job.JobStatus.READY);
+        } else if (progressPercentage >= 90) {
+            job.setStatus(Job.JobStatus.QUALITY_CHECK);
+        } else if (progressPercentage > 0) {
+            job.setStatus(Job.JobStatus.IN_PROGRESS);
+        }
+        
+        job.setLastModifiedDate(LocalDateTime.now());
+        Job savedJob = jobRepository.save(job);
+        
+        // Create progress entry
+        WorkProgress progress = new WorkProgress();
+        progress.setJobId(jobId);
+        progress.setProgressDate(LocalDate.now());
+        progress.setPreviousStatus(oldStatus);
+        progress.setNewStatus(job.getStatus().toString());
+        progress.setProgressPercentage(progressPercentage);
+        progress.setNotes(notes);
+        workProgressRepository.save(progress);
+        
+        return savedJob;
+    }
+
+    public Job updateJobStatus(Long jobId, String newStatus) {
+        Job job = getJobById(jobId);
+        String oldStatus = job.getStatus().toString();
+        
+        job.setStatus(Job.JobStatus.valueOf(newStatus));
+        job.setLastModifiedDate(LocalDateTime.now());
+        
+        // Update progress percentage based on status
+        switch (job.getStatus()) {
+            case NEW:
+                job.setProgressPercentage(0);
+                break;
+            case IN_PROGRESS:
+                if (job.getProgressPercentage() == 0) {
+                    job.setProgressPercentage(25);
+                }
+                break;
+            case QUALITY_CHECK:
+                job.setProgressPercentage(90);
+                break;
+            case READY:
+                job.setProgressPercentage(100);
+                break;
+            case DELIVERED:
+                job.setProgressPercentage(100);
+                job.setActualDeliveryDate(LocalDate.now());
+                break;
+            case COMPLETE:
+                job.setProgressPercentage(100);
+                break;
+        }
+        
+        Job savedJob = jobRepository.save(job);
+        
+        // Create progress entry
+        WorkProgress progress = new WorkProgress();
+        progress.setJobId(jobId);
+        progress.setProgressDate(LocalDate.now());
+        progress.setPreviousStatus(oldStatus);
+        progress.setNewStatus(newStatus);
+        progress.setProgressPercentage(job.getProgressPercentage());
+        progress.setNotes("Status updated to: " + newStatus);
+        workProgressRepository.save(progress);
+        
+        return savedJob;
+    }
+
+    public Map<String, Object> getJobStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Total jobs
+        stats.put("totalJobs", jobRepository.count());
+        
+        // Jobs by status
+        Map<String, Long> statusCount = new HashMap<>();
+        for (Job.JobStatus status : Job.JobStatus.values()) {
+            statusCount.put(status.toString(), jobRepository.countByStatus(status));
+        }
+        stats.put("jobsByStatus", statusCount);
+        
+        // Jobs by priority
+        Map<String, Long> priorityCount = new HashMap<>();
+        for (Job.JobPriority priority : Job.JobPriority.values()) {
+            priorityCount.put(priority.toString(), jobRepository.countByPriority(priority));
+        }
+        stats.put("jobsByPriority", priorityCount);
+        
+        // Active jobs (not complete)
+        stats.put("activeJobs", jobRepository.countByStatusNot(Job.JobStatus.COMPLETE));
+        
+        // Overdue jobs
+        stats.put("overdueJobs", jobRepository.countOverdueJobs(LocalDate.now()));
+        
+        return stats;
+    }
+
+    /**
+     * Find job by quote ID
+     */
+    public Job getJobByQuoteId(Long quoteId) {
+        return jobRepository.findByQuoteId(quoteId)
+            .orElseThrow(() -> new RuntimeException("Job not found for quote ID: " + quoteId));
+    }
+
+
+    public Job createJob(Job job) {
+        // Generate job number if not provided
+        if (job.getJobNumber() == null || job.getJobNumber().isEmpty()) {
+            String jobNumber = this.sequenceService.generateNextNumber("JOB");
+            job.setJobNumber(jobNumber);
+        }
+        
+        // Set creation timestamp
+        if (job.getCreatedDate() == null) {
+            job.setCreatedDate(java.time.LocalDateTime.now());
+        }
+        
+        // Set default status if not provided
+        if (job.getStatus() == null) {
+            job.setStatus(Job.JobStatus.NEW);
+        }
+        
+        return jobRepository.save(job);
+    }
+}

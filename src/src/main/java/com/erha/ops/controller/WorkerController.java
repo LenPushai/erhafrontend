@@ -1,0 +1,117 @@
+package com.erha.ops.controller;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import com.erha.ops.entity.Worker;
+import com.erha.ops.entity.Worker.WorkerStatus;
+import com.erha.ops.entity.Worker.WorkerType;
+import com.erha.ops.service.WorkerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@PreAuthorize("isAuthenticated()")
+@RestController
+@RequestMapping("/api/v1/workers")
+@CrossOrigin(origins = "http://localhost:3028")
+public class WorkerController {
+    
+    @Autowired
+    private WorkerService workerService;
+    
+    // Get all workers
+    @GetMapping
+    public ResponseEntity<List<Worker>> getAllWorkers() {
+        List<Worker> workers = workerService.getAllWorkers();
+        return ResponseEntity.ok(workers);
+    }
+    
+    // Get worker by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Worker> getWorkerById(@PathVariable Long id) {
+        return workerService.getWorkerById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+    
+    // Get workers by status
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Worker>> getWorkersByStatus(@PathVariable String status) {
+        try {
+            WorkerStatus workerStatus = WorkerStatus.valueOf(status.toUpperCase());
+            List<Worker> workers = workerService.getWorkersByStatus(workerStatus);
+            return ResponseEntity.ok(workers);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // Get workers by type
+    @GetMapping("/type/{type}")
+    public ResponseEntity<List<Worker>> getWorkersByType(@PathVariable String type) {
+        try {
+            WorkerType workerType = WorkerType.valueOf(type.toUpperCase());
+            List<Worker> workers = workerService.getWorkersByType(workerType);
+            return ResponseEntity.ok(workers);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    // Get workers by department
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<Worker>> getWorkersByDepartment(@PathVariable String department) {
+        List<Worker> workers = workerService.getWorkersByDepartment(department);
+        return ResponseEntity.ok(workers);
+    }
+    
+    // Search workers
+    @GetMapping("/search")
+    public ResponseEntity<List<Worker>> searchWorkers(@RequestParam String query) {
+        List<Worker> workers = workerService.searchWorkers(query);
+        return ResponseEntity.ok(workers);
+    }
+    
+    // Get worker statistics
+    @GetMapping("/statistics")
+    public ResponseEntity<WorkerService.WorkerStatistics> getStatistics() {
+        WorkerService.WorkerStatistics stats = workerService.getStatistics();
+        return ResponseEntity.ok(stats);
+    }
+    
+    // Create worker
+    @PostMapping
+    public ResponseEntity<Worker> createWorker(@RequestBody Worker worker) {
+        try {
+            Worker createdWorker = workerService.createWorker(worker);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdWorker);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    // Update worker
+    @PutMapping("/{id}")
+    public ResponseEntity<Worker> updateWorker(@PathVariable Long id, @RequestBody Worker worker) {
+        try {
+            Worker updatedWorker = workerService.updateWorker(id, worker);
+            return ResponseEntity.ok(updatedWorker);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    
+    // Delete worker
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWorker(@PathVariable Long id) {
+        try {
+            workerService.deleteWorker(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}

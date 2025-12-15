@@ -1,0 +1,295 @@
+// src/pages/rfq/RFQList.tsx
+// ERHA OPS - RFQ List View
+// CLEAN VERSION - No PowerShell Corruption
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  AlertCircle,
+  Building,
+  Calendar,
+  Clock
+} from 'lucide-react';
+
+interface RFQ {
+  id: number;
+  rfqNumber: string;
+  clientName: string;
+  projectName: string;
+  receivedDate: string;
+  requiredBy: string;
+  priority: string;
+  status: string;
+  operatingEntity: string;
+  estimatedValue?: number;
+  createdAt: string;
+}
+
+export default function RFQList() {
+  const navigate = useNavigate();
+  const [rfqs, setRfqs] = useState<RFQ[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterPriority, setFilterPriority] = useState('ALL');
+
+  useEffect(() => {
+    fetchRFQs();
+  }, []);
+
+  const fetchRFQs = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/rfqs');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch RFQs');
+      }
+
+      const data = await response.json();
+      // Handle both paginated response (Spring Boot) and plain array
+      setRfqs(Array.isArray(data) ? data : (data.content || []));
+    } catch (err) {
+      setError('Failed to load RFQs. Please ensure backend is running.');
+      console.error('Error fetching RFQs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateRFQ = () => {
+    navigate('/rfqs/create');
+  };
+
+  const handleViewRFQ = (id: number) => {
+    if (!id || id <= 0) {
+      console.error('Invalid RFQ ID:', id);
+      return;
+    }
+    navigate(`/rfqs/${id}`);
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const badges: { [key: string]: string } = {
+      'URGENT': 'danger',
+      'HIGH': 'warning',
+      'MEDIUM': 'info',
+      'LOW': 'secondary'
+    };
+    return badges[priority] || 'secondary';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges: { [key: string]: string } = {
+      'NEW': 'primary',
+      'IN_PROGRESS': 'info',
+      'QUOTED': 'success',
+      'WON': 'success',
+      'LOST': 'danger',
+      'CANCELLED': 'secondary'
+    };
+    return badges[status] || 'secondary';
+  };
+
+  const filteredRFQs = rfqs.filter(rfq => {
+    const matchesSearch =
+        rfq.rfqNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        rfq.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        rfq.projectName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = filterStatus === 'ALL' || rfq.status === filterStatus;
+    const matchesPriority = filterPriority === 'ALL' || rfq.priority === filterPriority;
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  if (loading) {
+    return (
+        <div className="container-fluid">
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="container-fluid">
+          <div className="alert alert-danger">
+            <AlertCircle size={20} className="me-2" />
+            <strong>Error:</strong> {error}
+          </div>
+        </div>
+    );
+  }
+
+  return (
+      <div className="container-fluid">
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="mb-1">RFQs (Requests for Quote)</h2>
+            <p className="text-muted mb-0">{filteredRFQs.length} of {rfqs.length} RFQs</p>
+          </div>
+          <button className="btn btn-primary" onClick={handleCreateRFQ}>
+            <Plus size={20} className="me-2" />
+            Create RFQ
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="row g-3">
+              <div className="col-md-4">
+                <div className="input-group">
+                <span className="input-group-text">
+                  <Search size={18} />
+                </span>
+                  <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search RFQs..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <select
+                    className="form-select"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="NEW">New</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="QUOTED">Quoted</option>
+                  <option value="WON">Won</option>
+                  <option value="LOST">Lost</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <select
+                    className="form-select"
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                >
+                  <option value="ALL">All Priorities</option>
+                  <option value="URGENT">Urgent</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+              <div className="col-md-2">
+                <button
+                    className="btn btn-outline-secondary w-100"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterStatus('ALL');
+                      setFilterPriority('ALL');
+                    }}
+                >
+                  <Filter size={18} className="me-2" />
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RFQ List */}
+        {filteredRFQs.length === 0 ? (
+            <div className="alert alert-info">
+              <AlertCircle size={20} className="me-2" />
+              No RFQs found. {searchTerm || filterStatus !== 'ALL' || filterPriority !== 'ALL' ? 'Try adjusting your filters.' : 'Create your first RFQ to get started!'}
+            </div>
+        ) : (
+            <div className="row g-3">
+              {filteredRFQs.map((rfq) => (
+                  <div key={rfq.id} className="col-md-6 col-lg-4">
+                    <div className="card h-100 hover-shadow" style={{ cursor: 'pointer' }}>
+                      <div className="card-body" onClick={() => handleViewRFQ(rfq.id)}>
+                        {/* Header */}
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                          <div>
+                            <h5 className="card-title mb-1">{rfq.rfqNumber}</h5>
+                            <small className="text-muted">#{rfq.id}</small>
+                          </div>
+                          <span className={`badge bg-${rfq.operatingEntity === 'ERHA FC' ? 'primary' : 'success'}`}>
+                      {rfq.operatingEntity}
+                    </span>
+                        </div>
+
+                        {/* Client & Project */}
+                        <div className="mb-3">
+                          <div className="d-flex align-items-center mb-2">
+                            <Building size={16} className="text-muted me-2" />
+                            <strong>{rfq.clientName}</strong>
+                          </div>
+                          <p className="mb-0 small text-muted">{rfq.projectName}</p>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="mb-3 small">
+                          <div className="d-flex align-items-center mb-1">
+                            <Clock size={14} className="text-muted me-2" />
+                            <span className="text-muted">Received:</span>
+                            <span className="ms-auto">{new Date(rfq.receivedDate).toLocaleDateString('en-ZA')}</span>
+                          </div>
+                          <div className="d-flex align-items-center">
+                            <Calendar size={14} className="text-muted me-2" />
+                            <span className="text-muted">Required:</span>
+                            <span className="ms-auto">{new Date(rfq.requiredBy).toLocaleDateString('en-ZA')}</span>
+                          </div>
+                        </div>
+
+                        {/* Status & Priority */}
+                        <div className="d-flex gap-2 mb-3">
+                    <span className={`badge bg-${getStatusBadge(rfq.status)} flex-fill`}>
+                      {rfq.status}
+                    </span>
+                          <span className={`badge bg-${getPriorityBadge(rfq.priority)} flex-fill`}>
+                      {rfq.priority}
+                    </span>
+                        </div>
+
+                        {/* Value */}
+                        {rfq.estimatedValue && (
+                            <div className="mb-3">
+                              <small className="text-muted">Estimated Value</small>
+                              <p className="mb-0 fw-bold text-success">
+                                R {rfq.estimatedValue.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                        )}
+
+                        {/* Action Button */}
+                        <button
+                            className="btn btn-outline-primary btn-sm w-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewRFQ(rfq.id);
+                            }}
+                        >
+                          <Eye size={16} className="me-2" />
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+              ))}
+            </div>
+        )}
+      </div>
+  );
+}

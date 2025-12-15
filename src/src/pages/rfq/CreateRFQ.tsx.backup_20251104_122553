@@ -1,0 +1,939 @@
+// src/pages/rfq/CreateRFQ.tsx
+// ERHA OPS - Dual RFQ Creation (INCOMING & OUTGOING)
+// UPDATED: Added Operating Entity field for ERHA FC vs ERHA SS
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, Save, X, Phone, Mail, Building, Package,
+  Truck, Calendar, DollarSign, AlertCircle, FileText, Users
+} from 'lucide-react';
+import { RFQType, IncomingRFQ, OutgoingRFQ, Priority, WorkLocation, ReceivedVia } from '../../types';
+
+export default function CreateRFQ() {
+  const navigate = useNavigate();
+
+  // Step 1: Choose RFQ Type
+  const [rfqType, setRfqType] = useState<RFQType | null>(null);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+
+  // Incoming RFQ State - UPDATED: Added operatingEntity
+  const [incomingData, setIncomingData] = useState<Partial<IncomingRFQ>>({
+    rfqType: 'INCOMING',
+    receivedDate: new Date().toISOString().split('T')[0],
+    receivedVia: 'PHONE',
+    priority: 'Normal',
+    workLocation: 'SHOP',
+    operatingEntity: '', // NEW FIELD
+    siteVisitRequired: false,
+    clientCallbackRequired: false,
+    isExistingClient: false
+  });
+
+  // Outgoing RFQ State - UPDATED: Added operatingEntity
+  const [outgoingData, setOutgoingData] = useState<Partial<OutgoingRFQ>>({
+    rfqType: 'OUTGOING',
+    issuedDate: new Date().toISOString().split('T')[0],
+    priority: 'Normal',
+    operatingEntity: '', // NEW FIELD
+    quoteValidityPeriod: 30,
+    approvalRequired: false,
+    urgentDelivery: false,
+    partialDelivery: false,
+    preferredSupplier: false,
+    alternativesAccepted: true
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = rfqType === 'INCOMING' ? incomingData : outgoingData;
+    console.log('Creating RFQ:', data);
+    alert(`${rfqType} RFQ Created Successfully! (Mock)`);
+    setTimeout(() => navigate('/rfq'), 1500);
+  };
+
+  const updateIncoming = (field: keyof IncomingRFQ, value: any) => {
+    setIncomingData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateOutgoing = (field: keyof OutgoingRFQ, value: any) => {
+    setOutgoingData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Step 1: RFQ Type Selection
+  if (!rfqType) {
+    return (
+        <div className="container-fluid">
+          <div className="d-flex align-items-center mb-4">
+            <button
+                className="btn btn-link text-decoration-none me-3"
+                onClick={() => navigate('/rfq')}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="mb-1">Create New RFQ</h2>
+              <p className="text-muted mb-0">Select RFQ type to begin</p>
+            </div>
+          </div>
+
+          <div className="row g-4 justify-content-center">
+            {/* INCOMING RFQ Card */}
+            <div className="col-lg-5">
+              <div
+                  className="card h-100 border-primary cursor-pointer hover-shadow"
+                  onClick={() => {
+                    setRfqType('INCOMING');
+                    setCurrentStep(1);
+                  }}
+                  style={{ cursor: 'pointer', transition: 'all 0.3s' }}
+              >
+                <div className="card-body p-5 text-center">
+                  <div className="mb-4">
+                    <Phone size={60} className="text-primary" />
+                  </div>
+                  <h3 className="card-title text-primary mb-3">Incoming RFQ</h3>
+                  <h5 className="text-muted mb-4">Client → ERHA</h5>
+                  <p className="card-text mb-4">
+                    Client requests a quote from ERHA for fabrication,
+                    repair, or manufacturing work.
+                  </p>
+                  <ul className="list-unstyled text-start">
+                    <li className="mb-2">✓ External client inquiry</li>
+                    <li className="mb-2">✓ ERHA provides quote</li>
+                    <li className="mb-2">✓ Creates job if won</li>
+                    <li className="mb-2">✓ Revenue-generating</li>
+                  </ul>
+                  <button className="btn btn-primary btn-lg mt-3 w-100">
+                    Create Incoming RFQ
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* OUTGOING RFQ Card */}
+            <div className="col-lg-5">
+              <div
+                  className="card h-100 border-success cursor-pointer hover-shadow"
+                  onClick={() => {
+                    setRfqType('OUTGOING');
+                    setCurrentStep(1);
+                  }}
+                  style={{ cursor: 'pointer', transition: 'all 0.3s' }}
+              >
+                <div className="card-body p-5 text-center">
+                  <div className="mb-4">
+                    <Package size={60} className="text-success" />
+                  </div>
+                  <h3 className="card-title text-success mb-3">Outgoing RFQ</h3>
+                  <h5 className="text-muted mb-4">ERHA → Supplier</h5>
+                  <p className="card-text mb-4">
+                    ERHA requests a quote from supplier for materials,
+                    services, or equipment needed for a job.
+                  </p>
+                  <ul className="list-unstyled text-start">
+                    <li className="mb-2">✓ Supplier inquiry</li>
+                    <li className="mb-2">✓ ERHA receives quote</li>
+                    <li className="mb-2">✓ Links to job/project</li>
+                    <li className="mb-2">✓ Cost management</li>
+                  </ul>
+                  <button className="btn btn-success btn-lg mt-3 w-100">
+                    Create Outgoing RFQ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-4">
+            <small className="text-muted">
+              Choose the type of RFQ based on the direction of the request
+            </small>
+          </div>
+        </div>
+    );
+  }
+
+  // INCOMING RFQ Form
+  if (rfqType === 'INCOMING') {
+    return (
+        <div className="container-fluid">
+          <div className="d-flex align-items-center mb-4">
+            <button
+                className="btn btn-link text-decoration-none me-3"
+                onClick={() => setRfqType(null)}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex-grow-1">
+              <h2 className="mb-1">
+                <Phone size={24} className="text-primary me-2" />
+                Incoming RFQ (Client → ERHA)
+              </h2>
+              <p className="text-muted mb-0">Capture client inquiry details</p>
+            </div>
+            <span className="badge bg-primary fs-6">Step {currentStep} of 5</span>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="row">
+              <div className="col-lg-8">
+                {/* Step 1: Client Information */}
+                {currentStep === 1 && (
+                    <div className="card mb-4">
+                      <div className="card-header bg-primary text-white">
+                        <h5 className="mb-0">
+                          <Building size={20} className="me-2" />
+                          Step 1: Client Information
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row g-3">
+                          <div className="col-12">
+                            <div className="form-check">
+                              <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id="existingClient"
+                                  checked={incomingData.isExistingClient}
+                                  onChange={(e) => updateIncoming('isExistingClient', e.target.checked)}
+                              />
+                              <label className="form-check-label" htmlFor="existingClient">
+                                Existing Client (load from database)
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Client Company Name *</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                required
+                                value={incomingData.clientName || ''}
+                                onChange={(e) => updateIncoming('clientName', e.target.value)}
+                                placeholder="e.g., CG-MILLS, SASOL"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Contact Person *</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                required
+                                value={incomingData.contactPerson || ''}
+                                onChange={(e) => updateIncoming('contactPerson', e.target.value)}
+                                placeholder="Full name"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              <Mail size={16} className="me-1" />
+                              Contact Email *
+                            </label>
+                            <input
+                                type="email"
+                                className="form-control"
+                                required
+                                value={incomingData.contactEmail || ''}
+                                onChange={(e) => updateIncoming('contactEmail', e.target.value)}
+                                placeholder="email@company.co.za"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              <Phone size={16} className="me-1" />
+                              Contact Phone *
+                            </label>
+                            <input
+                                type="tel"
+                                className="form-control"
+                                required
+                                value={incomingData.contactPhone || ''}
+                                onChange={(e) => updateIncoming('contactPhone', e.target.value)}
+                                placeholder="016 970 1234"
+                            />
+                          </div>
+
+                          <div className="col-md-8">
+                            <label className="form-label">Client Address</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.clientAddress || ''}
+                                onChange={(e) => updateIncoming('clientAddress', e.target.value)}
+                                placeholder="Physical address"
+                            />
+                          </div>
+
+                          <div className="col-md-4">
+                            <label className="form-label">City</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.clientCity || ''}
+                                onChange={(e) => updateIncoming('clientCity', e.target.value)}
+                                placeholder="Vanderbijlpark"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Province</label>
+                            <select
+                                className="form-select"
+                                value={incomingData.clientProvince || ''}
+                                onChange={(e) => updateIncoming('clientProvince', e.target.value)}
+                            >
+                              <option value="">Select province</option>
+                              <option value="Gauteng">Gauteng</option>
+                              <option value="Free State">Free State</option>
+                              <option value="Northern Cape">Northern Cape</option>
+                              <option value="Western Cape">Western Cape</option>
+                              <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                            </select>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Client Reference No.</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.clientReference || ''}
+                                onChange={(e) => updateIncoming('clientReference', e.target.value)}
+                                placeholder="Client's internal reference"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
+                {/* Step 2: Project Details + OPERATING ENTITY */}
+                {currentStep === 2 && (
+                    <div className="card mb-4">
+                      <div className="card-header bg-primary text-white">
+                        <h5 className="mb-0">
+                          <FileText size={20} className="me-2" />
+                          Step 2: Project Details & Operating Entity
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row g-3">
+                          {/* NEW: Operating Entity Dropdown */}
+                          <div className="col-12">
+                            <div className="alert alert-info mb-3">
+                              <Building size={18} className="me-2" />
+                              <strong>Select Operating Entity First</strong> - Determines which ERHA division handles this RFQ
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              <Building size={16} className="me-1" />
+                              Operating Entity *
+                            </label>
+                            <select
+                                className="form-select form-select-lg"
+                                required
+                                value={incomingData.operatingEntity || ''}
+                                onChange={(e) => updateIncoming('operatingEntity', e.target.value)}
+                            >
+                              <option value="">Select Operating Entity</option>
+                              <option value="ERHA FC">ERHA FC (Fabrication & Construction)</option>
+                              <option value="ERHA SS">ERHA SS (Steel Supplies)</option>
+                            </select>
+                            <small className="text-muted">
+                              Which ERHA division will handle this RFQ?
+                            </small>
+                          </div>
+
+                          <div className="col-md-6">
+                            <div className="card bg-light border-0 h-100">
+                              <div className="card-body">
+                                <small className="text-muted d-block mb-2">Entity Info:</small>
+                                {incomingData.operatingEntity === 'ERHA FC' && (
+                                    <div>
+                                      <strong className="text-primary">ERHA Fabrication & Construction</strong>
+                                      <p className="small mb-0 mt-1">Manufacturing, repairs, refurbishment, site work</p>
+                                    </div>
+                                )}
+                                {incomingData.operatingEntity === 'ERHA SS' && (
+                                    <div>
+                                      <strong className="text-success">ERHA Steel Supplies</strong>
+                                      <p className="small mb-0 mt-1">Steel sales, material supply, warehouse</p>
+                                    </div>
+                                )}
+                                {!incomingData.operatingEntity && (
+                                    <p className="small text-muted mb-0">Select entity to see details</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="col-12"><hr /></div>
+
+                          <div className="col-12">
+                            <label className="form-label">Project Name *</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                required
+                                value={incomingData.projectName || ''}
+                                onChange={(e) => updateIncoming('projectName', e.target.value)}
+                                placeholder="e.g., Stopper Guide Block Refurbishment"
+                            />
+                          </div>
+
+                          <div className="col-12">
+                            <label className="form-label">Detailed Description *</label>
+                            <textarea
+                                className="form-control"
+                                rows={5}
+                                required
+                                value={incomingData.description || ''}
+                                onChange={(e) => updateIncoming('description', e.target.value)}
+                                placeholder="Provide comprehensive project description..."
+                            />
+                            <small className="text-muted">
+                              Include: scope of work, current condition, specific requirements
+                            </small>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Work Location *</label>
+                            <div>
+                              <div className="form-check form-check-inline">
+                                <input
+                                    className="form-check-input"
+                                    type="radio"
+                                    name="workLocation"
+                                    id="locationShop"
+                                    value="SHOP"
+                                    checked={incomingData.workLocation === 'SHOP'}
+                                    onChange={(e) => updateIncoming('workLocation', e.target.value as WorkLocation)}
+                                />
+                                <label className="form-check-label" htmlFor="locationShop">
+                                  SHOP (ERHA Facility)
+                                </label>
+                              </div>
+                              <div className="form-check form-check-inline">
+                                <input
+                                    className="form-check-input"
+                                    type="radio"
+                                    name="workLocation"
+                                    id="locationSite"
+                                    value="SITE"
+                                    checked={incomingData.workLocation === 'SITE'}
+                                    onChange={(e) => updateIncoming('workLocation', e.target.value as WorkLocation)}
+                                />
+                                <label className="form-check-label" htmlFor="locationSite">
+                                  SITE (Client Location)
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {incomingData.workLocation === 'SITE' && (
+                              <div className="col-md-6">
+                                <label className="form-label">Site Address *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    required
+                                    value={incomingData.siteAddress || ''}
+                                    onChange={(e) => updateIncoming('siteAddress', e.target.value)}
+                                    placeholder="Client site location"
+                                />
+                              </div>
+                          )}
+
+                          <div className="col-md-6">
+                            <label className="form-label">Project Type</label>
+                            <select
+                                className="form-select"
+                                value={incomingData.projectType || ''}
+                                onChange={(e) => updateIncoming('projectType', e.target.value)}
+                            >
+                              <option value="">Select type</option>
+                              <option value="Manufacturing">Manufacturing</option>
+                              <option value="Refurbishment">Refurbishment</option>
+                              <option value="Repair">Repair</option>
+                              <option value="Installation">Installation</option>
+                              <option value="Maintenance">Maintenance</option>
+                              <option value="Modification">Modification</option>
+                            </select>
+                          </div>
+
+                          <div className="col-12">
+                            <label className="form-label">Special Requirements</label>
+                            <textarea
+                                className="form-control"
+                                rows={3}
+                                value={incomingData.specialRequirements || ''}
+                                onChange={(e) => updateIncoming('specialRequirements', e.target.value)}
+                                placeholder="Any special client requirements..."
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Quality Standards</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.qualityStandards || ''}
+                                onChange={(e) => updateIncoming('qualityStandards', e.target.value)}
+                                placeholder="e.g., ISO 9001, SANS 347"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Safety Requirements</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.safetyRequirements || ''}
+                                onChange={(e) => updateIncoming('safetyRequirements', e.target.value)}
+                                placeholder="e.g., Hot work permits required"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
+                {/* Step 3: Timeline & Priority */}
+                {currentStep === 3 && (
+                    <div className="card mb-4">
+                      <div className="card-header bg-primary text-white">
+                        <h5 className="mb-0">
+                          <Calendar size={20} className="me-2" />
+                          Step 3: Timeline & Priority
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row g-3">
+                          <div className="col-md-4">
+                            <label className="form-label">Date Received *</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                required
+                                value={incomingData.receivedDate || ''}
+                                onChange={(e) => updateIncoming('receivedDate', e.target.value)}
+                            />
+                            <small className="text-muted">Default: Today</small>
+                          </div>
+
+                          <div className="col-md-4">
+                            <label className="form-label">Received By</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.receivedBy || ''}
+                                onChange={(e) => updateIncoming('receivedBy', e.target.value)}
+                                placeholder="Receptionist name"
+                            />
+                          </div>
+
+                          <div className="col-md-4">
+                            <label className="form-label">Received Via *</label>
+                            <select
+                                className="form-select"
+                                required
+                                value={incomingData.receivedVia || ''}
+                                onChange={(e) => updateIncoming('receivedVia', e.target.value as ReceivedVia)}
+                            >
+                              <option value="PHONE">Phone Call</option>
+                              <option value="EMAIL">Email</option>
+                              <option value="WALK_IN">Walk-in</option>
+                              <option value="DIRECT_CONTACT">Direct Contact</option>
+                            </select>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Required By Date *</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                required
+                                value={incomingData.requiredBy || ''}
+                                onChange={(e) => updateIncoming('requiredBy', e.target.value)}
+                            />
+                            <small className="text-muted">Client's deadline</small>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Priority Level *</label>
+                            <select
+                                className="form-select"
+                                required
+                                value={incomingData.priority || ''}
+                                onChange={(e) => updateIncoming('priority', e.target.value as Priority)}
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Normal">Normal</option>
+                              <option value="High">High</option>
+                              <option value="Urgent">Urgent (&lt; 7 days)</option>
+                            </select>
+                          </div>
+
+                          {incomingData.priority === 'Urgent' && (
+                              <div className="col-12">
+                                <div className="alert alert-warning">
+                                  <AlertCircle size={20} className="me-2" />
+                                  <strong>Urgent RFQ:</strong> Manager notification will be triggered
+                                </div>
+                                <label className="form-label">Urgency Reason *</label>
+                                <textarea
+                                    className="form-control"
+                                    rows={2}
+                                    required
+                                    value={incomingData.urgencyReason || ''}
+                                    onChange={(e) => updateIncoming('urgencyReason', e.target.value)}
+                                    placeholder="Why is this urgent?"
+                                />
+                              </div>
+                          )}
+
+                          <div className="col-12">
+                            <div className="form-check">
+                              <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id="siteVisit"
+                                  checked={incomingData.siteVisitRequired}
+                                  onChange={(e) => updateIncoming('siteVisitRequired', e.target.checked)}
+                              />
+                              <label className="form-check-label" htmlFor="siteVisit">
+                                Site Visit Required
+                              </label>
+                            </div>
+                          </div>
+
+                          {incomingData.siteVisitRequired && (
+                              <div className="col-md-6">
+                                <label className="form-label">Scheduled Site Visit</label>
+                                <input
+                                    type="datetime-local"
+                                    className="form-control"
+                                    value={incomingData.siteVisitDate || ''}
+                                    onChange={(e) => updateIncoming('siteVisitDate', e.target.value)}
+                                />
+                              </div>
+                          )}
+
+                          <div className="col-md-6">
+                            <label className="form-label">Quote Due Date (Internal)</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                value={incomingData.quoteDueDate || ''}
+                                onChange={(e) => updateIncoming('quoteDueDate', e.target.value)}
+                            />
+                            <small className="text-muted">Internal deadline for quote</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
+                {/* Step 4: Technical & Commercial */}
+                {currentStep === 4 && (
+                    <div className="card mb-4">
+                      <div className="card-header bg-primary text-white">
+                        <h5 className="mb-0">
+                          <DollarSign size={20} className="me-2" />
+                          Step 4: Technical & Commercial Details
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Quantities</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.quantities || ''}
+                                onChange={(e) => updateIncoming('quantities', e.target.value)}
+                                placeholder="e.g., 12 units, 50 meters"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Dimensions</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.dimensions || ''}
+                                onChange={(e) => updateIncoming('dimensions', e.target.value)}
+                                placeholder="e.g., 450mm x 300mm x 200mm"
+                            />
+                          </div>
+
+                          <div className="col-12">
+                            <label className="form-label">Material Specifications</label>
+                            <textarea
+                                className="form-control"
+                                rows={3}
+                                value={incomingData.materialSpecs || ''}
+                                onChange={(e) => updateIncoming('materialSpecs', e.target.value)}
+                                placeholder="Material type, grade, specifications..."
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Estimated Value (R)</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                value={incomingData.estimatedValue || ''}
+                                onChange={(e) => updateIncoming('estimatedValue', parseFloat(e.target.value))}
+                                placeholder="0.00"
+                                step="0.01"
+                            />
+                            <small className="text-muted">Rough estimate for internal planning</small>
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Client Budget Indication</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.clientBudget || ''}
+                                onChange={(e) => updateIncoming('clientBudget', e.target.value)}
+                                placeholder="e.g., R100K - R150K"
+                            />
+                          </div>
+
+                          <div className="col-md-6">
+                            <label className="form-label">Payment Terms</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={incomingData.paymentTerms || ''}
+                                onChange={(e) => updateIncoming('paymentTerms', e.target.value)}
+                                placeholder="e.g., 30 days"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
+                {/* Step 5: Internal Information */}
+                {currentStep === 5 && (
+                    <div className="card mb-4">
+                      <div className="card-header bg-primary text-white">
+                        <h5 className="mb-0">
+                          <Users size={20} className="me-2" />
+                          Step 5: Internal Assignment & Notes
+                        </h5>
+                      </div>
+                      <div className="card-body">
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label">Assign to Estimator</label>
+                            <select
+                                className="form-select"
+                                value={incomingData.assignedTo || ''}
+                                onChange={(e) => updateIncoming('assignedTo', e.target.value)}
+                            >
+                              <option value="">Assign later</option>
+                              <option value="Juanic">Juanic</option>
+                              <option value="Wessie">Wessie</option>
+                            </select>
+                            <small className="text-muted">Can be assigned after creation</small>
+                          </div>
+
+                          <div className="col-12">
+                            <label className="form-label">Internal Notes</label>
+                            <textarea
+                                className="form-control"
+                                rows={4}
+                                value={incomingData.internalNotes || ''}
+                                onChange={(e) => updateIncoming('internalNotes', e.target.value)}
+                                placeholder="Private notes for ERHA team only..."
+                            />
+                            <small className="text-muted">
+                              Include: client history, special considerations, competitive info
+                            </small>
+                          </div>
+
+                          <div className="col-12">
+                            <div className="form-check">
+                              <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id="callback"
+                                  checked={incomingData.clientCallbackRequired}
+                                  onChange={(e) => updateIncoming('clientCallbackRequired', e.target.checked)}
+                              />
+                              <label className="form-check-label" htmlFor="callback">
+                                Client Callback Required
+                              </label>
+                            </div>
+                          </div>
+
+                          {incomingData.clientCallbackRequired && (
+                              <div className="col-md-6">
+                                <label className="form-label">Callback By *</label>
+                                <input
+                                    type="datetime-local"
+                                    className="form-control"
+                                    required
+                                    value={incomingData.clientCallbackBy || ''}
+                                    onChange={(e) => updateIncoming('clientCallbackBy', e.target.value)}
+                                />
+                              </div>
+                          )}
+
+                          <div className="col-md-6">
+                            <label className="form-label">Follow-up Date</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                value={incomingData.followUpDate || ''}
+                                onChange={(e) => updateIncoming('followUpDate', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="d-flex justify-content-between mb-4">
+                  {currentStep > 1 && (
+                      <button
+                          type="button"
+                          className="btn btn-outline-secondary"
+                          onClick={() => setCurrentStep(currentStep - 1)}
+                      >
+                        Previous
+                      </button>
+                  )}
+                  {currentStep < 5 ? (
+                      <button
+                          type="button"
+                          className="btn btn-primary ms-auto"
+                          onClick={() => setCurrentStep(currentStep + 1)}
+                      >
+                        Next Step
+                      </button>
+                  ) : (
+                      <button type="submit" className="btn btn-success ms-auto">
+                        <Save size={18} className="me-2" />
+                        Create RFQ
+                      </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Sidebar - Summary */}
+              <div className="col-lg-4">
+                <div className="card sticky-top" style={{ top: '20px' }}>
+                  <div className="card-header bg-light">
+                    <h6 className="mb-0">RFQ Summary</h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="mb-3">
+                      <small className="text-muted">Type</small>
+                      <p className="mb-0 fw-bold text-primary">
+                        <Phone size={16} className="me-1" />
+                        INCOMING (Client → ERHA)
+                      </p>
+                    </div>
+
+                    {/* NEW: Show Operating Entity in Summary */}
+                    {incomingData.operatingEntity && (
+                        <div className="mb-3">
+                          <small className="text-muted">Operating Entity</small>
+                          <p className="mb-0">
+                        <span className={`badge ${
+                            incomingData.operatingEntity === 'ERHA FC' ? 'bg-primary' : 'bg-success'
+                        }`}>
+                          {incomingData.operatingEntity}
+                        </span>
+                          </p>
+                        </div>
+                    )}
+
+                    {incomingData.clientName && (
+                        <div className="mb-3">
+                          <small className="text-muted">Client</small>
+                          <p className="mb-0 fw-bold">{incomingData.clientName}</p>
+                        </div>
+                    )}
+
+                    {incomingData.projectName && (
+                        <div className="mb-3">
+                          <small className="text-muted">Project</small>
+                          <p className="mb-0">{incomingData.projectName}</p>
+                        </div>
+                    )}
+
+                    {incomingData.requiredBy && (
+                        <div className="mb-3">
+                          <small className="text-muted">Required By</small>
+                          <p className="mb-0">{new Date(incomingData.requiredBy).toLocaleDateString()}</p>
+                        </div>
+                    )}
+
+                    {incomingData.priority && (
+                        <div className="mb-3">
+                          <small className="text-muted">Priority</small>
+                          <p className="mb-0">
+                        <span className={`badge bg-${
+                            incomingData.priority === 'Urgent' ? 'danger' :
+                                incomingData.priority === 'High' ? 'warning' : 'info'
+                        }`}>
+                          {incomingData.priority}
+                        </span>
+                          </p>
+                        </div>
+                    )}
+
+                    {incomingData.workLocation && (
+                        <div className="mb-3">
+                          <small className="text-muted">Location</small>
+                          <p className="mb-0">{incomingData.workLocation}</p>
+                        </div>
+                    )}
+
+                    {incomingData.estimatedValue && (
+                        <div className="mb-3">
+                          <small className="text-muted">Estimated Value</small>
+                          <p className="mb-0 fw-bold text-success">
+                            R {incomingData.estimatedValue.toLocaleString()}
+                          </p>
+                        </div>
+                    )}
+
+                    <div className="alert alert-info small mt-4">
+                      <strong>Progress:</strong> Step {currentStep} of 5
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+    );
+  }
+
+  // OUTGOING RFQ Form (to be implemented next - showing placeholder)
+  return (
+      <div className="container-fluid">
+        <div className="alert alert-info">
+          <h4>Outgoing RFQ Form</h4>
+          <p>ERHA → Supplier RFQ form will be implemented here.</p>
+          <button className="btn btn-primary" onClick={() => setRfqType(null)}>
+            Go Back
+          </button>
+        </div>
+      </div>
+  );
+}

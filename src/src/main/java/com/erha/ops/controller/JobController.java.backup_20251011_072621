@@ -1,0 +1,137 @@
+package com.erha.ops.controller;
+
+import com.erha.ops.entity.Job;
+import com.erha.ops.service.JobService;
+import com.erha.ops.dto.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/v1/jobs")
+@CrossOrigin(origins = "*", maxAge = 3600)
+public class JobController {
+
+    @Autowired
+    private JobService jobService;
+
+    @PostMapping("/convert-from-quote")
+    public ResponseEntity<?> convertQuoteToJob(@Valid @RequestBody ConvertQuoteToJobRequest request) {
+        try {
+            Job job = jobService.convertQuoteToJob(request);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Job created successfully from quote");
+            response.put("jobNumber", job.getJobNumber());
+            response.put("jobId", job.getJobId());
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Job>> getAllJobs(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long clientId) {
+        
+        List<Job> jobs = jobService.getFilteredJobs(status, priority, clientId);
+        return ResponseEntity.ok(jobs);
+    }
+
+    @GetMapping("/{jobId}")
+    public ResponseEntity<?> getJob(@PathVariable Long jobId) {
+        try {
+            Job job = jobService.getJobById(jobId);
+            return ResponseEntity.ok(job);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+    }
+
+    @PutMapping("/{jobId}/progress")
+    public ResponseEntity<?> updateProgress(
+            @PathVariable Long jobId,
+            @Valid @RequestBody UpdateProgressRequest request) {
+        try {
+            Job job = jobService.updateJobProgress(
+                jobId, 
+                request.getProgressPercentage(), 
+                request.getNotes()
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Progress updated successfully");
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @PutMapping("/{jobId}/status")
+    public ResponseEntity<?> updateStatus(
+            @PathVariable Long jobId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String newStatus = request.get("status");
+            if (newStatus == null || newStatus.isEmpty()) {
+                throw new IllegalArgumentException("Status is required");
+            }
+            
+            Job job = jobService.updateJobStatus(jobId, newStatus);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Status updated successfully");
+            response.put("job", job);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<Map<String, Object>> getStatistics() {
+        Map<String, Object> stats = jobService.getJobStatistics();
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/by-quote/{quoteId}")
+    public ResponseEntity<?> getJobByQuoteId(@PathVariable Long quoteId) {
+        try {
+            Job job = jobService.getJobByQuoteId(quoteId);
+            return ResponseEntity.ok(job);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("exists", false);
+            response.put("message", "No job found for this quote");
+            return ResponseEntity.ok(response);
+        }
+    }
+}

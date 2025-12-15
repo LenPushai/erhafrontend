@@ -1,0 +1,613 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Grid,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Alert,
+  Snackbar,
+  CircularProgress,
+} from '@mui/material';
+import {
+  ArrowBack,
+  Add,
+  PlaylistAdd,
+} from '@mui/icons-material';
+import type { Job } from '../../../types/job';
+
+// Task Template Types
+interface TaskTemplate {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  estimatedHours: number;
+  tasks: TemplateTask[];
+}
+
+interface TemplateTask {
+  id: number;
+  taskName: string;
+  description: string;
+  sequence: number;
+  estimatedHours: number;
+  skillRequired: string;
+}
+
+// API Service for Templates
+const templateService = {
+  getAllTemplates: async (): Promise<TaskTemplate[]> => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/task-templates');
+      if (!response.ok) {
+        console.warn('Failed to fetch templates:', response.status);
+        return [];
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      return [];
+    }
+  },
+
+  getTemplateById: async (id: number): Promise<TaskTemplate | null> => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/task-templates/${id}`);
+      if (!response.ok) return null;
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching template:', error);
+      return null;
+    }
+  }
+};
+
+// Job API Service
+const jobService = {
+  getJobById: async (id: number): Promise<Job> => {
+    const response = await fetch(`http://localhost:8080/api/v1/jobs/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch job');
+    return response.json();
+  },
+
+  getChildJobs: async (parentId: number): Promise<Job[]> => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/jobs/${parentId}/children`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error fetching child jobs:', error);
+      return [];
+    }
+  },
+
+  createChildJobs: async (parentId: number, children: any[]): Promise<any[]> => {
+    const response = await fetch(`http://localhost:8080/api/v1/jobs/${parentId}/children`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(children)
+    });
+    if (!response.ok) throw new Error('Failed to create child jobs');
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  addTasksToJob: async (jobId: number, tasks: any[]): Promise<void> => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/jobs/${jobId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tasks)
+      });
+      if (!response.ok) {
+        console.warn(`Failed to add tasks to job ${jobId}:`, response.status);
+      }
+    } catch (error) {
+      console.error(`Error adding tasks to job ${jobId}:`, error);
+    }
+  }
+};
+
+export default function JobDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  // ============================================================================
+  // ✅ FIX: ID VALIDATION - Prevent /jobs/create from breaking
+  // ============================================================================
+  
+  // Guard against /jobs/create route
+  if (id === 'create') {
+    return <Navigate to="/jobs" replace />;
+  }
+
+  // Parse and validate job ID
+  const jobId = parseInt(id || '', 10);
+  
+  if (isNaN(jobId) || jobId <= 0) {
+    return (
+      <Box p={3}>
+        <Card sx={{ borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' }}>
+          <CardContent>
+            <Alert severity="error" sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Invalid Job ID
+              </Typography>
+              <Typography variant="body2">
+                The job ID "<strong>{id}</strong>" is not valid. Job IDs must be positive numbers.
+              </Typography>
+            </Alert>
+            <Box display="flex" gap={2}>
+              <Button
+                variant="contained"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate('/jobs')}
+              >
+                Back to Jobs
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(-1)}
+              >
+                Go Back
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  // State
+  const [job, setJob] = useState<Job | null>(null);
+  const [childJobs, setChildJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Dialog State
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [applyTemplate, setApplyTemplate] = useState(false);
+  const [childJobQuantity, setChildJobQuantity] = useState(1);
+  const [childJobDescription, setChildJobDescription] = useState('');
+  const [childJobLocation, setChildJobLocation] = useState('SHOP');
+  const [childJobDepartment, setChildJobDepartment] = useState('WELDING');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+
+  // Templates
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+
+  useEffect(() => {
+    loadJob();
+    loadTemplates();
+  }, [jobId]);
+
+  const loadJob = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await jobService.getJobById(jobId);
+      setJob(data);
+
+      const children = await jobService.getChildJobs(jobId);
+      setChildJobs(children);
+
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error loading job:', err);
+      setError(err.message || 'Failed to load job');
+      setLoading(false);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const data = await templateService.getAllTemplates();
+      setTemplates(data);
+    } catch (err) {
+      console.error('Error loading templates:', err);
+    }
+  };
+
+  const handleTemplateChange = async (templateId: number) => {
+    setSelectedTemplateId(templateId);
+    const template = await templateService.getTemplateById(templateId);
+    setSelectedTemplate(template);
+  };
+
+  const handleCreateChildJobs = async () => {
+    if (!job || !childJobDescription.trim()) {
+      setError('Please enter a description');
+      return;
+    }
+
+    try {
+      const childJobsData = [];
+      for (let i = 1; i <= childJobQuantity; i++) {
+        const sequenceNum = String(i).padStart(2, '0');
+        childJobsData.push({
+          description: bulkMode
+              ? `${childJobDescription} #${sequenceNum}`
+              : childJobDescription,
+          location: childJobLocation,
+          department: childJobDepartment,
+          status: 'NEW',
+          priority: 'MEDIUM'
+        });
+      }
+
+      const createdJobs = await jobService.createChildJobs(jobId, childJobsData);
+
+      if (applyTemplate && selectedTemplate && selectedTemplate.tasks) {
+        for (const createdJob of createdJobs) {
+          const tasks = selectedTemplate.tasks.map((task: TemplateTask) => ({
+            taskName: task.taskName,
+            description: task.description,
+            sequence: task.sequence,
+            estimatedHours: task.estimatedHours,
+            skillRequired: task.skillRequired,
+            status: 'PENDING'
+          }));
+
+          await jobService.addTasksToJob(createdJob.jobId, tasks);
+        }
+      }
+
+      setSuccessMessage(`Successfully created ${createdJobs.length} child job(s)!`);
+      setCreateDialogOpen(false);
+      resetDialog();
+      loadJob();
+    } catch (err: any) {
+      console.error('Error creating child jobs:', err);
+      setError(err.message || 'Failed to create child jobs');
+    }
+  };
+
+  const resetDialog = () => {
+    setChildJobDescription('');
+    setChildJobLocation('SHOP');
+    setChildJobDepartment('WELDING');
+    setBulkMode(false);
+    setApplyTemplate(false);
+    setChildJobQuantity(1);
+    setSelectedTemplateId(null);
+    setSelectedTemplate(null);
+  };
+
+  if (loading) {
+    return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+    );
+  }
+
+  if (error) {
+    return (
+        <Box p={3}>
+          <Alert severity="error">{error}</Alert>
+          <Button
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/jobs')}
+              sx={{ mt: 2 }}
+          >
+            Back to Jobs
+          </Button>
+        </Box>
+    );
+  }
+
+  if (!job) {
+    return (
+        <Box p={3}>
+          <Alert severity="warning">Job not found</Alert>
+          <Button
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/jobs')}
+              sx={{ mt: 2 }}
+          >
+            Back to Jobs
+          </Button>
+        </Box>
+    );
+  }
+
+  return (
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <IconButton onClick={() => navigate('/jobs')}>
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h4">
+              Job {job.fullJobNumber || job.jobNumber}
+            </Typography>
+            <Chip
+                label={job.status}
+                color={job.status === 'COMPLETED' ? 'success' : 'default'}
+            />
+          </Box>
+          <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setCreateDialogOpen(true)}
+          >
+            Add Child Job
+          </Button>
+        </Box>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant="subtitle2" color="textSecondary">Description</Typography>
+                <Typography variant="body1">{job.description}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="subtitle2" color="textSecondary">Department</Typography>
+                <Typography variant="body1">{job.department}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="subtitle2" color="textSecondary">Location</Typography>
+                <Typography variant="body1">{job.location}</Typography>
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="subtitle2" color="textSecondary">Priority</Typography>
+                <Chip label={job.priority} size="small" />
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Typography variant="subtitle2" color="textSecondary">Progress</Typography>
+                <Typography variant="body1">{job.progressPercentage}%</Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Child Jobs ({childJobs.length})
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+
+            {childJobs.length === 0 ? (
+                <Alert severity="info">No child jobs yet. Click "Add Child Job" to create one.</Alert>
+            ) : (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Job Number</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Department</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Progress</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {childJobs.map((child) => (
+                          <TableRow
+                              key={child.jobId}
+                              hover
+                              sx={{ cursor: 'pointer' }}
+                              onClick={() => navigate(`/jobs/${child.jobId}`)}
+                          >
+                            <TableCell>{child.fullJobNumber || child.jobNumber}</TableCell>
+                            <TableCell>{child.description}</TableCell>
+                            <TableCell>{child.department}</TableCell>
+                            <TableCell>
+                              <Chip label={child.status} size="small" />
+                            </TableCell>
+                            <TableCell>{child.progressPercentage}%</TableCell>
+                          </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog
+            open={createDialogOpen}
+            onClose={() => { setCreateDialogOpen(false); resetDialog(); }}
+            maxWidth="md"
+            fullWidth
+        >
+          <DialogTitle>Create Child Job(s)</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+              <TextField
+                  label="Description"
+                  fullWidth
+                  required
+                  value={childJobDescription}
+                  onChange={(e) => setChildJobDescription(e.target.value)}
+                  placeholder="e.g., Heat Exchanger Unit"
+              />
+
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Location</InputLabel>
+                    <Select
+                        value={childJobLocation}
+                        onChange={(e) => setChildJobLocation(e.target.value)}
+                        label="Location"
+                    >
+                      <MenuItem value="SHOP">Shop</MenuItem>
+                      <MenuItem value="SITE">Site</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Department</InputLabel>
+                    <Select
+                        value={childJobDepartment}
+                        onChange={(e) => setChildJobDepartment(e.target.value)}
+                        label="Department"
+                    >
+                      <MenuItem value="WELDING">Welding</MenuItem>
+                      <MenuItem value="MACHINING">Machining</MenuItem>
+                      <MenuItem value="FABRICATION">Fabrication</MenuItem>
+                      <MenuItem value="ERHA FC">ERHA FC</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              <Divider />
+
+              <Box>
+                <FormControlLabel
+                    control={
+                      <Checkbox
+                          checked={bulkMode}
+                          onChange={(e) => setBulkMode(e.target.checked)}
+                      />
+                    }
+                    label="Create multiple child jobs"
+                />
+
+                {bulkMode && (
+                    <TextField
+                        label="Quantity"
+                        type="number"
+                        value={childJobQuantity}
+                        onChange={(e) => setChildJobQuantity(Math.max(1, Math.min(50, Number(e.target.value))))}
+                        inputProps={{ min: 1, max: 50 }}
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        helperText="Jobs will be numbered: #01, #02, #03, etc."
+                    />
+                )}
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <FormControlLabel
+                    control={
+                      <Checkbox
+                          checked={applyTemplate}
+                          onChange={(e) => setApplyTemplate(e.target.checked)}
+                      />
+                    }
+                    label="Apply task template"
+                />
+
+                {applyTemplate && (
+                    <>
+                      <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel>Select Template</InputLabel>
+                        <Select
+                            value={selectedTemplateId || ''}
+                            onChange={(e) => handleTemplateChange(Number(e.target.value))}
+                            label="Select Template"
+                        >
+                          {templates.map((template) => (
+                              <MenuItem key={template.id} value={template.id}>
+                                {template.name} - {template.category} ({template.estimatedHours}h)
+                              </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      {selectedTemplate && (
+                          <Alert severity="info" sx={{ mt: 2 }}>
+                            <Typography variant="body2" fontWeight="bold">
+                              {selectedTemplate.name}
+                            </Typography>
+                            <Typography variant="caption" display="block">
+                              {selectedTemplate.description}
+                            </Typography>
+                            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                              Preview (first 5 tasks):
+                            </Typography>
+                            <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
+                              {selectedTemplate.tasks.slice(0, 5).map((task: TemplateTask) => (
+                                  <li key={task.id}>
+                                    <Typography variant="caption">
+                                      {task.taskName} ({task.estimatedHours}h)
+                                    </Typography>
+                                  </li>
+                              ))}
+                              {selectedTemplate.tasks.length > 5 && (
+                                  <Typography variant="caption" color="textSecondary">
+                                    ... and {selectedTemplate.tasks.length - 5} more tasks
+                                  </Typography>
+                              )}
+                            </Box>
+                          </Alert>
+                      )}
+                    </>
+                )}
+              </Box>
+
+              {(bulkMode || applyTemplate) && (
+                  <Alert severity="success">
+                    <Typography variant="body2">
+                      <strong>Summary:</strong> Will create {bulkMode ? childJobQuantity : 1} child job(s)
+                      {applyTemplate && selectedTemplate && ` with ${selectedTemplate.tasks.length} tasks each`}
+                      {applyTemplate && selectedTemplate && bulkMode && ` (${childJobQuantity * selectedTemplate.tasks.length} tasks total)`}
+                    </Typography>
+                  </Alert>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => { setCreateDialogOpen(false); resetDialog(); }}>
+              Cancel
+            </Button>
+            <Button
+                onClick={handleCreateChildJobs}
+                variant="contained"
+                disabled={!childJobDescription.trim()}
+            >
+              Create
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+            open={!!successMessage}
+            autoHideDuration={6000}
+            onClose={() => setSuccessMessage(null)}
+        >
+          <Alert severity="success" onClose={() => setSuccessMessage(null)}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
+  );
+}

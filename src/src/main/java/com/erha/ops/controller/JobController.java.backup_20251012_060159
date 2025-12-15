@@ -1,0 +1,43 @@
+// ========================================
+// INTEGRATION - FIXED ENDPOINTS!
+// ========================================
+
+@GetMapping("/{jobId}/rfq")
+public ResponseEntity<Rfq> getJobRfq(@PathVariable Long jobId) {
+    return jobService.getJobRfq(jobId)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+}
+
+@GetMapping("/{jobId}/quote")
+public ResponseEntity<Quote> getJobQuote(@PathVariable Long jobId) {
+    return jobService.getJobQuote(jobId)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+}
+
+@PostMapping("/{jobId}/link-rfq/{rfqId}")  // ✅ Added /{rfqId} to path
+public ResponseEntity<Job> linkRfqToJob(
+        @PathVariable Long jobId,
+        @PathVariable Long rfqId) {  // ✅ Changed to @PathVariable
+    try {
+        Job updatedJob = jobService.linkRfqToJob(jobId, rfqId);
+        return ResponseEntity.ok(updatedJob);
+    } catch (RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(null);
+    }
+}
+
+@PostMapping("/{jobId}/link-quote/{quoteId}")  // ✅ Added /{quoteId} to path
+public ResponseEntity<Job> linkQuoteToJob(
+        @PathVariable Long jobId,
+        @PathVariable Long quoteId) {  // ✅ Changed to @PathVariable
+    try {
+        Job updatedJob = jobService.linkQuoteToJob(jobId, quoteId);
+        return ResponseEntity.ok(updatedJob);
+    } catch (RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(null);
+    }
+}

@@ -1,4 +1,4 @@
-﻿// authService.ts - Authentication API service
+// authService.ts - Authentication API service
 const API_BASE_URL = 'http://localhost:8080';
 
 export interface LoginRequest {

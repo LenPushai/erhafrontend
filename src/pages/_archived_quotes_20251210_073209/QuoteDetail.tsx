@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { quoteService } from '../../services/quoteService';
 import PinModal from '../../components/quotes/PinModal';

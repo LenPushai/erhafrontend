@@ -1,0 +1,64 @@
+/* ERHA OPS - Global Enhancements */
+
+/* Purple gradient headers everywhere */
+.card-header,
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+}
+
+/* Large, readable fonts */
+body, .table, .card-body {
+  font-size: 18px !important;
+}
+
+/* High contrast status badges */
+.badge {
+  font-size: 16px !important;
+  padding: 8px 16px !important;
+  font-weight: 700 !important;
+}
+
+/* Touch-friendly buttons */
+.btn {
+  min-height: 48px !important;
+  font-size: 18px !important;
+  padding: 12px 32px !important;
+}
+
+/* Better focus indicators */
+*:focus {
+  outline: 3px solid #667eea !important;
+  outline-offset: 2px !important;
+}
+
+/* Card styling */
+.card {
+  border-radius: 12px !important;
+  border: 2px solid #e9ecef !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
+/* Table improvements */
+.table th {
+  font-weight: 700 !important;
+  background: #f8f9fa !important;
+  border-bottom: 3px solid #667eea !important;
+}
+
+.table td {
+  padding: 16px !important;
+}
+
+/* Form inputs */
+.form-control, .form-select {
+  min-height: 56px !important;
+  font-size: 18px !important;
+  border: 2px solid #ced4da !important;
+  border-radius: 8px !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+}

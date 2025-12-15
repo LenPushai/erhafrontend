@@ -1,0 +1,43 @@
+package com.erha.ops.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "numbering_sequences")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class NumberingSequence {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "sequence_id")
+    private Long sequenceId;
+    
+    @Column(name = "sequence_type", unique = true, nullable = false, length = 50)
+    private String sequenceType;
+    
+    @Column(name = "current_number", nullable = false)
+    private Integer currentNumber;
+    
+    @Column(name = "prefix", length = 20)
+    private String prefix;
+    
+    @Column(name = "year")
+    private Integer year;
+    
+    @Column(name = "padding_length")
+    private Integer paddingLength;
+    
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedDate = LocalDateTime.now();
+    }
+}

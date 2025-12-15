@@ -1,0 +1,633 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+
+interface RFQ {
+  id: number;
+  jobNo: string;
+  operatingEntity: string;
+  clientId: number;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  description: string;
+  status: string;
+  priority: string;
+  requestDate: string;
+  requiredDate: string;
+  estimatedValue: number;
+  quoteNumber: string;
+  quoteStatus: string;
+  quoteValueExclVat: number;
+  quoteValueInclVat: number;
+  quotePdfPath: string;
+  docusignStatus: string;
+  docusignEnvelopeId: string;
+  orderNumber: string;
+  invoiceNumber: string;
+  orderDate: string;
+  invoiceDate: string;
+}
+
+interface Signatory {
+  name: string;
+  email: string;
+}
+
+const RFQDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [rfq, setRfq] = useState<RFQ | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [showDocuSignModal, setShowDocuSignModal] = useState(false);
+  const [managers, setManagers] = useState<Signatory[]>([{ name: '', email: '' }]);
+  const [clients, setClients] = useState<Signatory[]>([{ name: '', email: '' }]);
+
+  useEffect(() => {
+    fetchRfq();
+  }, [id]);
+
+  const fetchRfq = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:8080/api/v1/rfqs/${id}`);
+      setRfq(response.data);
+      if (response.data.contactPerson || response.data.contactEmail) {
+        setClients([{
+          name: response.data.contactPerson || '',
+          email: response.data.contactEmail || ''
+        }]);
+      }
+      setError(null);
+    } catch (err) {
+      setError('Failed to load RFQ details');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/upload-quote-pdf`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      alert('Quote PDF uploaded successfully!');
+      fetchRfq();
+    } catch (err) {
+      alert('Failed to upload PDF');
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openDocuSignModal = () => {
+    if (rfq?.contactPerson || rfq?.contactEmail) {
+      setClients([{
+        name: rfq?.contactPerson || '',
+        email: rfq?.contactEmail || ''
+      }]);
+    }
+    setShowDocuSignModal(true);
+  };
+
+  const addManager = () => {
+    setManagers([...managers, { name: '', email: '' }]);
+  };
+
+  const removeManager = (index: number) => {
+    if (managers.length > 1) {
+      setManagers(managers.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateManager = (index: number, field: 'name' | 'email', value: string) => {
+    const updated = [...managers];
+    updated[index][field] = value;
+    setManagers(updated);
+  };
+
+  const addClient = () => {
+    setClients([...clients, { name: '', email: '' }]);
+  };
+
+  const removeClient = (index: number) => {
+    if (clients.length > 1) {
+      setClients(clients.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateClient = (index: number, field: 'name' | 'email', value: string) => {
+    const updated = [...clients];
+    updated[index][field] = value;
+    setClients(updated);
+  };
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const getValidSigners = () => {
+    const validManagers = managers.filter(m => m.name.trim() && isValidEmail(m.email));
+    const validClients = clients.filter(c => isValidEmail(c.email));
+    return { validManagers, validClients };
+  };
+
+  const canSend = () => {
+    const { validManagers, validClients } = getValidSigners();
+    return validManagers.length > 0 && validClients.length > 0;
+  };
+
+  const handleSendForSignature = async () => {
+    const { validManagers, validClients } = getValidSigners();
+
+    if (validManagers.length === 0) {
+      alert('Please add at least one manager with name and valid email');
+      return;
+    }
+
+    if (validClients.length === 0) {
+      alert('Please add at least one client with a valid email');
+      return;
+    }
+
+    try {
+      setSending(true);
+      const response = await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/send-for-signature`, {
+        managers: validManagers,
+        clients: validClients
+      });
+
+      const allEmails = [...validManagers.map(m => m.email), ...validClients.map(c => c.email)];
+      alert(`Success! DocuSign envelope created.\n\nEnvelope ID: ${response.data.envelopeId}\nEmails sent to: ${allEmails.join(', ')}\n\nManagers will sign first, then clients.`);
+
+      setShowDocuSignModal(false);
+      fetchRfq();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to send';
+      alert(`Error: ${errorMsg}`);
+      console.error(err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this RFQ?')) return;
+    try {
+      await axios.delete(`http://localhost:8080/api/v1/rfqs/${id}`);
+      alert('RFQ deleted successfully');
+      navigate('/rfqs');
+    } catch (err) {
+      alert('Failed to delete RFQ');
+      console.error(err);
+    }
+  };
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
+    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
+  };
+
+  const formatDate = (date: string | null | undefined) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-ZA');
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusClasses: Record<string, string> = {
+      'Draft': 'bg-secondary',
+      'Pending Clarification': 'bg-warning text-dark',
+      'Under Review': 'bg-info',
+      'Quoted': 'bg-primary',
+      'Accepted': 'bg-success',
+      'Rejected': 'bg-danger',
+      'Completed': 'bg-dark'
+    };
+    return statusClasses[status] || 'bg-secondary';
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityClasses: Record<string, string> = {
+      'Low': 'bg-success',
+      'Medium': 'bg-warning text-dark',
+      'High': 'bg-orange',
+      'Urgent': 'bg-danger'
+    };
+    return priorityClasses[priority] || 'bg-secondary';
+  };
+
+  if (loading) {
+    return (
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+    );
+  }
+
+  if (error || !rfq) {
+    return (
+        <div className="container mt-4">
+          <div className="alert alert-danger">{error || 'RFQ not found'}</div>
+          <Link to="/rfqs" className="btn btn-primary">Back to RFQs</Link>
+        </div>
+    );
+  }
+
+  const { validManagers, validClients } = getValidSigners();
+  const totalSigners = validManagers.length + validClients.length;
+
+  return (
+      <div className="container-fluid px-4">
+        <nav aria-label="breadcrumb">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+            <li className="breadcrumb-item"><Link to="/rfqs">RFQs</Link></li>
+            <li className="breadcrumb-item active">#{rfq.id}</li>
+          </ol>
+        </nav>
+
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h1><Link to="/rfqs" className="btn btn-outline-secondary me-3">Back to List</Link> RFQ Details</h1>
+          <div>
+            <Link to={`/rfqs/${id}/edit`} className="btn btn-primary me-2">Edit RFQ</Link>
+            <button className="btn btn-danger" onClick={handleDelete}>Delete RFQ</button>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="col-md-8">
+            <div className="card mb-4">
+              <div className="card-header bg-dark text-white">
+                <h5 className="mb-0">RFQ Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <strong>RFQ Number:</strong><br />
+                    {rfq.jobNo}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Status:</strong><br />
+                    <span className={`badge ${getStatusBadge(rfq.status)}`}>{rfq.status}</span>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Client:</strong><br />
+                    Client ID: {rfq.clientId}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Priority:</strong><br />
+                    <span className={`badge ${getPriorityBadge(rfq.priority)}`}>{rfq.priority}</span>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Operating Entity:</strong><br />
+                    {rfq.operatingEntity}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Contact Person:</strong><br />
+                    {rfq.contactPerson || 'N/A'}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Contact Email:</strong><br />
+                    {rfq.contactEmail || 'N/A'}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Contact Phone:</strong><br />
+                    {rfq.contactPhone || 'N/A'}
+                  </div>
+                  <div className="col-12 mb-3">
+                    <strong>Description:</strong><br />
+                    {rfq.description || 'N/A'}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Requested Date:</strong><br />
+                    {formatDate(rfq.requestDate)}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Required By Date:</strong><br />
+                    {formatDate(rfq.requiredDate)}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Estimated Value:</strong><br />
+                    {formatCurrency(rfq.estimatedValue)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card mb-4">
+              <div className="card-header bg-info text-white">
+                <h5 className="mb-0">Quote Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <strong>Quote Number:</strong><br />
+                    {rfq.quoteNumber || 'Not yet quoted'}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Quote Status:</strong><br />
+                    {rfq.quoteStatus || 'N/A'}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Quote Value (Excl VAT):</strong><br />
+                    {formatCurrency(rfq.quoteValueExclVat)}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Quote Value (Incl VAT):</strong><br />
+                    <span className="text-primary fw-bold">{formatCurrency(rfq.quoteValueInclVat)}</span>
+                  </div>
+
+                  {rfq.quotePdfPath && (
+                      <div className="col-12 mb-3">
+                        <strong>Quote PDF:</strong><br />
+                        <a href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">View Quote PDF</a>
+                      </div>
+                  )}
+                  {rfq.docusignStatus && (
+                      <div className="col-12 mb-3">
+                        <strong>DocuSign Status:</strong><br />
+                        <span className={`badge ${rfq.docusignStatus === 'COMPLETED' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                      {rfq.docusignStatus}
+                    </span>
+                        {rfq.docusignEnvelopeId && (
+                            <small className="text-muted ms-2">Envelope: {rfq.docusignEnvelopeId}</small>
+                        )}
+                      </div>
+                  )}
+                </div>
+              </div>
+        {/* Order Information Card */}
+        <div className="card mb-4">
+          <div className="card-header bg-warning text-dark">
+            <h5 className="mb-0">
+              <i className="bi bi-cart-check me-2"></i>
+              Order Information
+            </h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Order Number:</strong><br />
+                {rfq.orderNumber ? (
+                  <span className="badge bg-success">{rfq.orderNumber}</span>
+                ) : (
+                  <span className="text-muted">Not yet ordered</span>
+                )}
+              </div>
+              <div className="col-md-6 mb-3">
+                <strong>Order Date:</strong><br />
+                {rfq.orderDate ? formatDate(rfq.orderDate) : <span className="text-muted">N/A</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoice Information Card */}
+        <div className="card mb-4">
+          <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
+            <h5 className="mb-0">
+              <i className="bi bi-receipt me-2"></i>
+              Invoice Information
+            </h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Number:</strong><br />
+                {rfq.invoiceNumber ? (
+                  <span className="badge" style={{backgroundColor: '#6f42c1', color: 'white'}}>{rfq.invoiceNumber}</span>
+                ) : (
+                  <span className="text-muted">Not yet invoiced</span>
+                )}
+              </div>
+              <div className="col-md-6 mb-3">
+                <strong>Invoice Date:</strong><br />
+                {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : <span className="text-muted">N/A</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+                {/* Order Information Card */}
+                <div className="card mb-4">
+                  <div className="card-header bg-warning text-dark">
+                    <h5 className="mb-0">Order Information</h5>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <strong>Order Number:</strong><br />
+                        {rfq.orderNumber || 'Not yet ordered'}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <strong>Order Date:</strong><br />
+                        {rfq.orderDate ? formatDate(rfq.orderDate) : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice Information Card */}
+                <div className="card mb-4">
+                  <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
+                    <h5 className="mb-0">Invoice Information</h5>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <strong>Invoice Number:</strong><br />
+                        {rfq.invoiceNumber || 'Not yet invoiced'}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <strong>Invoice Date:</strong><br />
+                        {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+
+          <div className="col-md-4">
+            <div className="card mb-4">
+              <div className="card-header bg-dark text-white">
+                <h5 className="mb-0">Actions</h5>
+              </div>
+              <div className="card-body">
+                <div className="d-grid gap-2">
+                  <button className="btn btn-info">Export to Pastel</button>
+
+                  <label className={`btn btn-warning ${uploading ? 'disabled' : ''}`}>
+                    {uploading ? 'Uploading...' : 'Upload Quote PDF'}
+                    <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  <button
+                      className="btn btn-success"
+                      onClick={openDocuSignModal}
+                      disabled={!rfq.quotePdfPath || rfq.docusignStatus === 'PENDING' || !rfq.contactEmail}
+                  >
+                    Send for Signature
+                  </button>
+
+                  <hr />
+                  <Link to={`/rfqs/${id}/edit`} className="btn btn-outline-primary">Edit RFQ</Link>
+                  <button className="btn btn-outline-danger" onClick={handleDelete}>Delete RFQ</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header bg-dark text-white">
+                <h5 className="mb-0">Workflow Progress</h5>
+              </div>
+              <div className="card-body">
+                <div className="list-group">
+                  <div className={`list-group-item ${rfq.id ? 'list-group-item-success' : ''}`}>RFQ Created</div>
+                  <div className={`list-group-item ${rfq.quoteNumber ? 'list-group-item-success' : ''}`}>Quote Added</div>
+                  <div className={`list-group-item ${rfq.quotePdfPath ? 'list-group-item-success' : ''}`}>PDF Uploaded</div>
+                  <div className={`list-group-item ${rfq.docusignStatus === 'COMPLETED' ? 'list-group-item-success' : ''}`}>Customer Signed</div>
+                  <div className={`list-group-item ${rfq.orderNumber ? 'list-group-item-success' : ''}`}>Order Received</div>
+                  <div className={`list-group-item ${rfq.invoiceNumber ? 'list-group-item-success' : ''}`}>Invoiced</div>
+                  <div className="list-group-item">Payment Received</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showDocuSignModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">Send Quote for Signature</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowDocuSignModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info">
+                  <strong>Signing Order:</strong> Managers sign first (in order), then clients sign (in order).
+                </div>
+
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-primary mb-0">Managers (Sign First)</h6>
+                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={addManager}>+ Add Manager</button>
+                  </div>
+                  {managers.map((manager, index) => (
+                      <div key={index} className="card mb-2">
+                        <div className="card-body py-2">
+                          <div className="row g-2 align-items-center">
+                            <div className="col-md-1">
+                              <span className="badge bg-primary">{index + 1}</span>
+                            </div>
+                            <div className="col-md-4">
+                              <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  placeholder="Manager Name"
+                                  value={manager.name}
+                                  onChange={(e) => updateManager(index, 'name', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-5">
+                              <input
+                                  type="email"
+                                  className={`form-control form-control-sm ${manager.email && !isValidEmail(manager.email) ? 'is-invalid' : ''}`}
+                                  placeholder="manager@erha.co.za"
+                                  value={manager.email}
+                                  onChange={(e) => updateManager(index, 'email', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-2">
+                              {managers.length > 1 && (
+                                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeManager(index)}>Remove</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  ))}
+                </div>
+
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h6 className="text-success mb-0">Clients (Sign Second)</h6>
+                    <button type="button" className="btn btn-sm btn-outline-success" onClick={addClient}>+ Add Client</button>
+                  </div>
+                  {clients.map((client, index) => (
+                      <div key={index} className="card mb-2 border-success">
+                        <div className="card-body py-2">
+                          <div className="row g-2 align-items-center">
+                            <div className="col-md-1">
+                              <span className="badge bg-success">{index + 1}</span>
+                            </div>
+                            <div className="col-md-4">
+                              <input
+                                  type="text"
+                                  className="form-control form-control-sm"
+                                  placeholder="Client Name (optional)"
+                                  value={client.name}
+                                  onChange={(e) => updateClient(index, 'name', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-5">
+                              <input
+                                  type="email"
+                                  className={`form-control form-control-sm ${client.email && !isValidEmail(client.email) ? 'is-invalid' : ''}`}
+                                  placeholder="client@company.co.za"
+                                  value={client.email}
+                                  onChange={(e) => updateClient(index, 'email', e.target.value)}
+                              />
+                            </div>
+                            <div className="col-md-2">
+                              {clients.length > 1 && (
+                                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeClient(index)}>Remove</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDocuSignModal(false)}>Cancel</button>
+                <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={handleSendForSignature}
+                    disabled={sending || !canSend()}
+                >
+                  {sending ? 'Sending...' : `Send to DocuSign (${totalSigners} signers)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+      </div>
+  );
+};
+
+export default RFQDetail;

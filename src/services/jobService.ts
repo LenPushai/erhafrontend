@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import type { Job } from '../types/job';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 // Centralized status type definitions
 export type RFQStatus = 'PENDING' | 'IN_PROGRESS' | 'QUOTED' | 'ACCEPTED' | 'REJECTED';

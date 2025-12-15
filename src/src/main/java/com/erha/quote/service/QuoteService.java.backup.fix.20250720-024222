@@ -1,0 +1,166 @@
+package com.erha.quote.service;
+
+import com.erha.quote.util.QuoteUtils;
+
+import com.erha.quote.model.Quote;
+import com.erha.quote.model.QuoteStatus;
+import com.erha.quote.model.QuotePriority;
+import com.erha.quote.repository.QuoteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.HashMap;
+
+@Service
+public class QuoteService {
+    
+    @Autowired
+    private QuoteRepository quoteRepository;
+    
+    // Core CRUD
+    public Quote createQuote(Quote quote) {
+        quote.setQuoteNumber("QTE" + System.currentTimeMillis());
+        quote.calculateTotal();
+        return quoteRepository.save(quote);
+    }
+    
+    public Optional<Quote> getQuoteById(Long id) {
+        return quoteRepository.findById(id);
+    }
+    
+    public Quote updateQuote(Quote quote) {
+        quote.setUpdatedAt(LocalDateTime.now());
+        quote.calculateTotal();
+        return quoteRepository.save(quote);
+    }
+    
+    public void deleteQuote(Long id) {
+        quoteRepository.deleteById(id);
+    }
+    
+    public List<Quote> getAllQuotes() {
+        return quoteRepository.findAll();
+    }
+    
+    public Page<Quote> getAllQuotes(Pageable pageable) {
+        return quoteRepository.findAll(pageable);
+    }
+    
+    // Status operations
+    public List<Quote> getQuotesByStatus(QuoteStatus status) {
+        return quoteRepository.findByStatus(status);
+    }
+    
+    public Page<Quote> getQuotesByStatus(QuoteStatus status, Pageable pageable) {
+        return quoteRepository.findByStatus(status, pageable);
+    }
+    
+    public Long countByStatus(QuoteStatus status) {
+        return quoteRepository.countByStatus(status);
+    }
+    
+    // Priority operations
+    public List<Quote> getQuotesByPriority(QuotePriority priority) {
+        return quoteRepository.findByPriority(priority);
+    }
+    
+    // Client operations
+    public List<Quote> getQuotesByClient(String clientName) {
+        return quoteRepository.findByClientNameContainingIgnoreCase(clientName);
+    }
+    
+    // Financial operations
+    public List<Quote> getHighValueQuotes(BigDecimal threshold) {
+        return quoteRepository.findHighValueQuotes(threshold);
+    }
+    
+    public List<Quote> getQuotesByValueRange(BigDecimal min, BigDecimal max) {
+        return quoteRepository.findByTotalAmountBetween(min, max);
+    }
+    
+    public BigDecimal getTotalApprovedValue() {
+        BigDecimal total = quoteRepository.getTotalApprovedValue();
+        return total != null ? total : BigDecimal.ZERO;
+    }
+    
+    public BigDecimal getAverageQuoteValue() {
+        BigDecimal avg = quoteRepository.getAverageQuoteValue();
+        return avg != null ? avg : BigDecimal.ZERO;
+    }
+    
+    // Date operations
+    public List<Quote> getExpiredQuotes() {
+        return quoteRepository.findExpiredQuotes();
+    }
+    
+    public List<Quote> getRecentQuotes(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return quoteRepository.findRecentQuotes(pageable);
+    }
+    
+    public List<Quote> getQuotesInDateRange(LocalDateTime start, LocalDateTime end) {
+        return quoteRepository.findByCreatedAtBetween(start, end);
+    }
+    
+    // Workflow operations
+    public Quote approveQuote(Long id, String approver) {
+        Quote quote = getQuoteById(id).orElseThrow();
+        quote.approve(approver);
+        return quoteRepository.save(quote);
+    }
+    
+    public Quote rejectQuote(Long id) {
+        Quote quote = getQuoteById(id).orElseThrow();
+        quote.setStatus(QuoteStatus.REJECTED);
+        quote.setUpdatedAt(LocalDateTime.now());
+        return quoteRepository.save(quote);
+    }
+    
+    public Quote sendToClient(Long id) {
+        Quote quote = getQuoteById(id).orElseThrow();
+        quote.setStatus(QuoteStatus.SENT_TO_CLIENT);
+        quote.setUpdatedAt(LocalDateTime.now());
+        return quoteRepository.save(quote);
+    }
+    
+    // Analytics
+    public Map<String, Object> getAnalytics() {
+        Map<String, Object> analytics = new HashMap<>();
+        analytics.put("totalQuotes", quoteRepository.count());
+        analytics.put("totalApprovedValue", getTotalApprovedValue());
+        analytics.put("averageQuoteValue", getAverageQuoteValue());
+        analytics.put("statusCounts", getStatusCounts());
+        return analytics;
+    }
+    
+    public Map<QuoteStatus, Long> getStatusCounts() {
+        Map<QuoteStatus, Long> counts = new HashMap<>();
+        for (QuoteStatus status : QuoteStatus.values()) {
+            counts.put(status, countByStatus(status));
+        }
+        return counts;
+    }
+    
+    // Utility
+    public Long getQuoteCount() {
+        return quoteRepository.count();
+    }
+    
+    public void initSampleData() {
+        if (quoteRepository.count() == 0) {
+            Quote sample = new Quote("ERHA Manufacturing", "Sample Pressure Vessel", new BigDecimal("150000"));
+            sample.setDescription("Sample quote for testing 25 endpoints");
+            sample.setCreatedBy(QuoteUtils.stringToUUID("Dynamic Duo"));
+            createQuote(sample);
+        }
+    }
+}
+

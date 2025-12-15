@@ -65,7 +65,7 @@ function App() {
           
           {/* Catch all - redirect to dashboard (will go to login if not authenticated) */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+          </Routes>
       </ToastProvider>
     </AuthProvider>
   )

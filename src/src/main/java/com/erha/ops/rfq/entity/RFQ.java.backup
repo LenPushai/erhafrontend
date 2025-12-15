@@ -1,0 +1,140 @@
+package com.erha.ops.rfq.entity;
+
+import com.erha.ops.rfq.enums.RFQStatus;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
+
+/**
+ * RFQ Entity - Simplified for initial testing
+ * Enhanced for ERHA OPS v7.0
+ */
+@Entity
+@Table(name = "simple_rfqs")
+public class RFQ {
+    
+    @Id
+    @Column(name = "rfq_id", columnDefinition = "CHAR(36)")
+    private String rfqId;
+    
+    @Column(name = "rfq_number", unique = true, nullable = false)
+    private String rfqNumber;
+    
+    @Column(name = "title", nullable = false)
+    private String title;
+    
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+    
+    @Column(name = "client_name", nullable = false)
+    private String clientName;
+    
+    @Column(name = "client_email")
+    private String clientEmail;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private RFQStatus status = RFQStatus.DRAFT;
+    
+    @Column(name = "estimated_value", precision = 15, scale = 2)
+    private BigDecimal estimatedValue;
+    
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+    
+    // Constructors
+    public RFQ() {
+        this.createdAt = LocalDateTime.now();
+    }
+    
+    public RFQ(String rfqNumber, String title, String clientName) {
+        this();
+        this.rfqNumber = rfqNumber;
+        this.title = title;
+        this.clientName = clientName;
+    }
+    
+    // Getters and Setters
+    public String getRfqId() {
+        return rfqId;
+    }
+    
+    public void setRfqId(String rfqId) {
+        this.rfqId = rfqId;
+    }
+    
+    public String getRfqNumber() {
+        return rfqNumber;
+    }
+    
+    public void setRfqNumber(String rfqNumber) {
+        this.rfqNumber = rfqNumber;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getClientName() {
+        return clientName;
+    }
+    
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+    
+    public String getClientEmail() {
+        return clientEmail;
+    }
+    
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+    
+    public RFQStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(RFQStatus status) {
+        this.status = status;
+    }
+    
+    public BigDecimal getEstimatedValue() {
+        return estimatedValue;
+    }
+    
+    public void setEstimatedValue(BigDecimal estimatedValue) {
+        this.estimatedValue = estimatedValue;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+    
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+}

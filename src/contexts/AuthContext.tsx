@@ -1,4 +1,4 @@
-﻿// AuthContext.tsx - Self-contained with all types
+// AuthContext.tsx - Self-contained with all types
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Define all types locally

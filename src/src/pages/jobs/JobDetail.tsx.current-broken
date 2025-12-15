@@ -1,0 +1,426 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import axios from 'axios';
+
+interface Job {
+  id: number;
+  jobNumber: string;
+  rfqId?: number;
+  rfqNumber?: string;
+  orderNumber?: string;
+  description: string;
+  department: string;
+  location: string;
+  status: string;
+  priority: string;
+  progress: number;
+  startDate?: string;
+  dueDate?: string;
+  completionDate?: string;
+  materialOrdered?: string;
+  dateReceived?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+const JobDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Guard #1: Redirect /jobs/create
+  if (id === 'create') {
+    return <Navigate to="/jobs" replace />;
+  }
+
+  // Guard #2: Validate numeric ID
+  const jobId = parseInt(id || '', 10);
+  if (isNaN(jobId) || jobId <= 0) {
+    return (
+        <div className="container-fluid px-4 py-5">
+          <div className="alert alert-danger">
+            <strong>Invalid Job ID:</strong> "{id}" is not a valid job number.
+          </div>
+        </div>
+    );
+  }
+
+  useEffect(() => {
+    fetchJob();
+  }, [jobId]);
+
+  const fetchJob = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/v1/jobs/${jobId}`);
+      setJob(response.data);
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error fetching job:', err);
+      setError(err.response?.data?.message || 'Failed to load job details');
+      setLoading(false);
+    }
+  };
+
+  const getStatusConfig = (status: string) => {
+    const configs: { [key: string]: { class: string; icon: string } } = {
+      'NEW': { class: 'bg-info text-white', icon: '🆕' },
+      'IN_PROGRESS': { class: 'bg-primary text-white', icon: '⚙️' },
+      'ON_HOLD': { class: 'bg-warning text-dark', icon: '⏸️' },
+      'COMPLETED': { class: 'bg-success text-white', icon: '✅' },
+      'CANCELLED': { class: 'bg-danger text-white', icon: '❌' }
+    };
+    return configs[status] || configs['NEW'];
+  };
+
+  const getPriorityConfig = (priority: string) => {
+    const configs: { [key: string]: { class: string; icon: string } } = {
+      'LOW': { class: 'bg-info text-white', icon: '⬇️' },
+      'MEDIUM': { class: 'bg-warning text-dark', icon: '➡️' },
+      'HIGH': { class: 'bg-orange text-white', icon: '⬆️' },
+      'URGENT': { class: 'bg-danger text-white', icon: '🔥' }
+    };
+    return configs[priority] || configs['MEDIUM'];
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const handleGeneratePDF = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/v1/jobs/${jobId}/pdf`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Job_Card_${job?.jobNumber || jobId}_${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate job card PDF');
+    }
+  };
+
+  const handleCreateChildJob = () => {
+    // Navigate to child job creation (if implemented)
+    alert('Create Child Job functionality - to be implemented');
+  };
+
+  if (loading) {
+    return (
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+          <div className="text-center">
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-3 fw-semibold text-secondary">Loading job details...</p>
+          </div>
+        </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+        <div className="container-fluid px-4 py-5">
+          <div className="alert alert-danger">
+            <h4 className="alert-heading">Error Loading Job</h4>
+            <p>{error || 'Job not found'}</p>
+            <hr />
+            <button onClick={() => navigate('/jobs')} className="btn btn-outline-danger">
+              ← Back to Jobs
+            </button>
+          </div>
+        </div>
+    );
+  }
+
+  const statusConfig = getStatusConfig(job.status);
+  const priorityConfig = getPriorityConfig(job.priority);
+
+  return (
+      <div className="min-vh-100" style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' }}>
+        {/* Header */}
+        <div className="text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #6610f2 0%, #0d6efd 50%, #0a58ca 100%)' }}>
+          <div className="container-fluid px-4 py-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <button
+                    onClick={() => navigate('/jobs')}
+                    className="btn btn-light btn-sm mb-3"
+                >
+                  ← Back to Jobs
+                </button>
+                <h1 className="display-5 fw-bold mb-2">
+                  <span className="fs-1 me-2">📋</span>
+                  Job: {job.jobNumber}
+                </h1>
+                <p className="mb-0 opacity-75">Master Job Card - ERHA Operations</p>
+              </div>
+              <div className="d-flex gap-2">
+                <button
+                    onClick={() => navigate(`/jobs/${job.jobId}/edit`)}
+                    className="btn btn-warning fw-semibold"
+                    style={{ borderRadius: '8px' }}
+                >
+                  ✏️ Edit Job
+                </button>
+                <button
+                    onClick={handleGeneratePDF}
+                    className="btn btn-light fw-semibold"
+                    style={{ borderRadius: '8px' }}
+                >
+                  📄 Generate PDF
+                </button>
+                <button
+                    onClick={handleCreateChildJob}
+                    className="btn btn-success fw-semibold"
+                    style={{ borderRadius: '8px' }}
+                >
+                  ➕ Create Child Job
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="container-fluid px-4 py-4">
+          <div className="row g-4">
+            {/* Left Column */}
+            <div className="col-lg-8">
+              {/* Job Information Card */}
+              <div className="card shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-dark text-white">
+                  <h5 className="mb-0">📌 Job Information</h5>
+                </div>
+                <div className="card-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="text-muted small mb-1">Job Number</label>
+                      <div className="fw-bold fs-5">{job.jobNumber}</div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="text-muted small mb-1">Order Number</label>
+                      <div className="fw-bold fs-5">{job.orderNumber || 'Not assigned'}</div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="text-muted small mb-1">Department</label>
+                      <div className="fw-semibold">{job.department}</div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="text-muted small mb-1">Location</label>
+                      <div className="fw-semibold">{job.location}</div>
+                    </div>
+                    <div className="col-12">
+                      <label className="text-muted small mb-1">Description</label>
+                      <div className="p-3 bg-light rounded">{job.description}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RFQ Source Card */}
+              {job.rfqId && (
+                  <div className="card shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+                    <div className="card-header bg-info text-white">
+                      <h5 className="mb-0">🔗 Source RFQ</h5>
+                    </div>
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <p className="mb-1">This job was created from RFQ:</p>
+                          <h4 className="mb-0 fw-bold">{job.rfqNumber || `RFQ #${job.rfqId}`}</h4>
+                        </div>
+                        <button
+                            onClick={() => navigate(`/rfq/${job.rfqId}`)}
+                            className="btn btn-info"
+                        >
+                          View RFQ →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+              )}
+
+              {/* Planning Information Card */}
+              <div className="card shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-warning text-dark">
+                  <h5 className="mb-0">📅 Supervisor Job Planning Info</h5>
+                </div>
+                <div className="card-body">
+                  <div className="row g-3">
+                    <div className="col-md-3">
+                      <label className="text-muted small mb-1">Date Received</label>
+                      <div className="fw-semibold">{formatDate(job.dateReceived)}</div>
+                    </div>
+                    <div className="col-md-3">
+                      <label className="text-muted small mb-1">Material Ordered</label>
+                      <div className="fw-semibold">{job.materialOrdered || 'Not ordered'}</div>
+                    </div>
+                    <div className="col-md-3">
+                      <label className="text-muted small mb-1">Completion Date</label>
+                      <div className="fw-semibold">{formatDate(job.completionDate)}</div>
+                    </div>
+                    <div className="col-md-3">
+                      <label className="text-muted small mb-1">Due Date</label>
+                      <div className="fw-semibold text-danger">{formatDate(job.dueDate)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Task Checklist Card */}
+              <div className="card shadow-sm" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-primary text-white">
+                  <h5 className="mb-0">✅ Task Checklist</h5>
+                </div>
+                <div className="card-body">
+                  <div className="alert alert-info mb-0">
+                    <p className="mb-0">
+                      <strong>📝 Note:</strong> Task management coming soon. This will include:
+                    </p>
+                    <ul className="mb-0 mt-2">
+                      <li>Manufacture tasks</li>
+                      <li>Sandblast operations</li>
+                      <li>Material preparation</li>
+                      <li>Quality checks</li>
+                      <li>Progress tracking</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="col-lg-4">
+              {/* Status & Priority Card */}
+              <div className="card shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-secondary text-white">
+                  <h5 className="mb-0">📊 Status & Priority</h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="text-muted small mb-2">Status</label>
+                    <div>
+                    <span className={`badge ${statusConfig.class} rounded-pill px-4 py-2 fs-6`}>
+                      {statusConfig.icon} {job.status}
+                    </span>
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="text-muted small mb-2">Priority</label>
+                    <div>
+                    <span className={`badge ${priorityConfig.class} rounded-pill px-4 py-2 fs-6`}>
+                      {priorityConfig.icon} {job.priority}
+                    </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-muted small mb-2">Progress</label>
+                    <div className="progress" style={{ height: '25px' }}>
+                      <div
+                          className="progress-bar progress-bar-striped progress-bar-animated"
+                          role="progressbar"
+                          style={{ width: `${job.progress}%` }}
+                          aria-valuenow={job.progress}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                      >
+                        {job.progress}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates Card */}
+              <div className="card shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-success text-white">
+                  <h5 className="mb-0">📆 Important Dates</h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="text-muted small mb-1">Start Date</label>
+                    <div className="fw-semibold">{formatDate(job.startDate)}</div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="text-muted small mb-1">Due Date</label>
+                    <div className="fw-semibold text-danger">{formatDate(job.dueDate)}</div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="text-muted small mb-1">Completion Date</label>
+                    <div className="fw-semibold">{formatDate(job.completionDate)}</div>
+                  </div>
+                  <div>
+                    <label className="text-muted small mb-1">Created</label>
+                    <div className="fw-semibold text-muted">{formatDate(job.createdAt)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Card */}
+              <div className="card shadow-sm" style={{ borderRadius: '12px' }}>
+                <div className="card-header bg-dark text-white">
+                  <h5 className="mb-0">⚡ Quick Actions</h5>
+                </div>
+                <div className="card-body">
+                  <div className="d-grid gap-2">
+                    <button
+                        onClick={() => navigate(`/jobs/${job.jobId}/edit`)}
+                        className="btn btn-outline-primary"
+                    >
+                      ✏️ Edit Job Details
+                    </button>
+                    <button
+                        onClick={handleGeneratePDF}
+                        className="btn btn-outline-info"
+                    >
+                      📄 Download Job Card PDF
+                    </button>
+                    <button
+                        onClick={handleCreateChildJob}
+                        className="btn btn-outline-success"
+                    >
+                      ➕ Create Child Job
+                    </button>
+                    {job.rfqId && (
+                        <button
+                            onClick={() => navigate(`/rfq/${job.rfqId}`)}
+                            className="btn btn-outline-secondary"
+                        >
+                          🔗 View Source RFQ
+                        </button>
+                    )}
+                    <button
+                        onClick={() => navigate('/jobs')}
+                        className="btn btn-outline-dark"
+                    >
+                      ← Back to All Jobs
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Styles */}
+        <style>{`
+        .bg-orange { background-color: #fd7e14 !important; }
+        .card { transition: all 0.2s ease; }
+        .card:hover { transform: translateY(-2px); }
+      `}</style>
+      </div>
+  );
+};
+
+export default JobDetail;
+
+

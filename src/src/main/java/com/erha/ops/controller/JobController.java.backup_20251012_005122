@@ -1,0 +1,178 @@
+package com.erha.ops.controller;
+
+import com.erha.ops.entity.Job;
+import com.erha.ops.entity.Rfq;
+import com.erha.ops.entity.Quote;
+import com.erha.ops.entity.WorkProgress;
+import com.erha.ops.service.JobService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/v1/jobs")
+@CrossOrigin(origins = "*")
+public class JobController {
+
+    @Autowired
+    private JobService jobService;
+
+    // ========================================
+    // BASIC CRUD OPERATIONS (6 endpoints)
+    // ========================================
+
+    @GetMapping
+    public ResponseEntity<List<Job>> getAllJobs() {
+        return ResponseEntity.ok(jobService.getAllJobs());
+    }
+
+    @PostMapping
+    public ResponseEntity<Job> createJob(@RequestBody Job job) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(jobService.createJob(job));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJobById(@PathVariable Long id) {
+        return jobService.getJobById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job) {
+        return ResponseEntity.ok(jobService.updateJob(id, job));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
+        jobService.deleteJob(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Job> updateJobStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+        return ResponseEntity.ok(jobService.updateJobStatus(id, jobStatus));
+    }
+
+    // ========================================
+    // FILTERING & SEARCH (6 endpoints)
+    // ========================================
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Job>> getJobsByStatus(@PathVariable String status) {
+        Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+        return ResponseEntity.ok(jobService.getJobsByStatus(jobStatus));
+    }
+
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<Job>> getJobsByDepartment(@PathVariable String department) {
+        return ResponseEntity.ok(jobService.getJobsByDepartment(department));
+    }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<Job>> getJobsByClient(@PathVariable Long clientId) {
+        return ResponseEntity.ok(jobService.getJobsByClient(clientId));
+    }
+
+    @GetMapping("/priority/{priority}")
+    public ResponseEntity<List<Job>> getJobsByPriority(@PathVariable String priority) {
+        Job.JobPriority jobPriority = Job.JobPriority.valueOf(priority.toUpperCase());
+        return ResponseEntity.ok(jobService.getJobsByPriority(jobPriority));
+    }
+
+    @GetMapping("/overdue")
+    public ResponseEntity<List<Job>> getOverdueJobs() {
+        return ResponseEntity.ok(jobService.getOverdueJobs());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Job>> searchJobs(@RequestParam String keyword) {
+        return ResponseEntity.ok(jobService.searchJobs(keyword));
+    }
+
+    // ========================================
+    // PROGRESS MANAGEMENT (3 endpoints)
+    // ========================================
+
+    @GetMapping("/{jobId}/progress")
+    public ResponseEntity<List<WorkProgress>> getJobProgress(@PathVariable Long jobId) {
+        return ResponseEntity.ok(jobService.getJobProgress(jobId));
+    }
+
+    @PostMapping("/{jobId}/progress")
+    public ResponseEntity<WorkProgress> addJobProgress(
+            @PathVariable Long jobId,
+            @RequestBody WorkProgress progress) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(jobService.addJobProgress(jobId, progress));
+    }
+
+    @GetMapping("/{jobId}/progress/latest")
+    public ResponseEntity<WorkProgress> getLatestJobProgress(@PathVariable Long jobId) {
+        return jobService.getLatestJobProgress(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ========================================
+    // INTEGRATION (4 endpoints) - FIXED! 🔧
+    // ========================================
+
+    @GetMapping("/{jobId}/rfq")
+    public ResponseEntity<Rfq> getJobRfq(@PathVariable Long jobId) {
+        return jobService.getJobRfq(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{jobId}/quote")
+    public ResponseEntity<Quote> getJobQuote(@PathVariable Long jobId) {
+        return jobService.getJobQuote(jobId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // 🔧 FIXED: Explicit path variable names and proper method signature
+    @PostMapping(value = "/{jobId}/link-rfq/{rfqId}")
+    public ResponseEntity<Job> linkRfqToJob(
+            @PathVariable(name = "jobId") Long jobId,
+            @PathVariable(name = "rfqId") Long rfqId) {
+        try {
+            Job updatedJob = jobService.linkRfqToJob(jobId, rfqId);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // 🔧 FIXED: Explicit path variable names and proper method signature
+    @PostMapping(value = "/{jobId}/link-quote/{quoteId}")
+    public ResponseEntity<Job> linkQuoteToJob(
+            @PathVariable(name = "jobId") Long jobId,
+            @PathVariable(name = "quoteId") Long quoteId) {
+        try {
+            Job updatedJob = jobService.linkQuoteToJob(jobId, quoteId);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ========================================
+    // STATISTICS (1 endpoint)
+    // ========================================
+
+    @GetMapping("/statistics")
+    public ResponseEntity<Map<String, Object>> getJobStatistics() {
+        return ResponseEntity.ok(jobService.getJobStatistics());
+    }
+}

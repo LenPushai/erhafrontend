@@ -1,0 +1,50 @@
+package com.erha.ops.repository;
+
+import com.erha.ops.entity.Job;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
+    
+    Optional<Job> findByJobNumber(String jobNumber);
+    
+    Optional<Job> findByQuoteId(Long quoteId);
+    
+    boolean existsByQuoteId(Long quoteId);
+    
+    List<Job> findByClientId(Long clientId);
+    
+    List<Job> findByStatus(Job.JobStatus status);
+    
+    List<Job> findByPriority(Job.JobPriority priority);
+    
+    Long countByStatus(Job.JobStatus status);
+    
+    Long countByPriority(Job.JobPriority priority);
+    
+    Long countByStatusNot(Job.JobStatus status);
+    
+    @Query("SELECT COUNT(j) FROM Job j WHERE j.expectedDeliveryDate < :currentDate AND j.status NOT IN ('DELIVERED', 'COMPLETE', 'INVOICED')")
+    Long countOverdueJobs(@Param("currentDate") LocalDate currentDate);
+    
+    @Query("SELECT j FROM Job j WHERE j.expectedDeliveryDate BETWEEN :startDate AND :endDate")
+    List<Job> findJobsDueBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT j FROM Job j WHERE j.status = 'IN_PROGRESS' ORDER BY j.expectedDeliveryDate ASC")
+    List<Job> findActiveJobsOrderByDeliveryDate();
+
+    // Additional query methods for dashboard
+    List<Job> findByStatusNot(Job.JobStatus status);
+    List<Job> findByLocation(Job.JobLocation location);
+    
+    @Query("SELECT j FROM Job j WHERE j.expectedDeliveryDate < :date AND j.status NOT IN ('DELIVERED', 'COMPLETE')")
+    List<Job> findOverdueJobs(@Param("date") LocalDate date);
+}
