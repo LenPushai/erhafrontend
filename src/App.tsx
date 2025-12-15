@@ -20,6 +20,7 @@ import CreateClient from './pages/clients/CreateClient'
 import InventoryPage from './pages/inventory/InventoryPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
+import WorkshopPortal from './pages/workshop/WorkshopPortal';
 
 function App() {
   return (
