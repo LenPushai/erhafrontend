@@ -37,3 +37,9 @@ export async function getWorkers(): Promise<Worker[]> {
   if (!res.ok) throw new Error("Failed to load workers");
   return res.json();
 }
+export async function advanceJobStatus(jobId: number): Promise<void> {
+  const res = await fetch(API_BASE + "/workshop/jobs/" + jobId + "/advance", {
+    method: "POST"
+  });
+  if (!res.ok) throw new Error("Failed to advance job status");
+}
