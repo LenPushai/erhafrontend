@@ -20,55 +20,58 @@ import CreateClient from './pages/clients/CreateClient'
 import InventoryPage from './pages/inventory/InventoryPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
-import WorkshopPortal from './pages/workshop/WorkshopPortal';
+import WorkshopPortal from './pages/workshop/WorkshopPortal'
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Routes>
-          {/* Public Route - Login */}
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected Routes - All wrapped in MainLayout */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            
-            {/* RFQ Routes - create before :id */}
-            <Route path="rfq" element={<RFQList />} />
-            <Route path="rfq/create" element={<CreateRFQ />} />
-            <Route path="rfq/:id" element={<RFQDetail />} />
-            <Route path="rfq/:id/edit" element={<RFQEdit />} />
-            
-            {/* Quotes Routes - create before :id */}            {/* Jobs Routes */}
-            <Route path="jobs" element={<JobsList />} />
-            <Route path="jobs/:id" element={<JobDetail />} />
-            <Route path="jobs/:id/edit" element={<JobEdit />} />
-            
-            {/* Clients Routes - create before :id */}
-            <Route path="clients" element={<ClientsList />} />
-            <Route path="clients/create" element={<CreateClient />} />
-            <Route path="clients/:id" element={<ClientDetail />} />
-            <Route path="clients/:id/edit" element={<ClientEdit />} />
-            
-            {/* Other Pages */}
-            <Route path="inventory" element={<InventoryPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="emergency" element={<div className="text-center p-5"><h3>Emergency Job - Coming Soon</h3></div>} />
-            <Route path="docsign" element={<div className="text-center p-5"><h3>DocSign Module - Coming Soon</h3></div>} />
-          </Route>
-          
-          {/* Catch all - redirect to dashboard (will go to login if not authenticated) */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <AuthProvider>
+        <ToastProvider>
+          <Routes>
+            {/* Public Route - Login */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Workshop Portal - Standalone (no auth required for tablets) */}
+            <Route path="/workshop" element={<WorkshopPortal />} />
+
+            {/* Protected Routes - All wrapped in MainLayout */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+
+              {/* RFQ Routes */}
+              <Route path="rfq" element={<RFQList />} />
+              <Route path="rfq/create" element={<CreateRFQ />} />
+              <Route path="rfq/:id" element={<RFQDetail />} />
+              <Route path="rfq/:id/edit" element={<RFQEdit />} />
+
+              {/* Jobs Routes */}
+              <Route path="jobs" element={<JobsList />} />
+              <Route path="jobs/:id" element={<JobDetail />} />
+              <Route path="jobs/:id/edit" element={<JobEdit />} />
+
+              {/* Clients Routes */}
+              <Route path="clients" element={<ClientsList />} />
+              <Route path="clients/create" element={<CreateClient />} />
+              <Route path="clients/:id" element={<ClientDetail />} />
+              <Route path="clients/:id/edit" element={<ClientEdit />} />
+
+              {/* Other Pages */}
+              <Route path="inventory" element={<InventoryPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="emergency" element={<div className="text-center p-5"><h3>Emergency Job - Coming Soon</h3></div>} />
+              <Route path="docsign" element={<div className="text-center p-5"><h3>DocSign Module - Coming Soon</h3></div>} />
+            </Route>
+
+            {/* Catch all - redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-      </ToastProvider>
-    </AuthProvider>
+        </ToastProvider>
+      </AuthProvider>
   )
 }
 
