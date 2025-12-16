@@ -78,6 +78,22 @@ const jobService = {
 
   addTasksToJob: async (jobId: number, tasks: any[]): Promise<void> => {
     await axios.post(`http://localhost:8080/api/v1/jobs/${jobId}/tasks`, tasks);
+  },
+
+  downloadJobCardPdf: async (jobId: number, jobNumber: string): Promise<void> => {
+    const response = await axios.get(
+        `http://localhost:8080/api/v1/jobs/${jobId}/job-card-pdf`,
+        { responseType: 'blob' }
+    );
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ERHA_JobCard_${jobNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 };
 
@@ -105,6 +121,7 @@ const JobDetail: React.FC = () => {
   const [childJobs, setChildJobs] = useState<ChildJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Create Child Job Modal State
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -171,6 +188,19 @@ const JobDetail: React.FC = () => {
       setTemplates(data);
     } catch {
       setTemplates([]);
+    }
+  };
+
+  const handleDownloadJobCardPdf = async () => {
+    if (!job) return;
+    try {
+      setPdfLoading(true);
+      await jobService.downloadJobCardPdf(jobId, job.jobNumber);
+    } catch (err) {
+      console.error('Failed to download PDF:', err);
+      alert('Failed to download Job Card PDF');
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -528,8 +558,12 @@ const JobDetail: React.FC = () => {
                   >
                     Edit Job Details
                   </button>
-                  <button className="btn btn-outline-info">
-                    Download Job Card PDF
+                  <button
+                      className="btn btn-outline-info"
+                      onClick={handleDownloadJobCardPdf}
+                      disabled={pdfLoading}
+                  >
+                    {pdfLoading ? 'Downloading...' : 'Download Job Card PDF'}
                   </button>
                   <button
                       onClick={() => setCreateDialogOpen(true)}

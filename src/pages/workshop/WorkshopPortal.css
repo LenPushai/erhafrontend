@@ -164,11 +164,16 @@
     font-weight: 600;
 }
 
-.job-description {
+.job-description { 
+    font-size: 0.85rem; 
+    color: #9ca3af; 
     margin: 0.5rem 0;
-    color: #9ca3af;
-    font-size: 0.85rem;
-    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.6em;
 }
 
 .job-stats {

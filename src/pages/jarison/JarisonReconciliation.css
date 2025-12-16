@@ -1,0 +1,284 @@
+.jarison-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.jarison-header {
+  margin-bottom: 1.5rem;
+}
+
+.jarison-header h1 {
+  color: #f3f4f6;
+  margin: 0 0 0.5rem 0;
+}
+
+.jarison-header p {
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Upload Section */
+.upload-section {
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.upload-section h2 {
+  color: #f3f4f6;
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+}
+
+.upload-form .form-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.form-group input[type="file"] {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: #f3f4f6;
+}
+
+.form-group select {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  color: #f3f4f6;
+  min-width: 120px;
+}
+
+.btn-upload {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-upload:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-upload:disabled {
+  background: #4b5563;
+  cursor: not-allowed;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.card-label {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.card-success .card-value { color: #10b981; }
+.card-warning .card-value { color: #f59e0b; }
+.card-danger .card-value { color: #ef4444; }
+
+/* Import History */
+.import-history {
+  margin-bottom: 1rem;
+}
+
+.import-history h3 {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.import-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.import-tab {
+  background: #374151;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.import-tab:hover {
+  background: #4b5563;
+}
+
+.import-tab.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-tab {
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.filter-tab:hover {
+  border-color: #6b7280;
+}
+
+.filter-tab.active {
+  background: #374151;
+  border-color: #3b82f6;
+  color: #f3f4f6;
+}
+
+/* Data Table */
+.data-table-container {
+  background: #1f2937;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #374151;
+  color: #9ca3af;
+  font-weight: 500;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.data-table td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #374151;
+  color: #f3f4f6;
+}
+
+.data-table tbody tr:hover {
+  background: #374151;
+}
+
+.unlinked {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Variance Colors */
+.variance-ok { color: #10b981; }
+.variance-over { color: #f59e0b; }
+.variance-under { color: #ef4444; }
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.status-matched {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.status-badge.status-variance {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.status-badge.status-unmatched {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.status-badge.status-pending {
+  background: rgba(107, 114, 128, 0.2);
+  color: #6b7280;
+}
+
+/* Row Status Background */
+tr.status-variance {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+tr.status-unmatched {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 1200px) {
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .upload-form .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

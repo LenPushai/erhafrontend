@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -96,9 +96,10 @@ const MainLayout: React.FC = () => {
       <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
         {/* Sidebar - Clean White */}
         <div
-            className={`bg-white border-end ${sidebarOpen ? '' : 'd-none d-md-block'}`}
+            className={`border-end ${sidebarOpen ? '' : 'd-none d-md-block'}`}
             style={{
               width: sidebarOpen ? '260px' : '0',
+              backgroundColor: '#0f172a',
               transition: 'width 0.3s',
               position: 'fixed',
               height: '100vh',
@@ -107,7 +108,7 @@ const MainLayout: React.FC = () => {
             }}
         >
           {/* Logo/Brand */}
-          <div className="p-3 border-bottom">
+          <div className="p-3 border-bottom" style={{ borderColor: "#1e293b !important" }}>
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
                 <div
@@ -157,8 +158,7 @@ const MainLayout: React.FC = () => {
                       <span className={`badge bg-${item.badgeColor} rounded-pill`}>
                   {item.badge}
                 </span>
-                  )}
-                </Link>
+                  )}</Link>
             ))}
           </nav>
 

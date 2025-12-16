@@ -1,0 +1,25 @@
+.completion-modal { max-width: 600px; }
+.completion-info { background: #1e3a5f; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #3b82f6; }
+.completion-info p { margin: 0; color: #93c5fd; font-size: 0.95rem; }
+
+.signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.signature-box { background: #0f1419; padding: 1.25rem; border-radius: 8px; text-align: center; border: 2px solid #374151; transition: border-color 0.2s; }
+.signature-box:has(select:not([value=""])) { border-color: #10b981; }
+.signature-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.signature-box h3 { margin: 0 0 0.25rem 0; color: #fff; font-size: 1rem; }
+.signature-desc { margin: 0 0 1rem 0; color: #9ca3af; font-size: 0.85rem; }
+.signature-select { width: 100%; padding: 0.75rem; background: #1a1f26; border: 1px solid #374151; border-radius: 6px; color: #fff; font-size: 0.9rem; }
+.signature-select:focus { outline: none; border-color: #3b82f6; }
+.signature-confirmed { margin-top: 0.75rem; padding: 0.5rem; background: #065f46; color: #10b981; border-radius: 4px; font-weight: 600; font-size: 0.9rem; }
+
+.completion-notes { margin-bottom: 1.5rem; }
+.completion-notes label { display: block; margin-bottom: 0.5rem; color: #9ca3af; font-size: 0.9rem; }
+.completion-notes textarea { width: 100%; padding: 0.75rem; background: #0f1419; border: 1px solid #374151; border-radius: 6px; color: #fff; font-size: 0.9rem; resize: vertical; }
+.completion-notes textarea:focus { outline: none; border-color: #3b82f6; }
+
+.modal-actions { display: flex; gap: 1rem; }
+.btn-cancel { flex: 1; padding: 1rem; background: #374151; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.btn-cancel:hover { background: #4b5563; }
+.btn-complete { flex: 2; padding: 1rem; background: #10b981; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.btn-complete:hover:not(:disabled) { background: #059669; }
+.btn-complete:disabled { opacity: 0.5; cursor: not-allowed; }

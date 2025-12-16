@@ -1,0 +1,44 @@
+.qc-modal { max-width: 650px; max-height: 85vh; display: flex; flex-direction: column; }
+.qc-progress-bar { background: #0f1419; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+.progress-stats { display: flex; gap: 1.5rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.stat-passed { color: #10b981; }
+.stat-failed { color: #ef4444; }
+.stat-pending { color: #6b7280; }
+.progress-track { height: 8px; background: #1a1f26; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.3s ease; }
+.progress-percent { text-align: right; font-size: 0.85rem; color: #9ca3af; margin-top: 0.5rem; }
+
+.qc-loading { text-align: center; padding: 2rem; color: #9ca3af; }
+.qc-checklist { flex: 1; overflow-y: auto; padding-right: 0.5rem; }
+
+.qc-item { background: #1a1f26; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border-left: 4px solid #374151; }
+.qc-item.status-passed { border-left-color: #10b981; background: #0f1f1a; }
+.qc-item.status-failed { border-left-color: #ef4444; background: #1f0f0f; }
+.qc-item.status-pending { border-left-color: #f59e0b; }
+
+.qc-item-header { display: flex; align-items: center; gap: 0.75rem; }
+.qc-status-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; }
+.qc-status-icon.status-passed { background: #10b981; color: #fff; }
+.qc-status-icon.status-failed { background: #ef4444; color: #fff; }
+.qc-status-icon.status-pending { background: #374151; color: #9ca3af; }
+.qc-status-icon.status-na { background: #6b7280; color: #fff; }
+
+.qc-step-num { font-weight: 700; color: #9ca3af; min-width: 24px; }
+.qc-step-name { flex: 1; color: #fff; font-weight: 500; }
+
+.qc-item-actions { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #374151; }
+.qc-notes-input { width: 100%; padding: 0.5rem; background: #0f1419; border: 1px solid #374151; border-radius: 4px; color: #fff; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.qc-notes-input:focus { outline: none; border-color: #3b82f6; }
+.qc-notes-input::placeholder { color: #6b7280; }
+
+.qc-buttons { display: flex; gap: 0.5rem; }
+.btn-pass { flex: 1; padding: 0.6rem; background: #10b981; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
+.btn-pass:hover:not(:disabled) { background: #059669; }
+.btn-fail { flex: 1; padding: 0.6rem; background: #ef4444; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; }
+.btn-fail:hover:not(:disabled) { background: #dc2626; }
+.btn-pass:disabled, .btn-fail:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.qc-item-notes { margin-top: 0.5rem; font-size: 0.85rem; color: #9ca3af; font-style: italic; }
+
+.btn-done { width: 100%; padding: 1rem; background: #059669; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.btn-done:hover { background: #047857; }

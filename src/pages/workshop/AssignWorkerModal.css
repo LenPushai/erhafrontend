@@ -1,0 +1,21 @@
+﻿.assign-modal { max-width: 550px; }
+.current-assignments { margin-bottom: 1.5rem; padding: 1rem; background: #0f1419; border-radius: 8px; }
+.current-assignments h3 { margin: 0 0 1rem 0; color: #9ca3af; font-size: 0.9rem; text-transform: uppercase; }
+.no-assignments { color: #6b7280; font-style: italic; margin: 0; }
+.assignment-list { list-style: none; padding: 0; margin: 0; }
+.assignment-item { display: flex; align-items: center; padding: 0.75rem; background: #1a1f26; border-radius: 6px; margin-bottom: 0.5rem; }
+.assignment-item:last-child { margin-bottom: 0; }
+.worker-name { flex: 1; color: #fff; font-weight: 600; }
+.worker-role { background: #3b82f6; color: #fff; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-right: 0.75rem; }
+.btn-remove { background: #ef4444; color: #fff; border: none; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.btn-remove:hover { background: #dc2626; }
+.add-assignment { margin-bottom: 1.5rem; padding: 1rem; background: #0f1419; border-radius: 8px; }
+.add-assignment h3 { margin: 0 0 1rem 0; color: #9ca3af; font-size: 0.9rem; text-transform: uppercase; }
+.add-assignment .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.add-assignment .form-group { flex: 1; }
+.add-assignment .form-group:first-child { flex: 2; }
+.btn-assign { width: 100%; padding: 0.75rem; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.btn-assign:hover:not(:disabled) { background: #2563eb; }
+.btn-assign:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-done { width: 100%; padding: 1rem; background: #059669; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.btn-done:hover { background: #047857; }

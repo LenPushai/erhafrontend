@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { getKanbanBoard, advanceJobStatus, type KanbanBoard, type KanbanJob } from "../../services/workshopService";
+import TimeEntryModal from "./TimeEntryModal";
+import AssignWorkerModal from "./AssignWorkerModal";
+import QcChecklistModal from "./QcChecklistModal";
+import JobCompletionModal from "./JobCompletionModal";
+import DeliveryModal from './DeliveryModal';
 import "./WorkshopPortal.css";
 
 const COLUMNS = [
@@ -7,7 +12,8 @@ const COLUMNS = [
     { key: "ASSIGNED", label: "ASSIGNED", color: "#8b5cf6", action: "START" },
     { key: "IN_PROGRESS", label: "IN PROGRESS", color: "#f59e0b", action: "QC CHECK" },
     { key: "QC_IN_PROGRESS", label: "QC CHECK", color: "#ef4444", action: "COMPLETE" },
-    { key: "READY_FOR_DELIVERY", label: "READY", color: "#10b981", action: null },
+    { key: "READY_FOR_DELIVERY", label: "READY", color: "#10b981", action: "DELIVER" },
+    { key: "DELIVERED", label: "DELIVERED", color: "#6b7280", action: null },
 ];
 
 const WorkshopPortal: React.FC = () => {
@@ -15,6 +21,11 @@ const WorkshopPortal: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
+    const [timeEntryJob, setTimeEntryJob] = useState<KanbanJob | null>(null);
+    const [assignJob, setAssignJob] = useState<KanbanJob | null>(null);
+    const [qcJob, setQcJob] = useState<KanbanJob | null>(null);
+    const [completionJob, setCompletionJob] = useState<KanbanJob | null>(null);
+    const [deliveryJob, setDeliveryJob] = useState<KanbanJob | null>(null);
 
     const loadData = async () => {
         try {
@@ -33,22 +44,28 @@ const WorkshopPortal: React.FC = () => {
         loadData();
     }, []);
 
-    const handleAdvance = async (jobId: number) => {
-        try {
-            setActionLoading(jobId);
-            await advanceJobStatus(jobId);
-            await loadData();
-        } catch (err) {
-            setError("Failed to update job");
-        } finally {
-            setActionLoading(null);
+    const handleAction = async (job: KanbanJob, columnKey: string) => {
+        if (columnKey === "NEW") {
+            setAssignJob(job);
+        } else if (columnKey === "QC_IN_PROGRESS") {
+            setCompletionJob(job);
+        } else if (columnKey === "READY_FOR_DELIVERY") {
+            setDeliveryJob(job);
+        } else {
+            try {
+                setActionLoading(job.jobId);
+                await advanceJobStatus(job.jobId);
+                await loadData();
+            } catch (err) {
+                setError("Failed to update job");
+            } finally {
+                setActionLoading(null);
+            }
         }
     };
 
-    const handleLogTime = (jobId: number, jobNumber: string) => {
-        // TODO: Open time entry modal
-        console.log('Log time for job:', jobId, jobNumber);
-        alert(`Log Time for ${jobNumber} - Coming soon!`);
+    const handleLogTime = (job: KanbanJob) => {
+        setTimeEntryJob(job);
     };
 
     const getJobs = (key: string): KanbanJob[] => {
@@ -62,6 +79,7 @@ const WorkshopPortal: React.FC = () => {
             case "ASSIGNED": return "#8b5cf6";
             case "IN_PROGRESS": return "#f59e0b";
             case "QC_IN_PROGRESS": return "#10b981";
+            case "READY_FOR_DELIVERY": return "#06b6d4";
             default: return "#6b7280";
         }
     };
@@ -73,7 +91,7 @@ const WorkshopPortal: React.FC = () => {
     return (
         <div className="workshop-portal">
             <header className="workshop-header">
-                <h1>🔧 ERHA WORKSHOP</h1>
+                <h1>ERHA WORKSHOP</h1>
                 <button onClick={loadData} disabled={loading}>
                     {loading ? "Loading..." : "Refresh"}
                 </button>
@@ -101,14 +119,14 @@ const WorkshopPortal: React.FC = () => {
                                     </div>
                                     <p className="job-description">{job.description}</p>
                                     <div className="job-stats">
-                                        <span>👷 {job.workerCount || 0}</span>
-                                        <span>⏱️ {job.totalHoursLogged || 0}h</span>
+                                        <span><i className="bi bi-people-fill"></i> {job.workerCount || 0}</span>
+                                        <span><i className="bi bi-clock"></i> {job.totalHoursLogged || 0}h</span>
                                     </div>
                                     <div className="job-actions">
-                                        {col.key !== "NEW" && col.key !== "READY_FOR_DELIVERY" && (
+                                        {(col.key === "ASSIGNED" || col.key === "IN_PROGRESS") && (
                                             <button
                                                 className="action-btn log-time-btn"
-                                                onClick={() => handleLogTime(job.jobId, job.jobNumber)}
+                                                onClick={() => handleLogTime(job)}
                                             >
                                                 LOG TIME
                                             </button>
@@ -117,7 +135,7 @@ const WorkshopPortal: React.FC = () => {
                                             <button
                                                 className="action-btn"
                                                 style={{ backgroundColor: getButtonColor(col.key) }}
-                                                onClick={() => handleAdvance(job.jobId)}
+                                                onClick={() => handleAction(job, col.key)}
                                                 disabled={actionLoading === job.jobId}
                                             >
                                                 {actionLoading === job.jobId ? "..." : col.action}
@@ -130,6 +148,58 @@ const WorkshopPortal: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {timeEntryJob && (
+                <TimeEntryModal
+                    jobId={timeEntryJob.jobId}
+                    jobNumber={timeEntryJob.jobNumber}
+                    onClose={() => setTimeEntryJob(null)}
+                    onSuccess={loadData}
+                />
+            )}
+
+            {assignJob && (
+                <AssignWorkerModal
+                    jobId={assignJob.jobId}
+                    jobNumber={assignJob.jobNumber}
+                    onClose={() => setAssignJob(null)}
+                    onSuccess={loadData}
+                />
+            )}
+
+            {qcJob && (
+                <QcChecklistModal
+                    jobId={qcJob.jobId}
+                    jobNumber={qcJob.jobNumber}
+                    onClose={() => setQcJob(null)}
+                    onSuccess={loadData}
+                />
+            )}
+
+            {completionJob && (
+                <JobCompletionModal
+                    jobId={completionJob.jobId}
+                    jobNumber={completionJob.jobNumber}
+                    onClose={() => setCompletionJob(null)}
+                    onSuccess={loadData}
+                />
+            )}
+
+            {deliveryJob && (
+                <DeliveryModal
+                    job={{
+                        jobId: deliveryJob.jobId,
+                        jobNumber: deliveryJob.jobNumber,
+                        clientName: deliveryJob.clientName || 'N/A',
+                        description: deliveryJob.description || ''
+                    }}
+                    onClose={() => setDeliveryJob(null)}
+                    onDeliveryConfirmed={() => {
+                        setDeliveryJob(null);
+                        loadData();
+                    }}
+                />
+            )}
         </div>
     );
 };

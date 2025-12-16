@@ -84,3 +84,16 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+/* Menu Dividers */
+.menu-divider {
+  padding: 1rem 1rem 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.menu-divider span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}

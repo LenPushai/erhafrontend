@@ -21,6 +21,7 @@ import InventoryPage from './pages/inventory/InventoryPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import WorkshopPortal from './pages/workshop/WorkshopPortal'
+import JarisonReconciliation from './pages/jarison/JarisonReconciliation'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
 
             {/* Workshop Portal - Standalone (no auth required for tablets) */}
             <Route path="/workshop" element={<WorkshopPortal />} />
+            <Route path="/jarison" element={<JarisonReconciliation />} />
 
             {/* Protected Routes - All wrapped in MainLayout */}
             <Route path="/" element={
