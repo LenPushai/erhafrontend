@@ -24,7 +24,6 @@ type SortDirection = 'asc' | 'desc';
 const RFQList: React.FC = () => {
   const navigate = useNavigate();
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
-  const [clientMap, setClientMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,25 +36,8 @@ const RFQList: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const itemsPerPage = 20;
 
-  // Fetch clients and RFQs on mount
   React.useEffect(() => {
-    const loadData = async () => {
-      // Fetch clients first
-      try {
-        const clientRes = await axios.get('http://localhost:8080/api/v1/clients');
-        const clientData = clientRes.data || [];
-        const map: Record<number, string> = {};
-        clientData.forEach((c: any) => {
-          map[c.id] = c.companyName || c.clientCode || `Client ${c.id}`;
-        });
-        setClientMap(map);
-      } catch (err) {
-        console.error('Error fetching clients:', err);
-      }
-      // Then fetch RFQs
-      fetchRFQs();
-    };
-    loadData();
+    fetchRFQs();
   }, []);
 
   const fetchRFQs = async () => {
@@ -67,7 +49,7 @@ const RFQList: React.FC = () => {
         id: rfq.id,
         jobNo: rfq.jobNo || 'N/A',
         clientId: rfq.clientId || rfq.client || null,
-        clientName: '',
+        clientName: clients.get(rfq.clientId || rfq.client) || 'Unknown',
         entity: rfq.entity || rfq.operatingEntity || 'ERHA FC',
         contact: rfq.contact || rfq.contactPerson || 'Not specified',
         description: rfq.description || 'No description',
@@ -87,13 +69,6 @@ const RFQList: React.FC = () => {
     }
   };
 
-  // Get client name from map
-  const getClientName = (clientId: number | null) => {
-    if (!clientId) return 'Unknown';
-    return clientMap[clientId] || `Client ${clientId}`;
-  };
-
-  // Calculate dashboard metrics
   const metrics = useMemo(() => {
     const totalValue = rfqs.reduce((sum, rfq) => sum + (rfq.estimatedValue || 0), 0);
     const statusCounts = rfqs.reduce((acc, rfq) => {
@@ -111,8 +86,7 @@ const RFQList: React.FC = () => {
       totalValue,
       draft: statusCounts['Draft'] || 0,
       pending: statusCounts['Pending Clarification'] || 0,
-      quoted: statusCounts['Quoted'] || statusCounts['Ready for Quote'] || 0,
-      converted: statusCounts['Converted'] || 0,
+      approved: statusCounts['Ready for Quote'] || 0,
       completed: statusCounts['Completed'] || 0,
       urgent: priorityCounts['Urgent'] || 0,
       high: priorityCounts['High'] || 0,
@@ -120,15 +94,13 @@ const RFQList: React.FC = () => {
     };
   }, [rfqs]);
 
-  // Status configuration
   const getStatusConfig = (status: string) => {
     const configs: { [key: string]: { class: string } } = {
       'Draft': { class: 'bg-secondary text-white' },
       'Pending Clarification': { class: 'bg-warning text-dark' },
       'Under Review': { class: 'bg-info text-white' },
       'Ready for Quote': { class: 'bg-primary text-white' },
-      'Quoted': { class: 'bg-info text-white' },
-      'Converted': { class: 'bg-success text-white' },
+      'Quoted': { class: 'bg-success text-white' },
       'Completed': { class: 'bg-success text-white' },
       'Won': { class: 'bg-success text-white' },
       'Lost': { class: 'bg-danger text-white' }
@@ -136,7 +108,6 @@ const RFQList: React.FC = () => {
     return configs[status] || configs['Draft'];
   };
 
-  // Priority configuration
   const getPriorityConfig = (priority: string) => {
     const configs: { [key: string]: { class: string } } = {
       'Low': { class: 'bg-info text-white' },
@@ -160,11 +131,10 @@ const RFQList: React.FC = () => {
     }
   };
 
-  // Filter and sort RFQs
   const filteredAndSortedRfqs = useMemo(() => {
     let filtered = rfqs.filter(rfq => {
       const jobNo = rfq.jobNo || '';
-      const clientName = getClientName(rfq.clientId);
+      const clientName = rfq.clientName || '';
       const description = rfq.description || '';
       const contact = rfq.contact || '';
 
@@ -199,7 +169,7 @@ const RFQList: React.FC = () => {
     });
 
     return filtered;
-  }, [rfqs, searchTerm, statusFilter, priorityFilter, entityFilter, sortField, sortDirection, clientMap]);
+  }, [rfqs, searchTerm, statusFilter, priorityFilter, entityFilter, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredAndSortedRfqs.length / itemsPerPage);
   const paginatedRfqs = filteredAndSortedRfqs.slice(
@@ -364,7 +334,7 @@ const RFQList: React.FC = () => {
 
         {/* Status Cards */}
         <div className="row g-3 mb-4">
-          <div className="col">
+          <div className="col-md-3">
             <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #6c757d' }}>
               <div className="card-body py-3">
                 <p className="text-muted small mb-1">Draft</p>
@@ -372,7 +342,7 @@ const RFQList: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="col">
+          <div className="col-md-3">
             <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #ffc107' }}>
               <div className="card-body py-3">
                 <p className="text-muted small mb-1">Pending</p>
@@ -380,23 +350,15 @@ const RFQList: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="col">
-            <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #17a2b8' }}>
-              <div className="card-body py-3">
-                <p className="text-muted small mb-1">Quoted</p>
-                <h3 className="fw-bold mb-0">{metrics.quoted}</h3>
-              </div>
-            </div>
-          </div>
-          <div className="col">
+          <div className="col-md-3">
             <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #198754' }}>
               <div className="card-body py-3">
-                <p className="text-muted small mb-1">Converted</p>
-                <h3 className="fw-bold mb-0 text-success">{metrics.converted}</h3>
+                <p className="text-muted small mb-1">Ready to Quote</p>
+                <h3 className="fw-bold mb-0">{metrics.approved}</h3>
               </div>
             </div>
           </div>
-          <div className="col">
+          <div className="col-md-3">
             <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #0d6efd' }}>
               <div className="card-body py-3">
                 <p className="text-muted small mb-1">Completed</p>
@@ -428,7 +390,6 @@ const RFQList: React.FC = () => {
                   <option value="Pending Clarification">Pending Clarification</option>
                   <option value="Ready for Quote">Ready for Quote</option>
                   <option value="Quoted">Quoted</option>
-                  <option value="Converted">Converted</option>
                   <option value="Completed">Completed</option>
                 </select>
               </div>
@@ -489,31 +450,21 @@ const RFQList: React.FC = () => {
                       paginatedRfqs.map((rfq) => {
                         const statusConfig = getStatusConfig(rfq.status);
                         const priorityConfig = getPriorityConfig(rfq.priority);
-
                         return (
                             <tr key={rfq.id}>
-                              <td className="px-4">
-                                <input type="checkbox" className="form-check-input" checked={selectedIds.has(rfq.id)} onChange={() => handleSelectOne(rfq.id)} />
-                              </td>
-                              <td className="px-4">
-                                <button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-link text-decoration-none fw-bold p-0">{rfq.jobNo}</button>
-                              </td>
-                              <td className="px-4 fw-semibold">{getClientName(rfq.clientId)}</td>
-                              <td className="px-4 text-muted" style={{ maxWidth: '300px' }}>
-                                <div className="text-truncate">{rfq.description}</div>
-                              </td>
-                              <td className="px-4">
-                                <span className={`badge ${statusConfig.class} rounded-pill px-3 py-2`}>{rfq.status}</span>
-                              </td>
-                              <td className="px-4">
-                                <span className={`badge ${priorityConfig.class} rounded-pill px-3 py-2`}>{rfq.priority}</span>
-                              </td>
-                              <td className="px-4 text-end fw-bold">{rfq.estimatedValue > 0 ? formatCurrency(rfq.estimatedValue) : '-'}</td>
+                              <td className="px-4"><input type="checkbox" className="form-check-input" checked={selectedIds.has(rfq.id)} onChange={() => handleSelectOne(rfq.id)} /></td>
+                              <td className="px-4"><button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-link text-decoration-none fw-bold p-0">{rfq.jobNo}</button></td>
+                              <td className="px-4 fw-semibold">{rfq.clientName}</td>
+                              <td className="px-4 text-muted" style={{ maxWidth: '300px' }}><div className="text-truncate">{rfq.description}</div></td>
+                              <td className="px-4"><span className={`badge ${statusConfig.class} rounded-pill px-3 py-2`}>{rfq.status}</span></td>
+                              <td className="px-4"><span className={`badge ${priorityConfig.class} rounded-pill px-3 py-2`}>{rfq.priority}</span></td>
+                              <td className="px-4 text-end fw-bold">{formatCurrency(rfq.estimatedValue)}</td>
                               <td className="px-4 text-muted">{formatDate(rfq.requestDate)}</td>
                               <td className="px-4">
-                                <div className="d-flex justify-content-center gap-1">
-                                  <button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-sm btn-outline-primary">View</button>
-                                  <button onClick={() => navigate(`/rfq/${rfq.id}/edit`)} className="btn btn-sm btn-outline-secondary">Edit</button>
+                                <div className="d-flex justify-content-center gap-2">
+                                  <button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-sm btn-outline-primary" title="View">View</button>
+                                  <button onClick={() => navigate(`/rfq/${rfq.id}/edit`)} className="btn btn-sm btn-outline-secondary" title="Edit">Edit</button>
+                                  {canExport(rfq.status) && <button onClick={() => handleExportToPastel(rfq.id)} className="btn btn-sm btn-outline-info" title="Export">Export</button>}
                                 </div>
                               </td>
                             </tr>
@@ -525,19 +476,13 @@ const RFQList: React.FC = () => {
               </div>
 
               {totalPages > 1 && (
-                  <div className="card-footer bg-light d-flex justify-content-between align-items-center">
-                    <div className="text-muted small">
-                      Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedRfqs.length)} of {filteredAndSortedRfqs.length} RFQs
-                    </div>
+                  <div className="card-footer bg-white d-flex justify-content-between align-items-center">
+                    <div className="text-muted small">Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedRfqs.length)} of {filteredAndSortedRfqs.length} RFQs</div>
                     <nav>
                       <ul className="pagination pagination-sm mb-0">
-                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                          <button className="page-link" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>Previous</button>
-                        </li>
+                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>Previous</button></li>
                         <li className="page-item active"><span className="page-link">Page {currentPage} of {totalPages}</span></li>
-                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                          <button className="page-link" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Next</button>
-                        </li>
+                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}><button className="page-link" onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Next</button></li>
                       </ul>
                     </nav>
                   </div>
@@ -551,7 +496,6 @@ const RFQList: React.FC = () => {
               {paginatedRfqs.map((rfq) => {
                 const statusConfig = getStatusConfig(rfq.status);
                 const priorityConfig = getPriorityConfig(rfq.priority);
-
                 return (
                     <div key={rfq.id} className="col-md-4">
                       <div className="card h-100 border-0 shadow-sm">
@@ -559,35 +503,23 @@ const RFQList: React.FC = () => {
                           <div className="d-flex justify-content-between align-items-start mb-3">
                             <div>
                               <button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-link text-decoration-none fw-bold p-0 h5 mb-1">{rfq.jobNo}</button>
-                              <p className="text-muted small mb-0">{getClientName(rfq.clientId)}</p>
+                              <p className="text-muted small mb-0">{rfq.clientName}</p>
                             </div>
                             <input type="checkbox" className="form-check-input" checked={selectedIds.has(rfq.id)} onChange={() => handleSelectOne(rfq.id)} />
                           </div>
-
-                          <p className="text-muted small mb-3" style={{ minHeight: '40px' }}>
-                            {rfq.description && rfq.description.substring(0, 100)}
-                            {rfq.description && rfq.description.length > 100 && '...'}
-                          </p>
-
+                          <p className="text-muted small mb-3" style={{ minHeight: '40px' }}>{(rfq.description || '').substring(0, 100)}{(rfq.description || '').length > 100 && '...'}</p>
                           <div className="d-flex gap-2 mb-3">
                             <span className={`badge ${statusConfig.class} rounded-pill`}>{rfq.status}</span>
                             <span className={`badge ${priorityConfig.class} rounded-pill`}>{rfq.priority}</span>
                           </div>
-
                           <div className="border-top pt-3 mb-3">
-                            <div className="d-flex justify-content-between mb-2">
-                              <span className="text-muted small">Estimated Value</span>
-                              <span className="fw-bold">{rfq.estimatedValue > 0 ? formatCurrency(rfq.estimatedValue) : '-'}</span>
-                            </div>
-                            <div className="d-flex justify-content-between">
-                              <span className="text-muted small">Received</span>
-                              <span className="fw-semibold small">{formatDate(rfq.requestDate)}</span>
-                            </div>
+                            <div className="d-flex justify-content-between mb-2"><span className="text-muted small">Estimated Value</span><span className="fw-bold">{formatCurrency(rfq.estimatedValue)}</span></div>
+                            <div className="d-flex justify-content-between"><span className="text-muted small">Received</span><span className="fw-semibold small">{formatDate(rfq.requestDate)}</span></div>
                           </div>
-
                           <div className="d-flex gap-2">
                             <button onClick={() => navigate(`/rfq/${rfq.id}`)} className="btn btn-primary btn-sm flex-fill">View</button>
                             <button onClick={() => navigate(`/rfq/${rfq.id}/edit`)} className="btn btn-outline-secondary btn-sm flex-fill">Edit</button>
+                            {canExport(rfq.status) && <button onClick={() => handleExportToPastel(rfq.id)} className="btn btn-outline-info btn-sm">Export</button>}
                           </div>
                         </div>
                       </div>
@@ -597,10 +529,7 @@ const RFQList: React.FC = () => {
             </div>
         )}
 
-        <style>{`
-          .cursor-pointer { cursor: pointer; }
-          .bg-orange { background-color: #fd7e14 !important; }
-        `}</style>
+        <style>{`.cursor-pointer { cursor: pointer; } .bg-orange { background-color: #fd7e14 !important; }`}</style>
       </div>
   );
 };

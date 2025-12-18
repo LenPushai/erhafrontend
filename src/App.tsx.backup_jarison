@@ -22,7 +22,6 @@ import ReportsPage from './pages/reports/ReportsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import WorkshopPortal from './pages/workshop/WorkshopPortal'
 import JarisonReconciliation from './pages/jarison/JarisonReconciliation'
-import CasualLabor from './pages/casuals/CasualLabor'
 
 function App() {
   return (
@@ -34,6 +33,7 @@ function App() {
 
             {/* Workshop Portal - Standalone (no auth required for tablets) */}
             <Route path="/workshop" element={<WorkshopPortal />} />
+            <Route path="/jarison" element={<JarisonReconciliation />} />
 
             {/* Protected Routes - All wrapped in MainLayout */}
             <Route path="/" element={
@@ -43,12 +43,6 @@ function App() {
             }>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              
-              {/* Jarison Time Reconciliation */}
-              <Route path="jarison" element={<JarisonReconciliation />} />
-              
-              {/* Casual Labor */}
-              <Route path="casuals" element={<CasualLabor />} />
 
               {/* RFQ Routes */}
               <Route path="rfq" element={<RFQList />} />

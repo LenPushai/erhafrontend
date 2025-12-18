@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -13,18 +13,14 @@ import {
   Menu,
   X,
   ChevronDown,
-  LogOut,
-  Kanban,
-  Clock,
-  HardHat
+  LogOut
 } from 'lucide-react';
 import jobService from '../../services/jobService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface NavItem {
-  type?: 'link' | 'divider';
-  path?: string;
-  icon?: React.ReactNode;
+  path: string;
+  icon: React.ReactNode;
   label: string;
   badge?: number;
   badgeColor?: string;
@@ -86,18 +82,9 @@ const MainLayout: React.FC = () => {
 
   const navItems: NavItem[] = [
     { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    
-    { type: 'divider', label: 'OPERATIONS' },
     { path: '/rfq', icon: <FileText size={20} />, label: 'RFQs', badge: counts.activeRfqs, badgeColor: 'primary' },
     { path: '/jobs', icon: <Briefcase size={20} />, label: 'Jobs', badge: counts.activeJobs, badgeColor: 'success' },
     { path: '/clients', icon: <Users size={20} />, label: 'Clients' },
-    
-    { type: 'divider', label: 'WORKSHOP' },
-    { path: '/workshop', icon: <Kanban size={20} />, label: 'Kanban Board' },
-    { path: '/jarison', icon: <Clock size={20} />, label: 'Time Tracking' },
-    { path: '/casuals', icon: <HardHat size={20} />, label: 'Casual Labor' },
-    
-    { type: 'divider', label: 'ADMIN' },
     { path: '/inventory', icon: <Package size={20} />, label: 'Inventory' },
     { path: '/reports', icon: <TrendingUp size={20} />, label: 'Reports' },
     { path: '/settings', icon: <Settings size={20} />, label: 'Settings' }
@@ -152,16 +139,16 @@ const MainLayout: React.FC = () => {
           <nav className="py-3">
             {navItems.map((item, index) => (
                 <Link
-                    key={item.path!}
-                    to={item.path!}
+                    key={item.path}
+                    to={item.path}
                     className={`d-flex align-items-center px-3 py-2 text-decoration-none ${
-                        isActive(item.path!)
+                        isActive(item.path)
                             ? 'bg-primary bg-opacity-10 text-primary fw-semibold'
                             : 'text-secondary hover-item'
                     }`}
                     style={{
                       transition: 'all 0.2s',
-                      borderLeft: isActive(item.path!) ? '4px solid #0d6efd' : '4px solid transparent'
+                      borderLeft: isActive(item.path) ? '4px solid #0d6efd' : '4px solid transparent'
                     }}
                     onClick={() => window.innerWidth < 768 && setSidebarOpen(false)}
                 >
@@ -217,7 +204,7 @@ const MainLayout: React.FC = () => {
 
                 <div className="flex-grow-1 px-3">
                   <h4 className="mb-0">
-                    {navItems.find(item => isActive(item.path!))?.label || 'Dashboard'}
+                    {navItems.find(item => isActive(item.path))?.label || 'Dashboard'}
                   </h4>
                 </div>
 

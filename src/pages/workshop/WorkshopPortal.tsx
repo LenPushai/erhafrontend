@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getKanbanBoard, advanceJobStatus, type KanbanBoard, type KanbanJob } from "../../services/workshopService";
 import TimeEntryModal from "./TimeEntryModal";
 import AssignWorkerModal from "./AssignWorkerModal";
@@ -47,8 +47,7 @@ const WorkshopPortal: React.FC = () => {
     const handleAction = async (job: KanbanJob, columnKey: string) => {
         if (columnKey === "NEW") {
             setAssignJob(job);
-        } else if (columnKey === "QC_IN_PROGRESS") {
-            setCompletionJob(job);
+        } else if (columnKey === "QC_IN_PROGRESS") { setQcJob(job);
         } else if (columnKey === "READY_FOR_DELIVERY") {
             setDeliveryJob(job);
         } else {

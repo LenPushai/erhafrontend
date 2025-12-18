@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getQcSignoffs, getQcProgress, initializeQcSignoffs, passHoldingPoint, failHoldingPoint, type QcSignoff, type QcProgress } from '../../services/workshopService';
+import api from '../../services/api';
 import './QcChecklistModal.css';
+
+interface HoldingPoint {
+    id: number;
+    sequenceNumber: number;
+    name: string;
+    description: string;
+    isActive: boolean;
+}
 
 interface QcChecklistModalProps {
     jobId: number;
@@ -11,6 +20,7 @@ interface QcChecklistModalProps {
 
 const QcChecklistModal: React.FC<QcChecklistModalProps> = ({ jobId, jobNumber, onClose, onSuccess }) => {
     const [signoffs, setSignoffs] = useState<QcSignoff[]>([]);
+    const [holdingPoints, setHoldingPoints] = useState<HoldingPoint[]>([]);
     const [progress, setProgress] = useState<QcProgress | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -25,19 +35,29 @@ const QcChecklistModal: React.FC<QcChecklistModalProps> = ({ jobId, jobNumber, o
         setLoading(true);
         setError(null);
         try {
+            const hpResponse = await api.get('/api/v1/qc/holding-points');
+            setHoldingPoints(hpResponse.data);
+
             let signoffsData = await getQcSignoffs(jobId);
             if (signoffsData.length === 0) {
                 await initializeQcSignoffs(jobId);
                 signoffsData = await getQcSignoffs(jobId);
             }
             setSignoffs(signoffsData);
+
             const progressData = await getQcProgress(jobId);
             setProgress(progressData);
         } catch (err) {
+            console.error('QC Load Error:', err);
             setError('Failed to load QC data');
         } finally {
             setLoading(false);
         }
+    };
+
+    const getDescription = (holdingPointId: number): string => {
+        const hp = holdingPoints.find(h => h.id === holdingPointId);
+        return hp?.description || `Step ${holdingPointId}`;
     };
 
     const handlePass = async (holdingPointId: number) => {
@@ -99,7 +119,7 @@ const QcChecklistModal: React.FC<QcChecklistModalProps> = ({ jobId, jobNumber, o
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content qc-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>QC Checklist</h2>
+                    <h2>QC Checklist - 9 Point Inspection</h2>
                     <span className="job-badge">{jobNumber}</span>
                 </div>
 
@@ -130,9 +150,9 @@ const QcChecklistModal: React.FC<QcChecklistModalProps> = ({ jobId, jobNumber, o
                                         {getStatusIcon(s.status)}
                                     </span>
                                     <span className="qc-step-num">{s.sequenceNumber}.</span>
-                                    <span className="qc-step-name">{s.holdingPointName}</span>
+                                    <span className="qc-step-name">{getDescription(s.holdingPointId)}</span>
                                 </div>
-                                
+
                                 {s.status === 'PENDING' && (
                                     <div className="qc-item-actions">
                                         <input
