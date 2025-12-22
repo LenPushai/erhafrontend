@@ -7,9 +7,11 @@ import Login from './pages/auth/Login'
 import MainLayout from './components/layout/MainLayout'
 import AdminDashboard from './components/dashboard/roles/AdminDashboard'
 import RFQList from './pages/rfq/RFQList'
-import CreateRFQ from './pages/rfq/CreateRFQ'
+import CreateRFQ from './pages/rfq/RFQCreate'
 import RFQDetail from './pages/rfq/RFQDetail'
 import RFQEdit from './pages/rfq/RFQEdit'
+import PrintableENQReport from './pages/rfq/PrintableENQReport'
+import QuoterDashboard from './pages/rfq/QuoterDashboard'
 import JobsList from './pages/jobs/JobsList'
 import JobDetail from './pages/jobs/JobDetail'
 import JobEdit from './pages/jobs/JobEdit'
@@ -55,6 +57,8 @@ function App() {
               <Route path="rfq/create" element={<CreateRFQ />} />
               <Route path="rfq/:id" element={<RFQDetail />} />
               <Route path="rfq/:id/edit" element={<RFQEdit />} />
+              <Route path="rfq/:id/enq-report" element={<PrintableENQReport />} />
+              <Route path="quoter-dashboard" element={<QuoterDashboard />} />
 
               {/* Jobs Routes */}
               <Route path="jobs" element={<JobsList />} />
@@ -84,3 +88,5 @@ function App() {
 }
 
 export default App
+
+

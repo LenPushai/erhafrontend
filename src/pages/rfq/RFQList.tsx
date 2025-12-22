@@ -296,7 +296,7 @@ const RFQList: React.FC = () => {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <span className="ms-1">↑</span> : <span className="ms-1">↓</span>;
+    return sortDirection === 'asc' ? <span className="ms-1">???</span> : <span className="ms-1">???</span>;
   };
 
   if (loading) {
@@ -454,7 +454,7 @@ const RFQList: React.FC = () => {
                 <div className="alert alert-primary mt-3 mb-0 d-flex justify-content-between align-items-center">
                   <div className="d-flex align-items-center gap-3">
                     <span className="badge bg-primary fs-6">{selectedIds.size} selected</span>
-                    <button onClick={handleBulkExport} className="btn btn-info btn-sm fw-semibold">Export to Pastel</button>
+                    
                   </div>
                   <button onClick={() => setSelectedIds(new Set())} className="btn btn-link text-decoration-none">Clear Selection</button>
                 </div>
@@ -606,3 +606,4 @@ const RFQList: React.FC = () => {
 };
 
 export default RFQList;
+

@@ -89,6 +89,7 @@ const MainLayout: React.FC = () => {
     
     { type: 'divider', label: 'OPERATIONS' },
     { path: '/rfq', icon: <FileText size={20} />, label: 'RFQs', badge: counts.activeRfqs, badgeColor: 'primary' },
+    { path: '/quoter-dashboard', icon: <FileSpreadsheet size={20} />, label: 'Quoter Dashboard' },
     { path: '/jobs', icon: <Briefcase size={20} />, label: 'Jobs', badge: counts.activeJobs, badgeColor: 'success' },
     { path: '/clients', icon: <Users size={20} />, label: 'Clients' },
     
@@ -318,3 +319,6 @@ const MainLayout: React.FC = () => {
 };
 
 export default MainLayout;
+
+
+

@@ -5,8 +5,21 @@ import { rfqService } from '../../services/rfqService';
 import { clientService } from '../../services/clientService';
 
 interface Client {
-  clientId: number;
+  id: number;
   clientName: string;
+  companyName?: string;
+}
+
+interface EnumOption {
+  value: string;
+  label: string;
+}
+
+interface EnumData {
+  departments: EnumOption[];
+  quoters: EnumOption[];
+  mediaReceived: EnumOption[];
+  actionsRequired: EnumOption[];
 }
 
 const RFQCreate: React.FC = () => {
@@ -15,6 +28,12 @@ const RFQCreate: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
+  const [enums, setEnums] = useState<EnumData>({
+    departments: [],
+    quoters: [],
+    mediaReceived: [],
+    actionsRequired: []
+  });
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -32,18 +51,36 @@ const RFQCreate: React.FC = () => {
     assignedTo: '',
     followUpDate: '',
     notes: '',
-    remarks: ''
+    remarks: '',
+    erhaDepartment: '',
+    assignedQuoter: '',
+    mediaReceived: '',
+    actionsRequired: [] as string[],
+    drawingNumber: ''
   });
 
   useEffect(() => {
     loadClients();
+    loadEnums();
   }, []);
+
+  const loadEnums = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/enums/all');
+      const data = await response.json();
+      setEnums(data);
+    } catch (err) {
+      console.error('Failed to load enums:', err);
+    }
+  };
 
   const loadClients = async () => {
     try {
       setLoadingClients(true);
-      const data = await clientService.getAllClients();
-      setClients(data);
+      const response = await clientService.getAllClients();
+      // Handle wrapped response { value: [...] } or direct array
+      const data = response.value || response;
+      setClients(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load clients:', err);
       setError('Failed to load clients. Please refresh the page.');
@@ -59,7 +96,7 @@ const RFQCreate: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.clientId) {
       setError('Please select a client');
       return;
@@ -88,7 +125,7 @@ const RFQCreate: React.FC = () => {
       setError('Required by date must be after request date');
       return;
     }
-    
+
     try {
       setSaving(true);
       setError(null);
@@ -109,10 +146,15 @@ const RFQCreate: React.FC = () => {
         assignedTo: formData.assignedTo.trim() || null,
         followUpDate: formData.followUpDate || null,
         notes: formData.notes.trim() || null,
-        remarks: formData.remarks.trim() || null
+        remarks: formData.remarks.trim() || null,
+        erhaDepartment: formData.erhaDepartment || null,
+        assignedQuoter: formData.assignedQuoter || null,
+        mediaReceived: formData.mediaReceived || null,
+        actionsRequired: formData.actionsRequired.length > 0 ? formData.actionsRequired.join(',') : null,
+        drawingNumber: formData.drawingNumber.trim() || null
       };
 
-      await rfqService.createRFQ(rfqData);
+      await rfqService.createRfq(rfqData);
       navigate('/rfqs');
     } catch (err: any) {
       setError(err.message || 'Failed to create RFQ');
@@ -124,7 +166,7 @@ const RFQCreate: React.FC = () => {
     <div className="container-fluid p-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div className="d-flex align-items-center gap-3">
-          <button 
+          <button
             className="btn btn-outline-secondary"
             onClick={() => navigate('/rfqs')}
             disabled={saving}
@@ -141,9 +183,9 @@ const RFQCreate: React.FC = () => {
       {error && (
         <div className="alert alert-danger alert-dismissible fade show">
           <strong>Error:</strong> {error}
-          <button 
-            type="button" 
-            className="btn-close" 
+          <button
+            type="button"
+            className="btn-close"
             onClick={() => setError(null)}
           ></button>
         </div>
@@ -171,8 +213,8 @@ const RFQCreate: React.FC = () => {
                   >
                     <option value="">Select a client...</option>
                     {clients.map(client => (
-                      <option key={client.clientId} value={client.clientId}>
-                        {client.clientName}
+                      <option key={client.id} value={client.id}>
+                        {client.companyName || client.clientName}
                       </option>
                     ))}
                   </select>
@@ -224,6 +266,95 @@ const RFQCreate: React.FC = () => {
                   onChange={(e) => handleInputChange('department', e.target.value)}
                   placeholder="e.g., MELTSHOP, MILLS"
                 />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card mb-3" style={{borderColor: '#28a745'}}>
+          <div className="card-header" style={{backgroundColor: '#d4edda'}}>
+            <h5 className="mb-0">ENQ Report Information</h5>
+          </div>
+          <div className="card-body">
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label className="form-label">ERHA Department</label>
+                <select
+                  className="form-select"
+                  value={formData.erhaDepartment}
+                  onChange={(e) => handleInputChange('erhaDepartment', e.target.value)}
+                >
+                  <option value="">Select department...</option>
+                  {enums.departments.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4 mb-3">
+                <label className="form-label">Assigned Quoter</label>
+                <select
+                  className="form-select"
+                  value={formData.assignedQuoter}
+                  onChange={(e) => handleInputChange('assignedQuoter', e.target.value)}
+                >
+                  <option value="">Select quoter...</option>
+                  {enums.quoters.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4 mb-3">
+                <label className="form-label">Media Received</label>
+                <select
+                  className="form-select"
+                  value={formData.mediaReceived}
+                  onChange={(e) => handleInputChange('mediaReceived', e.target.value)}
+                >
+                  <option value="">Select media...</option>
+                  {enums.mediaReceived.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Drawing Number</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={formData.drawingNumber}
+                  onChange={(e) => handleInputChange('drawingNumber', e.target.value)}
+                  placeholder="e.g., DWG-2025-001"
+                />
+              </div>
+
+              <div className="col-12 mb-3">
+                <label className="form-label">Actions Required</label>
+                <div className="d-flex flex-wrap gap-3">
+                  {enums.actionsRequired.map(opt => (
+                    <div key={opt.value} className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id={`action-${opt.value}`}
+                        checked={formData.actionsRequired.includes(opt.value)}
+                        onChange={(e) => {
+                          const current = formData.actionsRequired;
+                          if (e.target.checked) {
+                            handleInputChange('actionsRequired', [...current, opt.value]);
+                          } else {
+                            handleInputChange('actionsRequired', current.filter(v => v !== opt.value));
+                          }
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor={`action-${opt.value}`}>
+                        {opt.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -429,3 +560,6 @@ const RFQCreate: React.FC = () => {
 };
 
 export default RFQCreate;
+
+
+

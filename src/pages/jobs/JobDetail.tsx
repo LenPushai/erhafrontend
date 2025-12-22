@@ -17,6 +17,7 @@ interface Job {
   progressPercentage: number;
   startDate?: string;
   dueDate?: string;
+  expectedDeliveryDate?: string;
   completionDate?: string;
   materialOrdered?: string;
   dateReceived?: string;
@@ -28,6 +29,8 @@ interface Job {
   billingType?: string;
   quoteValueExclVat?: number;
   quoteValueInclVat?: number;
+  orderValueExcl?: number;
+  orderValueIncl?: number;
 }
 
 interface ChildJob {
@@ -123,7 +126,6 @@ const JobDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
 
-  // Create Child Job Modal State
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [applyTemplate, setApplyTemplate] = useState(false);
@@ -136,12 +138,10 @@ const JobDetail: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Guard #1: Redirect /jobs/create
   if (id === 'create') {
     return <Navigate to="/jobs" replace />;
   }
 
-  // Guard #2: Validate numeric ID
   const jobId = parseInt(id || '', 10);
   if (isNaN(jobId) || jobId <= 0) {
     return (
@@ -163,18 +163,14 @@ const JobDetail: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-
       const data = await jobService.getJobById(jobId);
       setJob(data);
-
-      // Load child jobs if this job exists
       try {
         const children = await jobService.getChildJobs(jobId);
         setChildJobs(children || []);
       } catch {
         setChildJobs([]);
       }
-
       setLoading(false);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load job details');
@@ -220,17 +216,12 @@ const JobDetail: React.FC = () => {
 
   const handleCreateChildJobs = async () => {
     if (!childJobDescription.trim() || !job) return;
-
     setCreating(true);
     try {
       const quantity = bulkMode ? childJobQuantity : 1;
       const childJobsToCreate = [];
-
       for (let i = 0; i < quantity; i++) {
-        const desc = bulkMode
-            ? `${childJobDescription} #${i + 1}`
-            : childJobDescription;
-
+        const desc = bulkMode ? `${childJobDescription} #${i + 1}` : childJobDescription;
         childJobsToCreate.push({
           description: desc,
           location: childJobLocation || job.location,
@@ -241,10 +232,7 @@ const JobDetail: React.FC = () => {
           billingType: job.billingType
         });
       }
-
       const createdJobs = await jobService.createChildJobs(jobId, childJobsToCreate);
-
-      // If template selected, add tasks to each child job
       if (applyTemplate && selectedTemplate && createdJobs.length > 0) {
         for (const createdJob of createdJobs) {
           const tasks = selectedTemplate.tasks.map((task, index) => ({
@@ -254,7 +242,6 @@ const JobDetail: React.FC = () => {
             assignedTo: task.assignedTo,
             notes: task.notes || ''
           }));
-
           try {
             await jobService.addTasksToJob(createdJob.jobId, tasks);
           } catch (err) {
@@ -262,16 +249,13 @@ const JobDetail: React.FC = () => {
           }
         }
       }
-
-      alert(
-          bulkMode
-              ? `Successfully created ${quantity} child jobs${applyTemplate ? ' with tasks' : ''}!`
-              : `Successfully created child job${applyTemplate ? ' with tasks' : ''}!`
+      alert(bulkMode
+          ? `Successfully created ${quantity} child jobs${applyTemplate ? ' with tasks' : ''}!`
+          : `Successfully created child job${applyTemplate ? ' with tasks' : ''}!`
       );
-
       resetDialog();
       setCreateDialogOpen(false);
-      loadJob(); // Reload to show new children
+      loadJob();
     } catch (err: any) {
       console.error('Error creating child jobs:', err);
       alert(err.response?.data?.message || err.message || 'Failed to create child jobs');
@@ -325,6 +309,10 @@ const JobDetail: React.FC = () => {
     return new Date(date).toLocaleDateString('en-ZA');
   };
 
+  const getDueDate = () => job?.dueDate || job?.expectedDeliveryDate;
+  const getJobValueExcl = () => job?.quoteValueExclVat || job?.orderValueExcl;
+  const getJobValueIncl = () => job?.quoteValueInclVat || job?.orderValueIncl;
+
   if (loading) {
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
@@ -346,7 +334,6 @@ const JobDetail: React.FC = () => {
 
   return (
       <div className="container-fluid px-4">
-        {/* Breadcrumb */}
         <nav aria-label="breadcrumb" className="mt-3">
           <ol className="breadcrumb">
             <li className="breadcrumb-item"><Link to="/">Home</Link></li>
@@ -355,7 +342,6 @@ const JobDetail: React.FC = () => {
           </ol>
         </nav>
 
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="mb-1">
@@ -365,19 +351,13 @@ const JobDetail: React.FC = () => {
             <p className="text-muted mb-0">{job.description}</p>
           </div>
           <div>
-          <span className={`badge ${getStatusBadgeClass(job.status)} me-2`} style={{ fontSize: '1rem' }}>
-            {job.status}
-          </span>
-            <span className={`badge ${getPriorityBadgeClass(job.priority)}`} style={{ fontSize: '1rem' }}>
-            {job.priority}
-          </span>
+            <span className={`badge ${getStatusBadgeClass(job.status)} me-2`} style={{ fontSize: '1rem' }}>{job.status}</span>
+            <span className={`badge ${getPriorityBadgeClass(job.priority)}`} style={{ fontSize: '1rem' }}>{job.priority}</span>
           </div>
         </div>
 
         <div className="row">
-          {/* Main Content */}
           <div className="col-md-8">
-            {/* Job Information Card */}
             <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #0d6efd' }}>
               <div className="card-header bg-white">
                 <h5 className="mb-0">Job Information</h5>
@@ -393,14 +373,25 @@ const JobDetail: React.FC = () => {
                     {job.orderNumber || 'N/A'}
                   </div>
                   <div className="col-md-6 mb-3">
+                    <strong>Client:</strong><br />
+                    <span className="fw-semibold">{job.clientId ? `Client #${job.clientId}` : 'N/A'}</span>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <strong>Job Value:</strong><br />
+                    <span className="text-success fw-bold fs-5">{formatCurrency(getJobValueIncl())}</span>
+                    {getJobValueExcl() && (
+                        <small className="text-muted d-block">(Excl VAT: {formatCurrency(getJobValueExcl())})</small>
+                    )}
+                  </div>
+                  <div className="col-md-6 mb-3">
                     <strong>Department:</strong><br />
                     {job.department || 'N/A'}
                   </div>
                   <div className="col-md-6 mb-3">
                     <strong>Location:</strong><br />
                     <span className={`badge ${job.location === 'SHOP' ? 'bg-info' : 'bg-warning text-dark'}`}>
-                    {job.location || 'N/A'}
-                  </span>
+                      {job.location || 'N/A'}
+                    </span>
                   </div>
                   <div className="col-12 mb-3">
                     <strong>Description:</strong><br />
@@ -410,7 +401,6 @@ const JobDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Progress Card */}
             <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #198754' }}>
               <div className="card-header bg-white">
                 <h5 className="mb-0">Progress & Dates</h5>
@@ -419,11 +409,7 @@ const JobDetail: React.FC = () => {
                 <div className="mb-3">
                   <strong>Progress:</strong>
                   <div className="progress mt-2" style={{ height: '25px' }}>
-                    <div
-                        className="progress-bar bg-success"
-                        role="progressbar"
-                        style={{ width: `${job.progressPercentage || 0}%` }}
-                    >
+                    <div className="progress-bar bg-success" role="progressbar" style={{ width: `${job.progressPercentage || 0}%` }}>
                       {job.progressPercentage || 0}%
                     </div>
                   </div>
@@ -435,7 +421,7 @@ const JobDetail: React.FC = () => {
                   </div>
                   <div className="col-md-4 mb-3">
                     <strong>Due Date:</strong><br />
-                    {formatDate(job.dueDate)}
+                    <span className={getDueDate() ? 'fw-semibold' : ''}>{formatDate(getDueDate())}</span>
                   </div>
                   <div className="col-md-4 mb-3">
                     <strong>Completion Date:</strong><br />
@@ -445,8 +431,7 @@ const JobDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Financial Card */}
-            {(job.quoteValueExclVat || job.quoteValueInclVat) && (
+            {(getJobValueExcl() || getJobValueIncl()) && (
                 <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #ffc107' }}>
                   <div className="card-header bg-white">
                     <h5 className="mb-0">Financial Information</h5>
@@ -454,12 +439,12 @@ const JobDetail: React.FC = () => {
                   <div className="card-body">
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <strong>Quote Value (Excl VAT):</strong><br />
-                        {formatCurrency(job.quoteValueExclVat)}
+                        <strong>Job Value (Excl VAT):</strong><br />
+                        {formatCurrency(getJobValueExcl())}
                       </div>
                       <div className="col-md-6 mb-3">
-                        <strong>Quote Value (Incl VAT):</strong><br />
-                        <span className="text-success fw-bold">{formatCurrency(job.quoteValueInclVat)}</span>
+                        <strong>Job Value (Incl VAT):</strong><br />
+                        <span className="text-success fw-bold">{formatCurrency(getJobValueIncl())}</span>
                       </div>
                       <div className="col-md-6 mb-3">
                         <strong>Billing Type:</strong><br />
@@ -470,14 +455,10 @@ const JobDetail: React.FC = () => {
                 </div>
             )}
 
-            {/* Child Jobs Card */}
             <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #6f42c1' }}>
               <div className="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">Child Jobs ({childJobs.length})</h5>
-                <button
-                    className="btn btn-success btn-sm"
-                    onClick={() => setCreateDialogOpen(true)}
-                >
+                <button className="btn btn-success btn-sm" onClick={() => setCreateDialogOpen(true)}>
                   + Create Child Job
                 </button>
               </div>
@@ -485,10 +466,7 @@ const JobDetail: React.FC = () => {
                 {childJobs.length === 0 ? (
                     <div className="text-center text-muted py-4">
                       <p className="mb-2">No child jobs yet</p>
-                      <button
-                          className="btn btn-outline-success"
-                          onClick={() => setCreateDialogOpen(true)}
-                      >
+                      <button className="btn btn-outline-success" onClick={() => setCreateDialogOpen(true)}>
                         Create First Child Job
                       </button>
                     </div>
@@ -514,24 +492,17 @@ const JobDetail: React.FC = () => {
                               </td>
                               <td>{child.description}</td>
                               <td>
-                            <span className={`badge ${getStatusBadgeClass(child.status)}`}>
-                              {child.status}
-                            </span>
+                                <span className={`badge ${getStatusBadgeClass(child.status)}`}>{child.status}</span>
                               </td>
                               <td>
                                 <div className="progress" style={{ height: '20px', width: '100px' }}>
-                                  <div
-                                      className="progress-bar bg-success"
-                                      style={{ width: `${child.progressPercentage || 0}%` }}
-                                  >
+                                  <div className="progress-bar bg-success" style={{ width: `${child.progressPercentage || 0}%` }}>
                                     {child.progressPercentage || 0}%
                                   </div>
                                 </div>
                               </td>
                               <td>
-                                <Link to={`/jobs/${child.jobId}`} className="btn btn-sm btn-outline-primary">
-                                  View
-                                </Link>
+                                <Link to={`/jobs/${child.jobId}`} className="btn btn-sm btn-outline-primary">View</Link>
                               </td>
                             </tr>
                         ))}
@@ -543,32 +514,20 @@ const JobDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="col-md-4">
-            {/* Quick Actions */}
             <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #0d6efd' }}>
               <div className="card-header bg-white">
                 <h5 className="mb-0">Quick Actions</h5>
               </div>
               <div className="card-body">
                 <div className="d-grid gap-2">
-                  <button
-                      onClick={() => navigate(`/jobs/${job.jobId}/edit`)}
-                      className="btn btn-outline-primary"
-                  >
+                  <button onClick={() => navigate(`/jobs/${job.jobId}/edit`)} className="btn btn-outline-primary">
                     Edit Job Details
                   </button>
-                  <button
-                      className="btn btn-outline-info"
-                      onClick={handleDownloadJobCardPdf}
-                      disabled={pdfLoading}
-                  >
+                  <button className="btn btn-outline-info" onClick={handleDownloadJobCardPdf} disabled={pdfLoading}>
                     {pdfLoading ? 'Downloading...' : 'Download Job Card PDF'}
                   </button>
-                  <button
-                      onClick={() => setCreateDialogOpen(true)}
-                      className="btn btn-success"
-                  >
+                  <button onClick={() => setCreateDialogOpen(true)} className="btn btn-success">
                     + Create Child Job
                   </button>
                   {job.rfqId && (
@@ -577,14 +536,11 @@ const JobDetail: React.FC = () => {
                       </Link>
                   )}
                   <hr />
-                  <Link to="/jobs" className="btn btn-outline-dark">
-                    ← Back to All Jobs
-                  </Link>
+                  <Link to="/jobs" className="btn btn-outline-dark">← Back to All Jobs</Link>
                 </div>
               </div>
             </div>
 
-            {/* Parent Job Info (if this is a child) */}
             {job.parentJobId && (
                 <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #fd7e14' }}>
                   <div className="card-header bg-white">
@@ -599,7 +555,6 @@ const JobDetail: React.FC = () => {
                 </div>
             )}
 
-            {/* Timestamps */}
             <div className="card border-0 shadow-sm" style={{ borderLeft: '4px solid #6c757d' }}>
               <div className="card-header bg-white">
                 <h5 className="mb-0">Timestamps</h5>
@@ -612,44 +567,23 @@ const JobDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Create Child Job Modal */}
         {createDialogOpen && (
             <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
               <div className="modal-dialog modal-lg modal-dialog-centered">
                 <div className="modal-content">
                   <div className="modal-header bg-success text-white">
                     <h5 className="modal-title">+ Create Child Job</h5>
-                    <button
-                        type="button"
-                        className="btn-close btn-close-white"
-                        onClick={() => {
-                          setCreateDialogOpen(false);
-                          resetDialog();
-                        }}
-                    ></button>
+                    <button type="button" className="btn-close btn-close-white" onClick={() => { setCreateDialogOpen(false); resetDialog(); }}></button>
                   </div>
                   <div className="modal-body">
-                    {/* Job Description */}
                     <div className="mb-3">
                       <label className="form-label fw-bold">Job Description *</label>
-                      <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Enter child job description..."
-                          value={childJobDescription}
-                          onChange={(e) => setChildJobDescription(e.target.value)}
-                      />
+                      <input type="text" className="form-control" placeholder="Enter child job description..." value={childJobDescription} onChange={(e) => setChildJobDescription(e.target.value)} />
                     </div>
-
-                    {/* Location & Department */}
                     <div className="row g-3 mb-3">
                       <div className="col-md-6">
                         <label className="form-label">Location</label>
-                        <select
-                            className="form-select"
-                            value={childJobLocation}
-                            onChange={(e) => setChildJobLocation(e.target.value)}
-                        >
+                        <select className="form-select" value={childJobLocation} onChange={(e) => setChildJobLocation(e.target.value)}>
                           <option value="">Same as parent ({job.location})</option>
                           <option value="SHOP">SHOP</option>
                           <option value="SITE">SITE</option>
@@ -657,11 +591,7 @@ const JobDetail: React.FC = () => {
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Department</label>
-                        <select
-                            className="form-select"
-                            value={childJobDepartment}
-                            onChange={(e) => setChildJobDepartment(e.target.value)}
-                        >
+                        <select className="form-select" value={childJobDepartment} onChange={(e) => setChildJobDepartment(e.target.value)}>
                           <option value="">Same as parent ({job.department})</option>
                           <option value="FABRICATION">FABRICATION</option>
                           <option value="MACHINING">MACHINING</option>
@@ -672,132 +602,70 @@ const JobDetail: React.FC = () => {
                         </select>
                       </div>
                     </div>
-
                     <hr />
-
-                    {/* Bulk Mode Checkbox */}
                     <div className="form-check mb-3">
-                      <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="bulkMode"
-                          checked={bulkMode}
-                          onChange={(e) => setBulkMode(e.target.checked)}
-                      />
+                      <input type="checkbox" className="form-check-input" id="bulkMode" checked={bulkMode} onChange={(e) => setBulkMode(e.target.checked)} />
                       <label className="form-check-label" htmlFor="bulkMode">
                         <strong>Create multiple child jobs</strong>
                         <small className="text-muted d-block">Auto-number: "Description #1", "Description #2", etc.</small>
                       </label>
                     </div>
-
-                    {/* Quantity Slider (shown if bulk mode) */}
                     {bulkMode && (
                         <div className="mb-3 ps-4">
                           <label className="form-label">Number of Jobs: <strong>{childJobQuantity}</strong></label>
-                          <input
-                              type="range"
-                              className="form-range"
-                              min="2"
-                              max="20"
-                              value={childJobQuantity}
-                              onChange={(e) => setChildJobQuantity(parseInt(e.target.value))}
-                          />
+                          <input type="range" className="form-range" min="2" max="20" value={childJobQuantity} onChange={(e) => setChildJobQuantity(parseInt(e.target.value))} />
                           <div className="d-flex justify-content-between text-muted small">
                             <span>2</span>
                             <span>20</span>
                           </div>
                         </div>
                     )}
-
                     <hr />
-
-                    {/* Apply Template Checkbox */}
                     <div className="form-check mb-3">
-                      <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="applyTemplate"
-                          checked={applyTemplate}
-                          onChange={(e) => setApplyTemplate(e.target.checked)}
-                      />
+                      <input type="checkbox" className="form-check-input" id="applyTemplate" checked={applyTemplate} onChange={(e) => setApplyTemplate(e.target.checked)} />
                       <label className="form-check-label" htmlFor="applyTemplate">
                         <strong>Apply task template</strong>
                         <small className="text-muted d-block">Add predefined tasks to each child job</small>
                       </label>
                     </div>
-
-                    {/* Template Selection (shown if apply template) */}
                     {applyTemplate && (
                         <div className="mb-3 ps-4">
                           <label className="form-label">Select Template</label>
-                          <select
-                              className="form-select"
-                              value={selectedTemplateId || ''}
-                              onChange={(e) => handleTemplateChange(e.target.value ? parseInt(e.target.value) : null)}
-                          >
+                          <select className="form-select" value={selectedTemplateId || ''} onChange={(e) => handleTemplateChange(e.target.value ? parseInt(e.target.value) : null)}>
                             <option value="">-- Select a template --</option>
                             {templates.map((t) => (
-                                <option key={t.templateId} value={t.templateId}>
-                                  {t.templateName} ({t.tasks?.length || 0} tasks)
-                                </option>
+                                <option key={t.templateId} value={t.templateId}>{t.templateName} ({t.tasks?.length || 0} tasks)</option>
                             ))}
                           </select>
-
-                          {/* Template Preview */}
                           {selectedTemplate && (
                               <div className="mt-3 p-3 bg-light rounded">
                                 <h6 className="mb-2">{selectedTemplate.templateName}</h6>
                                 <p className="text-muted small mb-2">{selectedTemplate.description}</p>
-                                <p className="mb-2">
-                                  <strong>Tasks ({selectedTemplate.tasks?.length || 0}):</strong>
-                                </p>
+                                <p className="mb-2"><strong>Tasks ({selectedTemplate.tasks?.length || 0}):</strong></p>
                                 <ul className="list-unstyled mb-0">
                                   {selectedTemplate.tasks?.slice(0, 5).map((task, i) => (
-                                      <li key={i} className="small">
-                                        {i + 1}. {task.description} ({task.estimatedHours}h)
-                                      </li>
+                                      <li key={i} className="small">{i + 1}. {task.description} ({task.estimatedHours}h)</li>
                                   ))}
                                   {(selectedTemplate.tasks?.length || 0) > 5 && (
-                                      <li className="small text-muted">
-                                        ... and {(selectedTemplate.tasks?.length || 0) - 5} more
-                                      </li>
+                                      <li className="small text-muted">... and {(selectedTemplate.tasks?.length || 0) - 5} more</li>
                                   )}
                                 </ul>
                               </div>
                           )}
                         </div>
                     )}
-
-                    {/* Summary */}
                     {childJobDescription && (
                         <div className="alert alert-info mt-3 mb-0">
                           <strong>Summary:</strong> Creating {bulkMode ? childJobQuantity : 1} child job(s)
                           {applyTemplate && selectedTemplate && (
-                              <span>
-                        {' '}with {selectedTemplate.tasks?.length || 0} tasks each
-                                {bulkMode && ` (${childJobQuantity * (selectedTemplate.tasks?.length || 0)} tasks total)`}
-                      </span>
+                              <span> with {selectedTemplate.tasks?.length || 0} tasks each{bulkMode && ` (${childJobQuantity * (selectedTemplate.tasks?.length || 0)} tasks total)`}</span>
                           )}
                         </div>
                     )}
                   </div>
                   <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          setCreateDialogOpen(false);
-                          resetDialog();
-                        }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={handleCreateChildJobs}
-                        disabled={!childJobDescription.trim() || creating}
-                    >
+                    <button type="button" className="btn btn-secondary" onClick={() => { setCreateDialogOpen(false); resetDialog(); }}>Cancel</button>
+                    <button type="button" className="btn btn-success" onClick={handleCreateChildJobs} disabled={!childJobDescription.trim() || creating}>
                       {creating ? 'Creating...' : `Create ${bulkMode ? `${childJobQuantity} Jobs` : 'Job'}`}
                     </button>
                   </div>

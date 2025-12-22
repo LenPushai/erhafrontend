@@ -7,11 +7,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { rfqService } from '../../services/rfqService';
 
+interface EnumOption {
+  value: string;
+  label: string;
+}
+
+interface EnumData {
+  departments: EnumOption[];
+  quoters: EnumOption[];
+  mediaReceived: EnumOption[];
+  actionsRequired: EnumOption[];
+}
+
 export default function RFQEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [enums, setEnums] = useState<EnumData>({
+    departments: [],
+    quoters: [],
+    mediaReceived: [],
+    actionsRequired: []
+  });
   const [formData, setFormData] = useState({
     rfqNumber: '',
     clientName: '',
@@ -42,10 +60,22 @@ export default function RFQEdit() {
     invoiceNumber: '',
     invoiceDate: '',
     invoiceStatus: '',
+    // ENQ Report fields
+    erhaDepartment: '',
+    assignedQuoter: '',
+    mediaReceived: '',
+    actionsRequired: [] as string[],
+    drawingNumber: '',
   });
 
   useEffect(() => {
     // CRITICAL FIX: Don't fetch if creating new RFQ
+    // Load enums
+    fetch('http://localhost:8080/api/v1/enums/all')
+      .then(res => res.json())
+      .then(data => setEnums(data))
+      .catch(err => console.error('Failed to load enums:', err));
+
     if (id === 'new') {
       setLoading(false);
       return;
@@ -101,6 +131,12 @@ export default function RFQEdit() {
           invoiceNumber: data.invoiceNumber || '',
           invoiceDate: formatDate(data.invoiceDate),
           invoiceStatus: data.invoiceStatus || '',
+          // ENQ Report fields
+          erhaDepartment: data.erhaDepartment || '',
+          assignedQuoter: data.assignedQuoter || '',
+          mediaReceived: data.mediaReceived || '',
+          actionsRequired: data.actionsRequired ? data.actionsRequired.split(',') : [],
+          drawingNumber: data.drawingNumber || '',
         });
       } catch (err: any) {
         console.error('Error fetching RFQ:', err);
@@ -135,11 +171,28 @@ export default function RFQEdit() {
     }
   };
 
+  const handleActionsChange = (value: string, checked: boolean) => {
+    setFormData(prev => {
+      const current = prev.actionsRequired;
+      if (checked) {
+        return { ...prev, actionsRequired: [...current, value] };
+      } else {
+        return { ...prev, actionsRequired: current.filter(v => v !== value) };
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      if (id === 'new') {
+      // Load enums
+    fetch('http://localhost:8080/api/v1/enums/all')
+      .then(res => res.json())
+      .then(data => setEnums(data))
+      .catch(err => console.error('Failed to load enums:', err));
+
+    if (id === 'new') {
         // CREATE new RFQ
         const createData: any = {
           jobNo: formData.rfqNumber,
@@ -168,6 +221,12 @@ export default function RFQEdit() {
           invoiceNumber: formData.invoiceNumber || undefined,
           invoiceDate: formData.invoiceDate || undefined,
           invoiceStatus: formData.invoiceStatus || undefined,
+          // ENQ Report fields
+          erhaDepartment: formData.erhaDepartment || undefined,
+          assignedQuoter: formData.assignedQuoter || undefined,
+          mediaReceived: formData.mediaReceived || undefined,
+          actionsRequired: formData.actionsRequired.length > 0 ? formData.actionsRequired.join(',') : undefined,
+          drawingNumber: formData.drawingNumber || undefined,
         };
 
         await rfqService.createRfq(createData);
@@ -202,6 +261,12 @@ export default function RFQEdit() {
           invoiceNumber: formData.invoiceNumber || undefined,
           invoiceDate: formData.invoiceDate || undefined,
           invoiceStatus: formData.invoiceStatus || undefined,
+          // ENQ Report fields
+          erhaDepartment: formData.erhaDepartment || undefined,
+          assignedQuoter: formData.assignedQuoter || undefined,
+          mediaReceived: formData.mediaReceived || undefined,
+          actionsRequired: formData.actionsRequired.length > 0 ? formData.actionsRequired.join(',') : undefined,
+          drawingNumber: formData.drawingNumber || undefined,
         };
 
         await rfqService.updateRfq(Number(id), updateData);
@@ -248,7 +313,7 @@ export default function RFQEdit() {
         <form onSubmit={handleSubmit}>
           <div className="row">
             {/* Basic Information */}
-            <div className="col-md-6 mb-4">
+            <div className="col-12 mb-4">
               <div className="card">
                 <div className="card-header bg-dark text-white">
                   <h5 className="mb-0">Basic Information</h5>
@@ -396,8 +461,93 @@ export default function RFQEdit() {
               </div>
             </div>
 
+            {/* ENQ Report Information */}
+            <div className="col-12 mb-4">
+              <div className="card" style={{borderColor: '#28a745'}}>
+                <div className="card-header" style={{backgroundColor: '#d4edda'}}>
+                  <h5 className="mb-0">ENQ Report Information</h5>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">ERHA Department</label>
+                      <select
+                        className="form-select"
+                        name="erhaDepartment"
+                        value={formData.erhaDepartment}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select department...</option>
+                        {enums.departments.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Assigned Quoter</label>
+                      <select
+                        className="form-select"
+                        name="assignedQuoter"
+                        value={formData.assignedQuoter}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select quoter...</option>
+                        {enums.quoters.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Media Received</label>
+                      <select
+                        className="form-select"
+                        name="mediaReceived"
+                        value={formData.mediaReceived}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select media...</option>
+                        {enums.mediaReceived.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Drawing Number</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="drawingNumber"
+                        value={formData.drawingNumber}
+                        onChange={handleChange}
+                        placeholder="e.g., DWG-2025-001"
+                      />
+                    </div>
+                    <div className="col-12 mb-3">
+                      <label className="form-label">Actions Required</label>
+                      <div className="row">
+                        {enums.actionsRequired.map(opt => (
+                          <div key={opt.value} className="col-md-2 col-sm-4 col-6 mb-2"><div className="form-check">
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              id={`edit-action-${opt.value}`}
+                              checked={formData.actionsRequired.includes(opt.value)}
+                              onChange={(e) => handleActionsChange(opt.value, e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
+                              {opt.label}
+                            </label>
+                          </div></div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Quote, Order, Invoice Information */}
-            <div className="col-md-6 mb-4">
+            <div className="col-12 mb-4">
               {/* Quote Information */}
               <div className="card mb-4">
                 <div className="card-header bg-info text-white">
@@ -557,3 +707,11 @@ export default function RFQEdit() {
       </div>
   );
 }
+
+
+
+
+
+
+
+

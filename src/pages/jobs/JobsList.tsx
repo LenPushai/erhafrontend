@@ -169,10 +169,6 @@ export default function JobsList() {
             <h1 className="h3 fw-bold text-dark mb-1">Job Dashboard</h1>
             <p className="text-muted mb-0">Manage and track all active jobs</p>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
-            <Plus size={20} className="me-2" />
-            New Job
-          </button>
         </div>
 
         {/* Stats Cards - Clean White with Colored Left Border */}

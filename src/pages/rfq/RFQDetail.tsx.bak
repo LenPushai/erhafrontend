@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import SmartWorkflow from '../../components/SmartWorkflow';
 
 interface RFQ {
   id: number;
@@ -30,7 +29,6 @@ interface RFQ {
   invoiceDate: string;
   jobId: number | null;  // Link to Job
   jobStatus: string | null;  // Job status for workflow
-  amountPaid: number | null;
   erhaDepartment: string | null;
   assignedQuoter: string | null;
   mediaReceived: string | null;
@@ -598,9 +596,54 @@ const RFQDetail: React.FC = () => {
               </div>
             </div>
 
+            {/* Workflow Progress - UPDATED */}
+            <div className="card">
+              <div className="card-header bg-dark text-white">
+                <h5 className="mb-0">Workflow Progress</h5>
+              </div>
+              <div className="card-body">
+                <div className="list-group">
+                  <div className={`list-group-item ${rfq.id ? 'list-group-item-success' : ''}`}>
+                    <i className="bi bi-check-circle me-2"></i>
+                    RFQ Created
+                  </div>
+                  <div className={`list-group-item ${rfq.quoteNumber ? 'list-group-item-success' : ''}`}>
+                    <i className={`bi ${rfq.quoteNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Quote Added
+                  </div>
+                  <div className={`list-group-item ${rfq.quotePdfPath ? 'list-group-item-success' : ''}`}>
+                    <i className={`bi ${rfq.quotePdfPath ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    PDF Uploaded
+                  </div>
+                  <div className={`list-group-item ${rfq.docusignStatus === 'COMPLETED' ? 'list-group-item-success' : ''}`}>
+                    <i className={`bi ${rfq.docusignStatus === 'COMPLETED' ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Customer Signed
+                  </div>
+                  <div className={`list-group-item ${rfq.orderNumber ? 'list-group-item-success' : ''}`}>
+                    <i className={`bi ${rfq.orderNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Order Received
+                  </div>
 
-            {/* Smart Workflow Component */}
-            <SmartWorkflow rfq={rfq} />
+                  {/* NEW - Job Created Step */}
+                  <div className={`list-group-item ${rfq.jobId ? 'list-group-item-success' : canCreateJob() ? 'list-group-item-warning' : ''}`}>
+                    <i className={`bi ${rfq.jobId ? 'bi-check-circle' : canCreateJob() ? 'bi-exclamation-circle' : 'bi-circle'} me-2`}></i>
+                    Job Created
+                    {canCreateJob() && !rfq.jobId && (
+                        <span className="badge bg-warning text-dark ms-2">Ready</span>
+                    )}
+                  </div>
+
+                  <div className={`list-group-item ${rfq.invoiceNumber ? 'list-group-item-success' : ''}`}>
+                    <i className={`bi ${rfq.invoiceNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
+                    Invoiced
+                  </div>
+                  <div className="list-group-item">
+                    <i className="bi bi-circle me-2"></i>
+                    Payment Received
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
