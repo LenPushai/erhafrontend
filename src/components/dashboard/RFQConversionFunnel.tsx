@@ -20,9 +20,9 @@ const RFQConversionFunnel: React.FC = () => {
       try {
         // Fetch RFQs, Quotes, and Jobs
         const [rfqsRes, quotesRes, jobsRes] = await Promise.all([
-          fetch('http://localhost:8080/api/v1/rfqs?page=0&size=1000'),
-          fetch('http://localhost:8080/api/v1/quotes'),
-          fetch('http://localhost:8080/api/v1/jobs')
+          fetch('https://erhauatdev7000.onrender.com/api/v1/rfqs?page=0&size=1000'),
+          fetch('https://erhauatdev7000.onrender.com/api/v1/quotes'),
+          fetch('https://erhauatdev7000.onrender.com/api/v1/jobs')
         ]);
 
         const rfqs = await rfqsRes.json();

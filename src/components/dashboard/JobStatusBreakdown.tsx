@@ -16,7 +16,7 @@ const JobStatusBreakdown: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/v1/jobs');
+        const response = await fetch('https://erhauatdev7000.onrender.com/api/v1/jobs');
         const jobs = await response.json();
 
         // Count jobs by status

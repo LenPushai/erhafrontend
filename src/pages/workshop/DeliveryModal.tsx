@@ -52,7 +52,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ job, onClose, onDeliveryC
     try {
       const signatureData = signatureRef.current?.toDataURL() || '';
       
-      await axios.post(`http://localhost:8080/api/v1/delivery/confirm/${job.jobId}`, {
+      await axios.post(`https://erhauatdev7000.onrender.com/api/v1/delivery/confirm/${job.jobId}`, {
         deliveredBy,
         vehicle,
         deliveryNoteNumber: generateDeliveryNoteNumber(),

@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       // Call testlogin endpoint directly
-      const response = await fetch('http://localhost:8080/api/auth/testlogin', {
+      const response = await fetch('https://erhauatdev7000.onrender.com/api/auth/testlogin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -44,12 +44,12 @@ const QuoterDashboard: React.FC = () => {
       setLoading(true);
       
       // Fetch RFQs
-      const rfqRes = await axios.get('http://localhost:8080/api/v1/rfqs?size=100');
+      const rfqRes = await axios.get('https://erhauatdev7000.onrender.com/api/v1/rfqs?size=100');
       const rfqData = rfqRes.data.content || rfqRes.data || [];
       setRfqs(rfqData);
 
       // Fetch clients for name lookup
-      const clientRes = await axios.get('http://localhost:8080/api/v1/clients');
+      const clientRes = await axios.get('https://erhauatdev7000.onrender.com/api/v1/clients');
       const clientData = clientRes.data.value || clientRes.data.content || clientRes.data || [];
       const clientMap = new Map<number, string>();
       clientData.forEach((c: Client) => {

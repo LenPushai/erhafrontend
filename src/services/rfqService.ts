@@ -2,7 +2,7 @@
 // ERHA OPS - RFQ Service
 // CLEAN VERSION - With getRfqById function
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'https://erhauatdev7000.onrender.com/api/v1';
 
 export interface RFQ {
   id: number;

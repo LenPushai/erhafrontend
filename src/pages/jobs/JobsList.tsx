@@ -62,7 +62,7 @@ export default function JobsList() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/jobs/${jobToDelete.jobId}`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/jobs/${jobToDelete.jobId}`, {
         method: 'DELETE',
       });
 

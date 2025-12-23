@@ -117,7 +117,7 @@ export default function JobDetail() {
 
   const loadTemplates = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/task-templates');
+      const response = await fetch('https://erhauatdev7000.onrender.com/api/v1/task-templates');
       if (response.ok) {
         const data = await response.json();
         setTemplates(data);
@@ -131,7 +131,7 @@ export default function JobDetail() {
     setSelectedTemplateId(templateId);
     if (templateId) {
       try {
-        const response = await fetch(`http://localhost:8080/api/v1/task-templates/${templateId}`);
+        const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/task-templates/${templateId}`);
         if (response.ok) {
           const data = await response.json();
           setSelectedTemplate(data);
@@ -173,7 +173,7 @@ export default function JobDetail() {
       }
 
       // Create child jobs
-      const response = await fetch(`http://localhost:8080/api/v1/jobs/${id}/children`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/jobs/${id}/children`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ export default function JobDetail() {
             status: 'PENDING'
           }));
 
-          await fetch(`http://localhost:8080/api/v1/jobs/${createdJob.jobId}/tasks`, {
+          await fetch(`https://erhauatdev7000.onrender.com/api/v1/jobs/${createdJob.jobId}/tasks`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

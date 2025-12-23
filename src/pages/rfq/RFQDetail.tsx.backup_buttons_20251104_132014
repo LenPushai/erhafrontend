@@ -64,7 +64,7 @@ export default function RFQDetail() {
       }
 
       try {
-        const response = await fetch(`http://localhost:8080/api/v1/rfqs/${numId}`);
+        const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${numId}`);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -95,7 +95,7 @@ export default function RFQDetail() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}`, {
         method: 'DELETE',
       });
 

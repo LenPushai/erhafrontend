@@ -49,7 +49,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ rfq, show, onClose, onPayme
         paymentMethod
       };
 
-      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

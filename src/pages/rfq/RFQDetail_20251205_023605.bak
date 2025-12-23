@@ -53,7 +53,7 @@ const RFQDetail: React.FC = () => {
 
   const handleExportToPastel = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/export/pastel/rfqs/${rfq.id}`);
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/export/pastel/rfqs/${rfq.id}`);
       const csvData = await response.text();
       const blob = new Blob([csvData], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -85,7 +85,7 @@ const RFQDetail: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}/upload-quote-pdf`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}/upload-quote-pdf`, {
         method: 'POST',
         body: formData,
       });
@@ -124,7 +124,7 @@ const RFQDetail: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/rfqs/${rfq.id}/send-for-signature`, {
+      const response = await fetch(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}/send-for-signature`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -391,7 +391,7 @@ const RFQDetail: React.FC = () => {
                     <div>
                       {rfq.quotePdfPath ? (
                           <a
-                              href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`}
+                              href={`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}/quote-pdf`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-sm btn-outline-success"

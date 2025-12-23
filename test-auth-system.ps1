@@ -3,7 +3,7 @@ Write-Host "?? ERHA OPS - Testing Authentication System" -ForegroundColor Green
 
 Write-Host "1. Testing basic connectivity..." -ForegroundColor Cyan
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/test" -Method GET
+    $response = Invoke-RestMethod -Uri "https://erhauatdev7000.onrender.com/api/auth/test" -Method GET
     Write-Host "  ? API Test: $response" -ForegroundColor Green
 } catch {
     Write-Host "  ? API Test failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -16,7 +16,7 @@ $loginBody = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json"
+    $loginResponse = Invoke-RestMethod -Uri "https://erhauatdev7000.onrender.com/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json"
     Write-Host "  ? Admin Login Success!" -ForegroundColor Green
     Write-Host "  ?? Token: $($loginResponse.token.Substring(0,20))..." -ForegroundColor Gray
     Write-Host "  ?? User ID: $($loginResponse.id)" -ForegroundColor Gray
@@ -36,7 +36,7 @@ $registerBody = @{
 } | ConvertTo-Json
 
 try {
-    $registerResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/register" -Method POST -Body $registerBody -ContentType "application/json"
+    $registerResponse = Invoke-RestMethod -Uri "https://erhauatdev7000.onrender.com/api/auth/register" -Method POST -Body $registerBody -ContentType "application/json"
     Write-Host "  ? User Registration Success!" -ForegroundColor Green
     Write-Host "  ?? New User ID: $($registerResponse.id)" -ForegroundColor Gray
 } catch {

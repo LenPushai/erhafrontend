@@ -26,7 +26,7 @@ Health Score: 7/10 (70%)
 
 ## Server Configuration
 - Port: 8080
-- URL: http://localhost:8080
+- URL: https://erhauatdev7000.onrender.com
 
 ## Next Steps
 1. Compile: mvn clean compile

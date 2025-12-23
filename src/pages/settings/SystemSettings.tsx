@@ -74,7 +74,7 @@ const SystemSettings: React.FC = () => {
     try {
       setLoading(true);
       // TODO: Replace with actual API endpoint
-      // const response = await axios.get('http://localhost:8080/api/users', {
+      // const response = await axios.get('https://erhauatdev7000.onrender.com/api/users', {
       //   headers: { Authorization: `Bearer ${user?.token}` }
       // });
       

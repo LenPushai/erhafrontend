@@ -66,7 +66,7 @@ const RFQCreate: React.FC = () => {
 
   const loadEnums = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/enums/all');
+      const response = await fetch('https://erhauatdev7000.onrender.com/api/v1/enums/all');
       const data = await response.json();
       setEnums(data);
     } catch (err) {

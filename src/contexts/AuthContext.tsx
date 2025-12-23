@@ -43,7 +43,7 @@ interface AuthProviderProps {
 }
 
 // Inline auth service
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://erhauatdev7000.onrender.com';
 
 const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {

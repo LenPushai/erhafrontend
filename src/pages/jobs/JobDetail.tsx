@@ -65,27 +65,27 @@ interface TemplateTask {
 
 const jobService = {
   getJobById: async (id: number): Promise<Job> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/jobs/${id}`);
+    const response = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/jobs/${id}`);
     return response.data;
   },
 
   getChildJobs: async (parentId: number): Promise<ChildJob[]> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/jobs/${parentId}/children`);
+    const response = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/jobs/${parentId}/children`);
     return response.data;
   },
 
   createChildJobs: async (parentId: number, children: Partial<Job>[]): Promise<any[]> => {
-    const response = await axios.post(`http://localhost:8080/api/v1/jobs/${parentId}/children`, children);
+    const response = await axios.post(`https://erhauatdev7000.onrender.com/api/v1/jobs/${parentId}/children`, children);
     return response.data;
   },
 
   addTasksToJob: async (jobId: number, tasks: any[]): Promise<void> => {
-    await axios.post(`http://localhost:8080/api/v1/jobs/${jobId}/tasks`, tasks);
+    await axios.post(`https://erhauatdev7000.onrender.com/api/v1/jobs/${jobId}/tasks`, tasks);
   },
 
   downloadJobCardPdf: async (jobId: number, jobNumber: string): Promise<void> => {
     const response = await axios.get(
-        `http://localhost:8080/api/v1/jobs/${jobId}/job-card-pdf`,
+        `https://erhauatdev7000.onrender.com/api/v1/jobs/${jobId}/job-card-pdf`,
         { responseType: 'blob' }
     );
     const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -103,7 +103,7 @@ const jobService = {
 const templateService = {
   getAllTemplates: async (): Promise<TaskTemplate[]> => {
     try {
-      const response = await axios.get('http://localhost:8080/api/v1/task-templates');
+      const response = await axios.get('https://erhauatdev7000.onrender.com/api/v1/task-templates');
       return response.data;
     } catch {
       return [];
@@ -111,7 +111,7 @@ const templateService = {
   },
 
   getTemplateById: async (id: number): Promise<TaskTemplate> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/task-templates/${id}`);
+    const response = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/task-templates/${id}`);
     return response.data;
   }
 };

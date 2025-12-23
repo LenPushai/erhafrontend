@@ -64,7 +64,7 @@ const RFQDetail: React.FC = () => {
   const fetchRfq = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8080/api/v1/rfqs/${id}`);
+      const response = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${id}`);
       setRfq(response.data);
       if (response.data.contactPerson || response.data.contactEmail) {
         setClients([{
@@ -90,7 +90,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setUploading(true);
-      await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/upload-quote-pdf`, formData, {
+      await axios.post(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${id}/upload-quote-pdf`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Quote PDF uploaded successfully!');
@@ -108,7 +108,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setCreatingJob(true);
-      const response = await axios.post(`http://localhost:8080/api/v1/jobs/from-rfq/${id}`);
+      const response = await axios.post(`https://erhauatdev7000.onrender.com/api/v1/jobs/from-rfq/${id}`);
       const jobId = response.data.id || response.data.jobId;
 
       alert('Job created successfully!');
@@ -196,7 +196,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setSending(true);
-      const response = await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/send-for-signature`, {
+      const response = await axios.post(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${id}/send-for-signature`, {
         managers: validManagers,
         clients: validClients
       });
@@ -218,7 +218,7 @@ const RFQDetail: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this RFQ?')) return;
     try {
-      await axios.delete(`http://localhost:8080/api/v1/rfqs/${id}`);
+      await axios.delete(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${id}`);
       alert('RFQ deleted successfully');
       navigate('/rfqs');
     } catch (err) {
@@ -229,7 +229,7 @@ const RFQDetail: React.FC = () => {
 
   const handleExportToPastel = async () => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/export/pastel/rfqs/${id}`, {
+      const response = await axios.get(`https://erhauatdev7000.onrender.com/api/export/pastel/rfqs/${id}`, {
         responseType: 'blob'
       });
       
@@ -446,7 +446,7 @@ const RFQDetail: React.FC = () => {
                   {rfq.quotePdfPath && (
                       <div className="col-12 mb-3">
                         <strong>Quote PDF:</strong><br />
-                        <a href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">View Quote PDF</a>
+                        <a href={`https://erhauatdev7000.onrender.com/api/v1/rfqs/${rfq.id}/quote-pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">View Quote PDF</a>
                       </div>
                   )}
                   {rfq.docusignStatus && (

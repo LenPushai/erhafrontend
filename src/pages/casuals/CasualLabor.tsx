@@ -94,8 +94,8 @@ interface Summary {
   totalPending: number;
 }
 
-const API_BASE = 'http://localhost:8080/api/v1/casuals';
-const JOBS_API = 'http://localhost:8080/api/v1/jobs';
+const API_BASE = 'https://erhauatdev7000.onrender.com/api/v1/casuals';
+const JOBS_API = 'https://erhauatdev7000.onrender.com/api/v1/jobs';
 
 const CasualLabor: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);

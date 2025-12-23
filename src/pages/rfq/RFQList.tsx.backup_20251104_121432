@@ -44,7 +44,7 @@ export default function RFQList() {
 
   const fetchRFQs = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/rfqs');
+      const response = await fetch('https://erhauatdev7000.onrender.com/api/v1/rfqs');
 
       if (!response.ok) {
         throw new Error('Failed to fetch RFQs');

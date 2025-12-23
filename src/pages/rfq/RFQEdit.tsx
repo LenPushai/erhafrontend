@@ -71,7 +71,7 @@ export default function RFQEdit() {
   useEffect(() => {
     // CRITICAL FIX: Don't fetch if creating new RFQ
     // Load enums
-    fetch('http://localhost:8080/api/v1/enums/all')
+    fetch('https://erhauatdev7000.onrender.com/api/v1/enums/all')
       .then(res => res.json())
       .then(data => setEnums(data))
       .catch(err => console.error('Failed to load enums:', err));
@@ -187,7 +187,7 @@ export default function RFQEdit() {
 
     try {
       // Load enums
-    fetch('http://localhost:8080/api/v1/enums/all')
+    fetch('https://erhauatdev7000.onrender.com/api/v1/enums/all')
       .then(res => res.json())
       .then(data => setEnums(data))
       .catch(err => console.error('Failed to load enums:', err));

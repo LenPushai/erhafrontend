@@ -49,12 +49,12 @@ const PrintableENQReport: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const rfqRes = await axios.get(`http://localhost:8080/api/v1/rfqs/${id}`);
+        const rfqRes = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/rfqs/${id}`);
         setRfq(rfqRes.data);
         
         if (rfqRes.data.clientId) {
           try {
-            const clientRes = await axios.get(`http://localhost:8080/api/v1/clients/${rfqRes.data.clientId}`);
+            const clientRes = await axios.get(`https://erhauatdev7000.onrender.com/api/v1/clients/${rfqRes.data.clientId}`);
             setClient(clientRes.data);
           } catch (e) {
             console.error('Failed to load client');

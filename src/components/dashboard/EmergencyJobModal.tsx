@@ -37,7 +37,7 @@ const EmergencyJobModal: React.FC<EmergencyJobModalProps> = ({ show, onClose }) 
       const valueIncl = valueExcl * 1.15;
 
       // Create emergency job via API
-      const response = await fetch('http://localhost:8080/api/v1/jobs', {
+      const response = await fetch('https://erhauatdev7000.onrender.com/api/v1/jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
