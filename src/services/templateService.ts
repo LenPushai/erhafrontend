@@ -7,7 +7,7 @@ export const templateService = {
     const response = await axios.get(API_URL + '/task-templates');
     return response.data;
   },
-  
+
   getTemplate: async (id: number) => {
     const response = await axios.get(API_URL + '/task-templates/' + id);
     return response.data;
