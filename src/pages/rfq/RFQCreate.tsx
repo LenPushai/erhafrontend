@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { rfqService } from '../../services/rfqService';
 import { clientService } from '../../services/clientService';
+import { rfqLineItemService } from '../../services/rfqLineItemService';
+import RFQLineItems from '../../components/rfq/RFQLineItems';
 
 interface Client {
   id: number;
@@ -20,6 +22,17 @@ interface EnumData {
   quoters: EnumOption[];
   mediaReceived: EnumOption[];
   actionsRequired: EnumOption[];
+}
+
+interface LineItem {
+  lineNumber: number;
+  description: string;
+  quantity: string;
+  unitOfMeasure: string;
+  estimatedUnitPrice: string;
+  estimatedLineTotal: string;
+  drawingReference?: string;
+  notes?: string;
 }
 
 const RFQCreate: React.FC = () => {
@@ -59,6 +72,8 @@ const RFQCreate: React.FC = () => {
     drawingNumber: ''
   });
 
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+
   useEffect(() => {
     loadClients();
     loadEnums();
@@ -78,7 +93,6 @@ const RFQCreate: React.FC = () => {
     try {
       setLoadingClients(true);
       const response = await clientService.getAllClients();
-      // Handle wrapped response { value: [...] } or direct array
       const data = response.value || response;
       setClients(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -92,6 +106,13 @@ const RFQCreate: React.FC = () => {
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError(null);
+  };
+
+  const handleLineItemsChange = (items: LineItem[]) => {
+    setLineItems(items);
+    // Auto-calculate total estimated value from line items
+    const total = items.reduce((sum, item) => sum + (parseFloat(item.estimatedLineTotal) || 0), 0);
+    setFormData(prev => ({ ...prev, estimatedValue: total.toFixed(2) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,6 +147,18 @@ const RFQCreate: React.FC = () => {
       return;
     }
 
+    // Validate line items
+    if (lineItems.length === 0) {
+      setError('Please add at least one line item');
+      return;
+    }
+
+    const hasEmptyDescriptions = lineItems.some(item => !item.description.trim());
+    if (hasEmptyDescriptions) {
+      setError('All line items must have a description');
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
@@ -154,7 +187,23 @@ const RFQCreate: React.FC = () => {
         drawingNumber: formData.drawingNumber.trim() || null
       };
 
-      await rfqService.createRfq(rfqData);
+      // Create RFQ first
+      const createdRfq = await rfqService.createRfq(rfqData);
+
+      // Then create line items
+      const lineItemsToCreate = lineItems.map((item, index) => ({
+        lineNumber: index + 1,
+        description: item.description,
+        quantity: parseFloat(item.quantity) || 0,
+        unitOfMeasure: item.unitOfMeasure,
+        estimatedUnitPrice: parseFloat(item.estimatedUnitPrice) || 0,
+        estimatedLineTotal: parseFloat(item.estimatedLineTotal) || 0,
+        drawingReference: item.drawingReference || null,
+        notes: item.notes || null
+      }));
+
+      await rfqLineItemService.createLineItemsBatch(createdRfq.id, lineItemsToCreate);
+
       navigate('/rfqs');
     } catch (err: any) {
       setError(err.message || 'Failed to create RFQ');
@@ -163,403 +212,375 @@ const RFQCreate: React.FC = () => {
   };
 
   return (
-    <div className="container-fluid p-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div className="d-flex align-items-center gap-3">
-          <button
-            className="btn btn-outline-secondary"
-            onClick={() => navigate('/rfqs')}
-            disabled={saving}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h2 className="mb-1">Create New RFQ</h2>
-            <div className="text-muted small">Request for Quotation</div>
-          </div>
-        </div>
-      </div>
-
-      {error && (
-        <div className="alert alert-danger alert-dismissible fade show">
-          <strong>Error:</strong> {error}
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => setError(null)}
-          ></button>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="card mb-3">
-          <div className="card-header bg-light">
-            <h5 className="mb-0">Client Information</h5>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Client <span className="text-danger">*</span>
-                </label>
-                {loadingClients ? (
-                  <div className="form-control">Loading clients...</div>
-                ) : (
-                  <select
-                    className="form-select"
-                    value={formData.clientId}
-                    onChange={(e) => handleInputChange('clientId', e.target.value)}
-                    required
-                  >
-                    <option value="">Select a client...</option>
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>
-                        {client.companyName || client.clientName}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Contact Person <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.contactPerson}
-                  onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                  required
-                  placeholder="Who requested this RFQ?"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Contact Email</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  value={formData.contactEmail}
-                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                  placeholder="contact@email.com"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Contact Phone</label>
-                <input
-                  type="tel"
-                  className="form-control"
-                  value={formData.contactPhone}
-                  onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                  placeholder="+27 12 345 6789"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Department/Area</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.department}
-                  onChange={(e) => handleInputChange('department', e.target.value)}
-                  placeholder="e.g., MELTSHOP, MILLS"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card mb-3" style={{borderColor: '#28a745'}}>
-          <div className="card-header" style={{backgroundColor: '#d4edda'}}>
-            <h5 className="mb-0">ENQ Report Information</h5>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-4 mb-3">
-                <label className="form-label">ERHA Department</label>
-                <select
-                  className="form-select"
-                  value={formData.erhaDepartment}
-                  onChange={(e) => handleInputChange('erhaDepartment', e.target.value)}
-                >
-                  <option value="">Select department...</option>
-                  {enums.departments.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-4 mb-3">
-                <label className="form-label">Assigned Quoter</label>
-                <select
-                  className="form-select"
-                  value={formData.assignedQuoter}
-                  onChange={(e) => handleInputChange('assignedQuoter', e.target.value)}
-                >
-                  <option value="">Select quoter...</option>
-                  {enums.quoters.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-4 mb-3">
-                <label className="form-label">Media Received</label>
-                <select
-                  className="form-select"
-                  value={formData.mediaReceived}
-                  onChange={(e) => handleInputChange('mediaReceived', e.target.value)}
-                >
-                  <option value="">Select media...</option>
-                  {enums.mediaReceived.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Drawing Number</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.drawingNumber}
-                  onChange={(e) => handleInputChange('drawingNumber', e.target.value)}
-                  placeholder="e.g., DWG-2025-001"
-                />
-              </div>
-
-              <div className="col-12 mb-3">
-                <label className="form-label">Actions Required</label>
-                <div className="d-flex flex-wrap gap-3">
-                  {enums.actionsRequired.map(opt => (
-                    <div key={opt.value} className="form-check">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        id={`action-${opt.value}`}
-                        checked={formData.actionsRequired.includes(opt.value)}
-                        onChange={(e) => {
-                          const current = formData.actionsRequired;
-                          if (e.target.checked) {
-                            handleInputChange('actionsRequired', [...current, opt.value]);
-                          } else {
-                            handleInputChange('actionsRequired', current.filter(v => v !== opt.value));
-                          }
-                        }}
-                      />
-                      <label className="form-check-label" htmlFor={`action-${opt.value}`}>
-                        {opt.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card mb-3">
-          <div className="card-header bg-light">
-            <h5 className="mb-0">RFQ Details</h5>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Operating Entity <span className="text-danger">*</span>
-                </label>
-                <select
-                  className="form-select"
-                  value={formData.operatingEntity}
-                  onChange={(e) => handleInputChange('operatingEntity', e.target.value)}
-                  required
-                >
-                  <option value="ERHA FC">ERHA FC</option>
-                  <option value="ERHA SS">ERHA SS</option>
-                </select>
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Priority <span className="text-danger">*</span>
-                </label>
-                <select
-                  className="form-select"
-                  value={formData.priority}
-                  onChange={(e) => handleInputChange('priority', e.target.value)}
-                  required
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Date Received <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={formData.requestDate}
-                  onChange={(e) => handleInputChange('requestDate', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">
-                  Required By <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={formData.requiredDate}
-                  onChange={(e) => handleInputChange('requiredDate', e.target.value)}
-                  required
-                  min={formData.requestDate}
-                />
-              </div>
-
-              <div className="col-12 mb-3">
-                <label className="form-label">
-                  Description <span className="text-danger">*</span>
-                </label>
-                <textarea
-                  className="form-control"
-                  rows={4}
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  required
-                  placeholder="Detailed description of what needs to be quoted"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Estimated Value</label>
-                <div className="input-group">
-                  <span className="input-group-text">R</span>
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={formData.estimatedValue}
-                    onChange={(e) => handleInputChange('estimatedValue', e.target.value)}
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Assign To</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={formData.assignedTo}
-                  onChange={(e) => handleInputChange('assignedTo', e.target.value)}
-                  placeholder="Team member name"
-                />
-              </div>
-
-              <div className="col-12 mb-3">
-                <label className="form-label">Special Requirements</label>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  value={formData.specialRequirements}
-                  onChange={(e) => handleInputChange('specialRequirements', e.target.value)}
-                  placeholder="Any special specifications, drawings, certifications"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Follow-up Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={formData.followUpDate}
-                  onChange={(e) => handleInputChange('followUpDate', e.target.value)}
-                  min={formData.requestDate}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card mb-3">
-          <div className="card-header bg-light">
-            <h5 className="mb-0">Additional Notes</h5>
-          </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Internal Notes</label>
-                <textarea
-                  className="form-control"
-                  rows={4}
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Internal notes for the team"
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label className="form-label">Remarks</label>
-                <textarea
-                  className="form-control"
-                  rows={4}
-                  value={formData.remarks}
-                  onChange={(e) => handleInputChange('remarks', e.target.value)}
-                  placeholder="Client-facing remarks"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="card-footer bg-light">
-            <div className="d-flex justify-content-end gap-2">
-              <button
-                type="button"
+      <div className="container-fluid p-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex align-items-center gap-3">
+            <button
                 className="btn btn-outline-secondary"
                 onClick={() => navigate('/rfqs')}
                 disabled={saving}
-              >
-                <X size={16} className="me-2" />
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={saving || loadingClients}
-              >
-                {saving ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2"></span>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} className="me-2" />
-                    Create RFQ
-                  </>
-                )}
-              </button>
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <h2 className="mb-1">Create New RFQ</h2>
+              <div className="text-muted small">Request for Quotation</div>
             </div>
           </div>
         </div>
-      </form>
-    </div>
+
+        {error && (
+            <div className="alert alert-danger alert-dismissible fade show">
+              <strong>Error:</strong> {error}
+              <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setError(null)}
+              ></button>
+            </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="card mb-3">
+            <div className="card-header bg-light">
+              <h5 className="mb-0">Client Information</h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Client <span className="text-danger">*</span>
+                  </label>
+                  {loadingClients ? (
+                      <div className="form-control">Loading clients...</div>
+                  ) : (
+                      <select
+                          className="form-select"
+                          value={formData.clientId}
+                          onChange={(e) => handleInputChange('clientId', e.target.value)}
+                          required
+                      >
+                        <option value="">Select a client...</option>
+                        {clients.map(client => (
+                            <option key={client.id} value={client.id}>
+                              {client.companyName || client.clientName}
+                            </option>
+                        ))}
+                      </select>
+                  )}
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Contact Person <span className="text-danger">*</span>
+                  </label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData.contactPerson}
+                      onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                      required
+                      placeholder="Who requested this RFQ?"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Contact Email</label>
+                  <input
+                      type="email"
+                      className="form-control"
+                      value={formData.contactEmail}
+                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      placeholder="contact@email.com"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Contact Phone</label>
+                  <input
+                      type="tel"
+                      className="form-control"
+                      value={formData.contactPhone}
+                      onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                      placeholder="+27 12 345 6789"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Department/Area</label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData.department}
+                      onChange={(e) => handleInputChange('department', e.target.value)}
+                      placeholder="e.g., MELTSHOP, MILLS"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card mb-3" style={{borderColor: '#28a745'}}>
+            <div className="card-header" style={{backgroundColor: '#d4edda'}}>
+              <h5 className="mb-0">ENQ Report Information</h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label className="form-label">Assigned Quoter</label>
+                  <select
+                      className="form-select"
+                      value={formData.assignedQuoter}
+                      onChange={(e) => handleInputChange('assignedQuoter', e.target.value)}
+                  >
+                    <option value="">Select quoter...</option>
+                    {enums?.quoters?.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-4 mb-3">
+                  <label className="form-label">Media Received</label>
+                  <select
+                      className="form-select"
+                      value={formData.mediaReceived}
+                      onChange={(e) => handleInputChange('mediaReceived', e.target.value)}
+                  >
+                    <option value="">Select media...</option>
+                    {enums?.mediaReceived?.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Drawing Number</label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData.drawingNumber}
+                      onChange={(e) => handleInputChange('drawingNumber', e.target.value)}
+                      placeholder="e.g., DWG-2025-001"
+                  />
+                </div>
+
+                <div className="col-12 mb-3">
+                  <label className="form-label">Actions Required</label>
+                  <div className="d-flex flex-wrap gap-3">
+                    {enums?.actionsRequired?.map(opt => (
+                        <div key={opt.value} className="form-check">
+                          <input
+                              type="checkbox"
+                              className="form-check-input"
+                              id={`action-${opt.value}`}
+                              checked={formData.actionsRequired.includes(opt.value)}
+                              onChange={(e) => {
+                                const current = formData.actionsRequired;
+                                if (e.target.checked) {
+                                  handleInputChange('actionsRequired', [...current, opt.value]);
+                                } else {
+                                  handleInputChange('actionsRequired', current.filter(v => v !== opt.value));
+                                }
+                              }}
+                          />
+                          <label className="form-check-label" htmlFor={`action-${opt.value}`}>
+                            {opt.label}
+                          </label>
+                        </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card mb-3">
+            <div className="card-header bg-light">
+              <h5 className="mb-0">RFQ Details</h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Operating Entity <span className="text-danger">*</span>
+                  </label>
+                  <select
+                      className="form-select"
+                      value={formData.operatingEntity}
+                      onChange={(e) => handleInputChange('operatingEntity', e.target.value)}
+                      required
+                  >
+                    <option value="ERHA FC">ERHA FC</option>
+                    <option value="ERHA SS">ERHA SS</option>
+                  </select>
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Priority <span className="text-danger">*</span>
+                  </label>
+                  <select
+                      className="form-select"
+                      value={formData.priority}
+                      onChange={(e) => handleInputChange('priority', e.target.value)}
+                      required
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Date Received <span className="text-danger">*</span>
+                  </label>
+                  <input
+                      type="date"
+                      className="form-control"
+                      value={formData.requestDate}
+                      onChange={(e) => handleInputChange('requestDate', e.target.value)}
+                      required
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">
+                    Required By <span className="text-danger">*</span>
+                  </label>
+                  <input
+                      type="date"
+                      className="form-control"
+                      value={formData.requiredDate}
+                      onChange={(e) => handleInputChange('requiredDate', e.target.value)}
+                      required
+                      min={formData.requestDate}
+                  />
+                </div>
+
+                <div className="col-12 mb-3">
+                  <label className="form-label">
+                    Description <span className="text-danger">*</span>
+                  </label>
+                  <textarea
+                      className="form-control"
+                      rows={4}
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      required
+                      placeholder="Detailed description of what needs to be quoted"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Assign To</label>
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={formData.assignedTo}
+                      onChange={(e) => handleInputChange('assignedTo', e.target.value)}
+                      placeholder="Team member name"
+                  />
+                </div>
+
+                <div className="col-12 mb-3">
+                  <label className="form-label">Special Requirements</label>
+                  <textarea
+                      className="form-control"
+                      rows={3}
+                      value={formData.specialRequirements}
+                      onChange={(e) => handleInputChange('specialRequirements', e.target.value)}
+                      placeholder="Any special specifications, drawings, certifications"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Follow-up Date</label>
+                  <input
+                      type="date"
+                      className="form-control"
+                      value={formData.followUpDate}
+                      onChange={(e) => handleInputChange('followUpDate', e.target.value)}
+                      min={formData.requestDate}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LINE ITEMS SECTION */}
+          <div className="mb-3">
+            <RFQLineItems onChange={handleLineItemsChange} />
+          </div>
+
+          <div className="card mb-3">
+            <div className="card-header bg-light">
+              <h5 className="mb-0">Additional Notes</h5>
+            </div>
+            <div className="card-body">
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Internal Notes</label>
+                  <textarea
+                      className="form-control"
+                      rows={4}
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder="Internal notes for the team"
+                  />
+                </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Remarks</label>
+                  <textarea
+                      className="form-control"
+                      rows={4}
+                      value={formData.remarks}
+                      onChange={(e) => handleInputChange('remarks', e.target.value)}
+                      placeholder="Client-facing remarks"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-footer bg-light">
+              <div className="d-flex justify-content-end gap-2">
+                <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => navigate('/rfqs')}
+                    disabled={saving}
+                >
+                  <X size={16} className="me-2" />
+                  Cancel
+                </button>
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving || loadingClients}
+                >
+                  {saving ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Creating...
+                      </>
+                  ) : (
+                      <>
+                        <Save size={16} className="me-2" />
+                        Create RFQ
+                      </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
   );
 };
 
 export default RFQCreate;
-
-
-

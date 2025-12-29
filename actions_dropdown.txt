@@ -1,0 +1,19 @@
+<div className="col-12 mb-3">
+  <label className="form-label">Actions Required</label>
+  <select 
+    className="form-select" 
+    name="actionsRequired" 
+    multiple 
+    size="5"
+    value={formData.actionsRequired}
+    onChange={(e) => {
+      const selected = Array.from(e.target.selectedOptions, option => option.value);
+      setFormData(prev => ({ ...prev, actionsRequired: selected }));
+    }}
+  >
+    {enums?.actionsRequired?.map(opt => (
+      <option key={opt.value} value={opt.value}>{opt.label}</option>
+    ))}
+  </select>
+  <small className="text-muted">Hold Ctrl/Cmd to select multiple</small>
+</div>

@@ -1,4 +1,4 @@
-﻿// src/pages/rfq/RFQEdit.tsx
+// src/pages/rfq/RFQEdit.tsx
 // ERHA OPS - RFQ Edit Page
 // FIXED: Handle "new" RFQ creation without API call
 
@@ -469,7 +469,20 @@ export default function RFQEdit() {
                 </div>
                 <div className="card-body">
                   <div className="row">
-                    
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">ERHA Department</label>
+                      <select
+                        className="form-select"
+                        name="erhaDepartment"
+                        value={formData.erhaDepartment}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select department...</option>
+                        {enums.departments.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="col-md-3 mb-3">
                       <label className="form-label">Assigned Quoter</label>
                       <select
@@ -479,7 +492,7 @@ export default function RFQEdit() {
                         onChange={handleChange}
                       >
                         <option value="">Select quoter...</option>
-                        {enums?.quoters?.map(opt => (
+                        {enums.quoters.map(opt => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
@@ -493,7 +506,7 @@ export default function RFQEdit() {
                         onChange={handleChange}
                       >
                         <option value="">Select media...</option>
-                        {enums?.mediaReceived?.map(opt => (
+                        {enums.mediaReceived.map(opt => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
@@ -511,27 +524,20 @@ export default function RFQEdit() {
                     </div>
                     <div className="col-12 mb-3">
                       <label className="form-label">Actions Required</label>
-                      <div className="d-flex flex-wrap gap-3">
-                        {enums?.actionsRequired?.map(opt => (
-                          <div key={opt.value} className="form-check">
+                      <div className="row">
+                        {enums.actionsRequired.map(opt => (
+                          <div key={opt.value} className="col-md-2 col-sm-4 col-6 mb-2"><div className="form-check">
                             <input
                               type="checkbox"
                               className="form-check-input"
                               id={`edit-action-${opt.value}`}
                               checked={formData.actionsRequired.includes(opt.value)}
-                              onChange={(e) => {
-                                const current = formData.actionsRequired;
-                                if (e.target.checked) {
-                                  setFormData(prev => ({ ...prev, actionsRequired: [...current, opt.value] }));
-                                } else {
-                                  setFormData(prev => ({ ...prev, actionsRequired: current.filter(v => v !== opt.value) }));
-                                }
-                              }}
+                              onChange={(e) => handleActionsChange(opt.value, e.target.checked)}
                             />
                             <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
                               {opt.label}
                             </label>
-                          </div>
+                          </div></div>
                         ))}
                       </div>
                     </div>

@@ -511,34 +511,25 @@ export default function RFQEdit() {
                     </div>
                     <div className="col-12 mb-3">
                       <label className="form-label">Actions Required</label>
-                      <div className="d-flex flex-wrap gap-3">
+                      <div className="row">
                         {enums?.actionsRequired?.map(opt => (
-                          <div key={opt.value} className="form-check">
-                            <input
-                              type="checkbox"
-                              className="form-check-input"
-                              id={`edit-action-${opt.value}`}
-                              checked={formData.actionsRequired.includes(opt.value)}
-                              onChange={(e) => {
-                                const current = formData.actionsRequired;
-                                if (e.target.checked) {
-                                  setFormData(prev => ({ ...prev, actionsRequired: [...current, opt.value] }));
-                                } else {
-                                  setFormData(prev => ({ ...prev, actionsRequired: current.filter(v => v !== opt.value) }));
-                                }
-                              }}
-                            />
-                            <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
-                              {opt.label}
-                            </label>
-                          </div>
+                            <div key={opt.value} className="col-md-2 col-sm-4 col-6 mb-2">
+                              <div className="form-check">
+                                <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id={`edit-action-${opt.value}`}
+                                    checked={formData.actionsRequired.includes(opt.value)}
+                                    onChange={(e) => handleActionsChange(opt.value, e.target.checked)}
+                                />
+                                <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
+                                  {opt.label}
+                                </label>
+                              </div>
+                            </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Quote, Order, Invoice Information */}
             <div className="col-12 mb-4">
