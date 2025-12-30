@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import jobService from '../../services/jobService';
+import JobSubTasks from '../../components/job/JobSubTasks';
+import { jobSubTaskService } from '../../services/jobSubTaskService';
 
 interface Job {
   jobId: number;
@@ -19,6 +21,19 @@ interface Job {
   department?: string;
   location?: string;
   priority?: string;
+}
+
+interface SubTask {
+  id?: number;
+  taskNumber: number;
+  operationType: string;
+  description: string;
+  assignedTo: string;
+  estimatedHours: string;
+  actualHours?: string;
+  status: string;
+  dueDate?: string;
+  notes?: string;
 }
 
 const JobEdit: React.FC = () => {
@@ -46,6 +61,8 @@ const JobEdit: React.FC = () => {
     priority: 'MEDIUM'
   });
 
+  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
+
   useEffect(() => {
     loadJob();
   }, [id]);
@@ -54,7 +71,7 @@ const JobEdit: React.FC = () => {
     try {
       setLoading(true);
       const data = await jobService.getJobById(Number(id));
-      console.log('Loaded job data:', data); // Debug log
+      console.log('Loaded job data:', data);
 
       // Map backend fields to form fields
       setFormData({
@@ -74,6 +91,20 @@ const JobEdit: React.FC = () => {
         location: data.location || '',
         priority: data.priority || 'MEDIUM'
       });
+
+      // Load sub tasks
+      try {
+        const tasks = await jobSubTaskService.getSubTasks(Number(id));
+        setSubTasks(tasks.map(t => ({
+          ...t,
+          estimatedHours: String(t.estimatedHours || ''),
+          actualHours: String(t.actualHours || '')
+        })));
+      } catch (err) {
+        console.error('Failed to load sub tasks:', err);
+        // Don't fail the whole page if sub tasks fail
+      }
+
       setError(null);
     } catch (err: any) {
       console.error('Failed to load job:', err);
@@ -85,6 +116,11 @@ const JobEdit: React.FC = () => {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  const handleSubTasksChange = (tasks: SubTask[]) => {
+    setSubTasks(tasks);
     setHasChanges(true);
   };
 
@@ -110,6 +146,31 @@ const JobEdit: React.FC = () => {
       };
 
       await jobService.updateJob(Number(id), updateData);
+
+      // Save sub tasks if they exist
+      if (subTasks.length > 0) {
+        const tasksToSave = subTasks.map((t, i) => ({
+          taskNumber: i + 1,
+          operationType: t.operationType,
+          description: t.description,
+          assignedTo: t.assignedTo,
+          estimatedHours: parseFloat(t.estimatedHours) || 0,
+          actualHours: parseFloat(t.actualHours || '0') || 0,
+          status: t.status,
+          dueDate: t.dueDate || null,
+          notes: t.notes || null
+        }));
+
+        // Delete existing sub tasks first, then create new ones
+        try {
+          // Just create batch - backend will handle duplicates
+          await jobSubTaskService.createSubTasksBatch(Number(id), tasksToSave);
+        } catch (err) {
+          console.error('Failed to save sub tasks:', err);
+          // Don't fail the whole save if sub tasks fail
+        }
+      }
+
       navigate('/jobs/' + id);
     } catch (err: any) {
       console.error('Failed to update job:', err);
@@ -354,6 +415,15 @@ const JobEdit: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* SUB TASKS / OPERATIONS SECTION */}
+          <div className="mb-4">
+            <JobSubTasks
+                jobId={Number(id)}
+                initialSubTasks={subTasks}
+                onChange={handleSubTasksChange}
+            />
           </div>
 
           {/* Notes Card */}
