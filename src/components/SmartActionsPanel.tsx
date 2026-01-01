@@ -19,7 +19,7 @@ interface RFQ {
 interface SmartActionsPanelProps {
   rfq: RFQ;
   onPrintEnq: () => void;
-  onUploadPdf: () => void;
+  onUploadPdf: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSendForSignature: () => void;
   onCreateJob: () => void;
   onDelete: () => void;
@@ -263,7 +263,7 @@ const SmartActionsPanel: React.FC<SmartActionsPanelProps> = ({
                   <input
                     type="file"
                     accept=".pdf"
-                    onChange={(e) => e.target.files?.[0] && action.onClick?.()}
+                    onChange={(e) => { if (e.target.files?.[0] && action.id === 'upload') { onUploadPdf(e); } else if (action.onClick) { action.onClick(); } }}
                     disabled={action.disabled}
                     style={{ display: 'none' }}
                     id={`file-upload-${action.id}`}
