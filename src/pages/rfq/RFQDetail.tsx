@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import WorkflowProgress from '../../components/WorkflowProgress';
 import SmartActionsPanel from '../../components/SmartActionsPanel';
+import RFQDetailsCard from '../../components/RFQDetailsCard';
+import RFQHeader from '../../components/RFQHeader';
 
 
 interface RFQ {
@@ -327,214 +329,14 @@ const RFQDetail: React.FC = () => {
           </div>
         </div>
 
-        <div className="row">
+        {/* RFQ Header Bar */}
+        <RFQHeader rfq={rfq} />
+
+                <div className="row">
           <div className="col-md-8">
-            {/* RFQ Information Card */}
-            <div className="card mb-4">
-              <div className="card-header bg-dark text-white">
-                <h5 className="mb-0">RFQ Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>RFQ Number:</strong><br />
-                    {rfq.jobNo}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Status:</strong><br />
-                    <span className={`badge ${getStatusBadge(rfq.status)}`}>{rfq.status}</span>
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Client:</strong><br />
-                    Client ID: {rfq.clientId}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Priority:</strong><br />
-                    <span className={`badge ${getPriorityBadge(rfq.priority)}`}>{rfq.priority}</span>
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Operating Entity:</strong><br />
-                    {rfq.operatingEntity}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Contact Person:</strong><br />
-                    {rfq.contactPerson || 'N/A'}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Contact Email:</strong><br />
-                    {rfq.contactEmail || 'N/A'}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Contact Phone:</strong><br />
-                    {rfq.contactPhone || 'N/A'}
-                  </div>
-                  <div className="col-12 mb-3">
-                    <strong>Description:</strong><br />
-                    {rfq.description || 'N/A'}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Requested Date:</strong><br />
-                    {formatDate(rfq.requestDate)}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Required By Date:</strong><br />
-                    {formatDate(rfq.requiredDate)}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Estimated Value:</strong><br />
-                    {formatCurrency(rfq.estimatedValue)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ENQ Report Information Card */}
-            <div className="card mb-4" style={{borderColor: "#28a745"}}>
-              <div className="card-header" style={{backgroundColor: "#d4edda"}}>
-                <h5 className="mb-0">ENQ Report Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-3 mb-3">
-                    <strong>ERHA Department:</strong><br />
-                    {rfq.erhaDepartment || "N/A"}
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <strong>Assigned Quoter:</strong><br />
-                    {rfq.assignedQuoter || "N/A"}
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <strong>Media Received:</strong><br />
-                    {rfq.mediaReceived || "N/A"}
-                  </div>
-                  <div className="col-md-3 mb-3">
-                    <strong>Drawing Number:</strong><br />
-                    {rfq.drawingNumber || "N/A"}
-                  </div>
-                  <div className="col-12">
-                    <strong>Actions Required:</strong><br />
-                    {rfq.actionsRequired ? rfq.actionsRequired.split(",").map((action, idx) => (
-                      <span key={idx} className="badge bg-secondary me-1">{action}</span>
-                    )) : "N/A"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quote Information Card */}
-            <div className="card mb-4">
-              <div className="card-header bg-info text-white">
-                <h5 className="mb-0">Quote Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>Quote Number:</strong><br />
-                    {rfq.quoteNumber || 'Not yet quoted'}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Quote Status:</strong><br />
-                    {rfq.quoteStatus || 'N/A'}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Quote Value (Excl VAT):</strong><br />
-                    {formatCurrency(rfq.quoteValueExclVat)}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Quote Value (Incl VAT):</strong><br />
-                    <span className="text-primary fw-bold">{formatCurrency(rfq.quoteValueInclVat)}</span>
-                  </div>
-
-                  {rfq.quotePdfPath && (
-                      <div className="col-12 mb-3">
-                        <strong>Quote PDF:</strong><br />
-                        <a href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">View Quote PDF</a>
-                      </div>
-                  )}
-                  {rfq.docusignStatus && (
-                      <div className="col-12 mb-3">
-                        <strong>DocuSign Status:</strong><br />
-                        <span className={`badge ${rfq.docusignStatus === 'COMPLETED' ? 'bg-success' : 'bg-warning text-dark'}`}>
-                      {rfq.docusignStatus}
-                    </span>
-                        {rfq.docusignEnvelopeId && (
-                            <small className="text-muted ms-2">Envelope: {rfq.docusignEnvelopeId}</small>
-                        )}
-                      </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Order Information Card */}
-            <div className="card mb-4">
-              <div className="card-header bg-warning text-dark">
-                <h5 className="mb-0">Order Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>Order Number:</strong><br />
-                    {rfq.orderNumber || <span className="text-muted">Not yet ordered</span>}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Order Date:</strong><br />
-                    {rfq.orderDate ? formatDate(rfq.orderDate) : <span className="text-muted">N/A</span>}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Job Information Card - NEW */}
-            {rfq.jobId && (
-                <div className="card mb-4">
-                  <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0">
-                      <i className="bi bi-briefcase me-2"></i>
-                      Job Information
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <strong>Job ID:</strong><br />
-                        <span className="badge bg-primary">{rfq.jobId}</span>
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <strong>Job Status:</strong><br />
-                        <span className="badge bg-info">{rfq.jobStatus || 'In Progress'}</span>
-                      </div>
-                      <div className="col-12">
-                        <Link to={`/jobs/${rfq.jobId}`} className="btn btn-primary">
-                          <i className="bi bi-eye me-2"></i>
-                          View Job
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            )}
-
-            {/* Invoice Information Card */}
-            <div className="card mb-4">
-              <div className="card-header text-white" style={{backgroundColor: '#6f42c1'}}>
-                <h5 className="mb-0">Invoice Information</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <strong>Invoice Number:</strong><br />
-                    {rfq.invoiceNumber || <span className="text-muted">Not yet invoiced</span>}
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <strong>Invoice Date:</strong><br />
-                    {rfq.invoiceDate ? formatDate(rfq.invoiceDate) : <span className="text-muted">N/A</span>}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Consolidated RFQ Details */}
+            <RFQDetailsCard rfq={rfq} />
           </div>
-
           {/* Sidebar */}
           <div className="col-md-4">
             {/* Smart Actions Panel */}
