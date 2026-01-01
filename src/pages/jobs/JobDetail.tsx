@@ -27,6 +27,7 @@ interface Job {
   parentJobId?: number;
   jobSequence?: string;
   billingType?: string;
+  creationSource?: string;
   quoteValueExclVat?: number;
   quoteValueInclVat?: number;
   orderValueExcl?: number;
@@ -345,7 +346,7 @@ const JobDetail: React.FC = () => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="mb-1">
-              <Link to="/jobs" className="btn btn-outline-secondary me-3">← Back</Link>
+              <Link to="/jobs" className="btn btn-outline-secondary me-3">??? Back</Link>
               Job: {job.jobNumber}
             </h1>
             <p className="text-muted mb-0">{job.description}</p>
@@ -455,63 +456,6 @@ const JobDetail: React.FC = () => {
                 </div>
             )}
 
-            <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #6f42c1' }}>
-              <div className="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Child Jobs ({childJobs.length})</h5>
-                <button className="btn btn-success btn-sm" onClick={() => setCreateDialogOpen(true)}>
-                  + Create Child Job
-                </button>
-              </div>
-              <div className="card-body">
-                {childJobs.length === 0 ? (
-                    <div className="text-center text-muted py-4">
-                      <p className="mb-2">No child jobs yet</p>
-                      <button className="btn btn-outline-success" onClick={() => setCreateDialogOpen(true)}>
-                        Create First Child Job
-                      </button>
-                    </div>
-                ) : (
-                    <div className="table-responsive">
-                      <table className="table table-hover mb-0">
-                        <thead className="table-light">
-                        <tr>
-                          <th>Job #</th>
-                          <th>Description</th>
-                          <th>Status</th>
-                          <th>Progress</th>
-                          <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {childJobs.map((child) => (
-                            <tr key={child.jobId}>
-                              <td>
-                                <Link to={`/jobs/${child.jobId}`} className="text-decoration-none fw-bold">
-                                  {child.jobNumber}
-                                </Link>
-                              </td>
-                              <td>{child.description}</td>
-                              <td>
-                                <span className={`badge ${getStatusBadgeClass(child.status)}`}>{child.status}</span>
-                              </td>
-                              <td>
-                                <div className="progress" style={{ height: '20px', width: '100px' }}>
-                                  <div className="progress-bar bg-success" style={{ width: `${child.progressPercentage || 0}%` }}>
-                                    {child.progressPercentage || 0}%
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <Link to={`/jobs/${child.jobId}`} className="btn btn-sm btn-outline-primary">View</Link>
-                              </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                      </table>
-                    </div>
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="col-md-4">
@@ -527,16 +471,13 @@ const JobDetail: React.FC = () => {
                   <button className="btn btn-outline-info" onClick={handleDownloadJobCardPdf} disabled={pdfLoading}>
                     {pdfLoading ? 'Downloading...' : 'Download Job Card PDF'}
                   </button>
-                  <button onClick={() => setCreateDialogOpen(true)} className="btn btn-success">
-                    + Create Child Job
-                  </button>
                   {job.rfqId && (
                       <Link to={`/rfq/${job.rfqId}`} className="btn btn-outline-secondary">
                         View Source RFQ
                       </Link>
                   )}
                   <hr />
-                  <Link to="/jobs" className="btn btn-outline-dark">← Back to All Jobs</Link>
+                  <Link to="/jobs" className="btn btn-outline-dark">??? Back to All Jobs</Link>
                 </div>
               </div>
             </div>
