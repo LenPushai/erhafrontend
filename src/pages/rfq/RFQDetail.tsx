@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import SmartWorkflow from '../../components/SmartWorkflow';
+import WorkflowProgress from '../../components/WorkflowProgress';
+import SmartActionsPanel from '../../components/SmartActionsPanel';
+
 
 interface RFQ {
   id: number;
@@ -535,72 +537,20 @@ const RFQDetail: React.FC = () => {
 
           {/* Sidebar */}
           <div className="col-md-4">
-            <div className="card mb-4">
-              <div className="card-header bg-dark text-white">
-                <h5 className="mb-0">Actions</h5>
-              </div>
-              <div className="card-body">
-                <div className="d-grid gap-2">
-                  <button className="btn btn-success" onClick={() => window.open(`/rfq/${id}/enq-report`, '_blank')}>Print ENQ Report</button>
+            {/* Smart Actions Panel */}
+            <SmartActionsPanel
+              rfq={rfq}
+              onPrintEnq={() => window.open(`/rfq/${id}/enq-report`, '_blank')}
+              onUploadPdf={handleFileUpload}
+              onSendForSignature={openDocuSignModal}
+              onCreateJob={handleCreateJob}
+              onDelete={handleDelete}
+              uploading={uploading}
+              creatingJob={creatingJob}
+            />
 
-                  <label className={`btn btn-warning ${uploading ? 'disabled' : ''}`}>
-                    {uploading ? 'Uploading...' : 'Upload Quote PDF'}
-                    <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                        style={{ display: 'none' }}
-                    />
-                  </label>
-
-                  <button
-                      className="btn btn-success"
-                      onClick={openDocuSignModal}
-                      disabled={!rfq.quotePdfPath || rfq.docusignStatus === 'PENDING' || !rfq.contactEmail}
-                  >
-                    Send for Signature
-                  </button>
-
-                  {/* Create Job Button - NEW */}
-                  {canCreateJob() && (
-                      <>
-                        <hr />
-                        <button
-                            className="btn btn-primary btn-lg"
-                            onClick={handleCreateJob}
-                            disabled={creatingJob}
-                        >
-                          <i className="bi bi-plus-circle me-2"></i>
-                          {creatingJob ? 'Creating...' : 'Create New Job'}
-                        </button>
-                        <small className="text-muted text-center">
-                          Order received - ready to create job
-                        </small>
-                      </>
-                  )}
-
-                  {/* View Job Button - NEW */}
-                  {rfq.jobId && (
-                      <>
-                        <hr />
-                        <Link to={`/jobs/${rfq.jobId}`} className="btn btn-primary btn-lg">
-                          <i className="bi bi-briefcase me-2"></i>
-                          View Job
-                        </Link>
-                      </>
-                  )}
-
-                  <hr />
-                  <Link to={`/rfq/${id}/edit`} className="btn btn-outline-primary">Edit RFQ</Link>
-                  <button className="btn btn-outline-danger" onClick={handleDelete}>Delete RFQ</button>
-                </div>
-              </div>
-            </div>
-
-
-            {/* Smart Workflow Component */}
-            <SmartWorkflow rfq={rfq} />
+            {/* Workflow Progress */}
+            <WorkflowProgress rfq={rfq} />
           </div>
         </div>
 
