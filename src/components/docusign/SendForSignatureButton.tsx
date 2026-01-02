@@ -33,7 +33,7 @@ export const SendForSignatureButton: React.FC<SendForSignatureButtonProps> = ({
             setIsLoading(true);
 
             // DIRECT API CALL - NO SERVICE LAYER
-            const response = await axios.post('http://localhost:8080/api/v1/docusign/send-quote', {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/docusign/send-quote`, {
                 quoteId: quoteId,
                 managerName: values.managerName,
                 managerEmail: values.managerEmail,

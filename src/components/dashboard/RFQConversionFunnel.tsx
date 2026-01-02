@@ -20,7 +20,7 @@ const RFQConversionFunnel: React.FC = () => {
       try {
         // Fetch RFQs, Quotes, and Jobs
         const [rfqsRes, quotesRes, jobsRes] = await Promise.all([
-          fetch('http://localhost:8080/api/v1/rfqs?page=0&size=1000'),
+          fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs?page=0&size=1000'),
           fetch('http://localhost:8080/api/v1/quotes'),
           fetch('http://localhost:8080/api/v1/jobs')
         ]);

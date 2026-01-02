@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 interface RFQ {
   id: number;
@@ -179,7 +179,7 @@ const RFQDetailsCard: React.FC<RFQDetailsCardProps> = ({ rfq }) => {
           </div>
           {rfq.quotePdfPath && (
             <a 
-              href={`http://localhost:8080/api/v1/rfqs/${rfq.id}/quote-pdf`} 
+              href={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs/${rfq.id}/quote-pdf`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="btn btn-sm btn-outline-primary mt-2"

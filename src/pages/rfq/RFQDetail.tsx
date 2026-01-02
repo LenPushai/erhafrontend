@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import WorkflowProgress from '../../components/WorkflowProgress';
@@ -68,7 +68,7 @@ const RFQDetail: React.FC = () => {
   const fetchRfq = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8080/api/v1/rfqs/${id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs/${id}`);
       setRfq(response.data);
       if (response.data.contactPerson || response.data.contactEmail) {
         setClients([{
@@ -94,7 +94,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setUploading(true);
-      await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/upload-quote-pdf`, formData, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs/${id}/upload-quote-pdf`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Quote PDF uploaded successfully!');
@@ -112,7 +112,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setCreatingJob(true);
-      const response = await axios.post(`http://localhost:8080/api/v1/jobs/from-rfq/${id}`);
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/jobs/from-rfq/${id}`);
       const jobId = response.data.id || response.data.jobId;
 
       alert('Job created successfully!');
@@ -200,7 +200,7 @@ const RFQDetail: React.FC = () => {
 
     try {
       setSending(true);
-      const response = await axios.post(`http://localhost:8080/api/v1/rfqs/${id}/send-for-signature`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs/${id}/send-for-signature`, {
         managers: validManagers,
         clients: validClients
       });
@@ -222,7 +222,7 @@ const RFQDetail: React.FC = () => {
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this RFQ?')) return;
     try {
-      await axios.delete(`http://localhost:8080/api/v1/rfqs/${id}`);
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs/${id}`);
       alert('RFQ deleted successfully');
       navigate('/rfqs');
     } catch (err) {
@@ -233,7 +233,7 @@ const RFQDetail: React.FC = () => {
 
   const handleExportToPastel = async () => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/export/pastel/rfqs/${id}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/export/pastel/rfqs/${id}`, {
         responseType: 'blob'
       });
       

@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       // Call testlogin endpoint directly
-      const response = await fetch('http://localhost:8080/api/auth/testlogin', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/auth/testlogin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

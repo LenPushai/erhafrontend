@@ -51,7 +51,7 @@ const MainLayout: React.FC = () => {
   const fetchCounts = async () => {
     try {
       const [rfqs, jobs] = await Promise.all([
-        fetch('http://localhost:8080/api/v1/rfqs').then(r => r.json()).then(data => Array.isArray(data) ? data : (data.content || [])).catch(() => []),
+        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/rfqs`).then(r => r.json()).then(data => Array.isArray(data) ? data : (data.content || [])).catch(() => []),
         jobService.getAllJobs().catch(() => [])
       ]);
       const activeRfqs = rfqs.length;

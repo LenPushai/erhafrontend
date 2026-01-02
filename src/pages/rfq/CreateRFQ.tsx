@@ -11,7 +11,7 @@ interface Client {
   contactPhone?: string;
 }
 
-const API_BASE = 'http://localhost:8080/api/v1';
+const API_BASE = ((import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + '/api/v1') as string;
 
 export default function CreateRFQ() {
   const navigate = useNavigate();

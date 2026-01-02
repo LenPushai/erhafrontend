@@ -51,7 +51,7 @@ const JarisonReconciliation: React.FC = () => {
 
   const fetchImports = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/v1/jarison/imports');
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/jarison/imports`);
       setImports(response.data);
       if (response.data.length > 0) {
         selectImport(response.data[0]);
@@ -65,7 +65,7 @@ const JarisonReconciliation: React.FC = () => {
     setSelectedImport(imp);
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:8080/api/v1/jarison/imports/${imp.id}/hours`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/jarison/imports/${imp.id}/hours`);
       setHours(response.data);
     } catch (error) {
       console.error('Failed to fetch hours:', error);
@@ -85,7 +85,7 @@ const JarisonReconciliation: React.FC = () => {
     formData.append('importedBy', 'admin');
 
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/jarison/import', formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/jarison/import`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert(`Import successful! ${response.data.totalEmployees} employees, ${response.data.matched} matched, ${response.data.unmatched} unmatched`);
