@@ -1,4 +1,4 @@
-﻿// src/pages/rfq/RFQEdit.tsx
+// src/pages/rfq/RFQEdit.tsx
 // ERHA OPS - RFQ Edit Page
 // FIXED: Handle "new" RFQ creation without API call
 
@@ -6,6 +6,18 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { rfqService } from '../../services/rfqService';
+import { rfqLineItemService } from '../../services/rfqLineItemService';
+import RFQLineItems from '../../components/rfq/RFQLineItems';
+
+interface LineItem {
+  id?: number;
+  lineNumber: number;
+  description: string;
+  quantity: number;
+  unitOfMeasure: string;
+  estimatedUnitPrice: number;
+  estimatedLineTotal: number;
+}
 
 interface EnumOption {
   value: string;
@@ -24,6 +36,8 @@ export default function RFQEdit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [originalLineItems, setOriginalLineItems] = useState<LineItem[]>([]);
   const [enums, setEnums] = useState<EnumData>({
     departments: [],
     quoters: [],
@@ -72,9 +86,9 @@ export default function RFQEdit() {
     // CRITICAL FIX: Don't fetch if creating new RFQ
     // Load enums
     fetch('http://localhost:8080/api/v1/enums/all')
-      .then(res => res.json())
-      .then(data => setEnums(data))
-      .catch(err => console.error('Failed to load enums:', err));
+        .then(res => res.json())
+        .then(data => setEnums(data))
+        .catch(err => console.error('Failed to load enums:', err));
 
     if (id === 'new') {
       setLoading(false);
@@ -138,6 +152,15 @@ export default function RFQEdit() {
           actionsRequired: data.actionsRequired ? data.actionsRequired.split(',') : [],
           drawingNumber: data.drawingNumber || '',
         });
+
+        // Fetch line items
+        try {
+          const itemsData = await rfqLineItemService.getLineItemsByRfqId(Number(id));
+          setLineItems(itemsData);
+          setOriginalLineItems(itemsData);
+        } catch (lineErr) {
+          console.log('No line items found');
+        }
       } catch (err: any) {
         console.error('Error fetching RFQ:', err);
         setError(err.message || 'Failed to fetch RFQ');
@@ -152,6 +175,10 @@ export default function RFQEdit() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLineItemsChange = (items: LineItem[]) => {
+    setLineItems(items);
   };
 
   // Auto-calculate VAT
@@ -187,12 +214,12 @@ export default function RFQEdit() {
 
     try {
       // Load enums
-    fetch('http://localhost:8080/api/v1/enums/all')
-      .then(res => res.json())
-      .then(data => setEnums(data))
-      .catch(err => console.error('Failed to load enums:', err));
+      fetch('http://localhost:8080/api/v1/enums/all')
+          .then(res => res.json())
+          .then(data => setEnums(data))
+          .catch(err => console.error('Failed to load enums:', err));
 
-    if (id === 'new') {
+      if (id === 'new') {
         // CREATE new RFQ
         const createData: any = {
           jobNo: formData.rfqNumber,
@@ -229,8 +256,22 @@ export default function RFQEdit() {
           drawingNumber: formData.drawingNumber || undefined,
         };
 
-        await rfqService.createRfq(createData);
-        alert('RFQ Updated Successfully!');
+        const createdRfq = await rfqService.createRfq(createData);
+
+        // Save line items for new RFQ
+        if (lineItems.length > 0 && createdRfq?.id) {
+          try {
+            const itemsToSave = lineItems.map((item, index) => ({
+              ...item,
+              lineNumber: index + 1
+            }));
+            await rfqLineItemService.createLineItemsBatch(createdRfq.id, itemsToSave);
+          } catch (e) {
+            console.log('Line items save error:', e);
+          }
+        }
+
+        alert('RFQ Created Successfully!');
         navigate('/rfq');
       } else {
         // UPDATE existing RFQ
@@ -270,6 +311,21 @@ export default function RFQEdit() {
         };
 
         await rfqService.updateRfq(Number(id), updateData);
+
+        // Save line items - delete old and create new
+        try {
+          await rfqLineItemService.deleteAllByRfqId(Number(id));
+          if (lineItems.length > 0) {
+            const itemsToSave = lineItems.map((item, index) => ({
+              ...item,
+              lineNumber: index + 1
+            }));
+            await rfqLineItemService.createLineItemsBatch(Number(id), itemsToSave);
+          }
+        } catch (e) {
+          console.log('Line items save error:', e);
+        }
+
         alert('RFQ updated successfully!');
         navigate(`/rfq/${id}`);
       }
@@ -461,6 +517,22 @@ export default function RFQEdit() {
               </div>
             </div>
 
+            {/* Line Items Section */}
+            <div className="col-12 mb-4">
+              <div className="card" style={{borderColor: '#17a2b8'}}>
+                <div className="card-header" style={{backgroundColor: '#17a2b8', color: 'white'}}>
+                  <h5 className="mb-0">Line Items</h5>
+                </div>
+                <div className="card-body">
+                  <RFQLineItems
+                      rfqId={id !== 'new' ? Number(id) : undefined}
+                      initialLineItems={lineItems}
+                      onChange={handleLineItemsChange}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* ENQ Report Information */}
             <div className="col-12 mb-4">
               <div className="card" style={{borderColor: '#28a745'}}>
@@ -469,69 +541,69 @@ export default function RFQEdit() {
                 </div>
                 <div className="card-body">
                   <div className="row">
-                    
+
                     <div className="col-md-3 mb-3">
                       <label className="form-label">Assigned Quoter</label>
                       <select
-                        className="form-select"
-                        name="assignedQuoter"
-                        value={formData.assignedQuoter}
-                        onChange={handleChange}
+                          className="form-select"
+                          name="assignedQuoter"
+                          value={formData.assignedQuoter}
+                          onChange={handleChange}
                       >
                         <option value="">Select quoter...</option>
                         {enums?.quoters?.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </div>
                     <div className="col-md-3 mb-3">
                       <label className="form-label">Media Received</label>
                       <select
-                        className="form-select"
-                        name="mediaReceived"
-                        value={formData.mediaReceived}
-                        onChange={handleChange}
+                          className="form-select"
+                          name="mediaReceived"
+                          value={formData.mediaReceived}
+                          onChange={handleChange}
                       >
                         <option value="">Select media...</option>
                         {enums?.mediaReceived?.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </div>
                     <div className="col-md-3 mb-3">
                       <label className="form-label">Drawing Number</label>
                       <input
-                        type="text"
-                        className="form-control"
-                        name="drawingNumber"
-                        value={formData.drawingNumber}
-                        onChange={handleChange}
-                        placeholder="e.g., DWG-2025-001"
+                          type="text"
+                          className="form-control"
+                          name="drawingNumber"
+                          value={formData.drawingNumber}
+                          onChange={handleChange}
+                          placeholder="e.g., DWG-2025-001"
                       />
                     </div>
                     <div className="col-12 mb-3">
                       <label className="form-label">Actions Required</label>
                       <div className="d-flex flex-wrap gap-3">
                         {enums?.actionsRequired?.map(opt => (
-                          <div key={opt.value} className="form-check">
-                            <input
-                              type="checkbox"
-                              className="form-check-input"
-                              id={`edit-action-${opt.value}`}
-                              checked={formData.actionsRequired.includes(opt.value)}
-                              onChange={(e) => {
-                                const current = formData.actionsRequired;
-                                if (e.target.checked) {
-                                  setFormData(prev => ({ ...prev, actionsRequired: [...current, opt.value] }));
-                                } else {
-                                  setFormData(prev => ({ ...prev, actionsRequired: current.filter(v => v !== opt.value) }));
-                                }
-                              }}
-                            />
-                            <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
-                              {opt.label}
-                            </label>
-                          </div>
+                            <div key={opt.value} className="form-check">
+                              <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  id={`edit-action-${opt.value}`}
+                                  checked={formData.actionsRequired.includes(opt.value)}
+                                  onChange={(e) => {
+                                    const current = formData.actionsRequired;
+                                    if (e.target.checked) {
+                                      setFormData(prev => ({ ...prev, actionsRequired: [...current, opt.value] }));
+                                    } else {
+                                      setFormData(prev => ({ ...prev, actionsRequired: current.filter(v => v !== opt.value) }));
+                                    }
+                                  }}
+                              />
+                              <label className="form-check-label" htmlFor={`edit-action-${opt.value}`}>
+                                {opt.label}
+                              </label>
+                            </div>
                         ))}
                       </div>
                     </div>
@@ -701,11 +773,3 @@ export default function RFQEdit() {
       </div>
   );
 }
-
-
-
-
-
-
-
-

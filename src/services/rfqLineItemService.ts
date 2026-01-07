@@ -14,10 +14,14 @@ export interface RFQLineItem {
 }
 
 export const rfqLineItemService = {
-  async getLineItems(rfqId: number): Promise<RFQLineItem[]> {
+  async getLineItemsByRfqId(rfqId: number): Promise<RFQLineItem[]> {
     const response = await fetch(`${API_BASE_URL}/rfqs/${rfqId}/line-items`);
     if (!response.ok) throw new Error('Failed to fetch line items');
     return response.json();
+  },
+
+  async getLineItems(rfqId: number): Promise<RFQLineItem[]> {
+    return this.getLineItemsByRfqId(rfqId);
   },
 
   async createLineItemsBatch(rfqId: number, lineItems: RFQLineItem[]): Promise<RFQLineItem[]> {
@@ -30,10 +34,14 @@ export const rfqLineItemService = {
     return response.json();
   },
 
-  async deleteAllLineItems(rfqId: number): Promise<void> {
+  async deleteAllByRfqId(rfqId: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/rfqs/${rfqId}/line-items`, {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Failed to delete line items');
+  },
+
+  async deleteAllLineItems(rfqId: number): Promise<void> {
+    return this.deleteAllByRfqId(rfqId);
   }
 };

@@ -44,6 +44,17 @@ interface ChildJob {
   progressPercentage: number;
 }
 
+interface JobLineItem {
+  id: number;
+  jobId: number;
+  lineNumber: number;
+  description: string;
+  quantity: number;
+  unitOfMeasure: string;
+  source: string;
+  status: string;
+}
+
 interface TaskTemplate {
   templateId: number;
   templateName: string;
@@ -124,6 +135,7 @@ const JobDetail: React.FC = () => {
   const [childJobs, setChildJobs] = useState<ChildJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<JobLineItem[]>([]);
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -165,6 +177,14 @@ const JobDetail: React.FC = () => {
       setError(null);
       const data = await jobService.getJobById(jobId);
       setJob(data);
+
+      // Fetch job line items
+      try {
+        const lineItemsRes = await axios.get(`http://localhost:8080/api/v1/jobs/${id}/line-items`);
+        setLineItems(lineItemsRes.data);
+      } catch (e) {
+        console.log('No line items found');
+      }
       try {
         const children = await jobService.getChildJobs(jobId);
         setChildJobs(children || []);
@@ -451,6 +471,65 @@ const JobDetail: React.FC = () => {
                         {job.billingType || 'N/A'}
                       </div>
                     </div>
+                  </div>
+                </div>
+            )}
+
+            {/* LINE ITEMS CARD */}
+            {lineItems.length > 0 && (
+                <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #17a2b8' }}>
+                  <div className="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">Line Items ({lineItems.length})</h5>
+                    <Link to={`/jobs/${job.jobId}/edit`} className="btn btn-outline-primary btn-sm">
+                      + Add/Edit Items
+                    </Link>
+                  </div>
+                  <div className="card-body p-0" style={{ overflowX: 'auto' }}>
+                    <table className="table table-striped table-hover mb-0">
+                      <thead className="table-dark">
+                      <tr>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th style={{ minWidth: '200px' }}>Description</th>
+                        <th style={{ width: '80px' }}>Qty</th>
+                        <th style={{ width: '100px' }}>UoM</th>
+                        <th style={{ width: '100px' }}>Source</th>
+                        <th style={{ width: '100px' }}>Status</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {lineItems.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.lineNumber}</td>
+                            <td>{item.description}</td>
+                            <td>{item.quantity}</td>
+                            <td>{item.unitOfMeasure}</td>
+                            <td>
+                                <span className={`badge ${item.source === 'RFQ' ? 'bg-info' : 'bg-warning'}`}>
+                                  {item.source}
+                                </span>
+                            </td>
+                            <td>
+                              <span className="badge bg-secondary">{item.status}</span>
+                            </td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+            )}
+
+            {/* Show empty state if no line items */}
+            {lineItems.length === 0 && (
+                <div className="card mb-4 border-0 shadow-sm" style={{ borderLeft: '4px solid #17a2b8' }}>
+                  <div className="card-header bg-white">
+                    <h5 className="mb-0">Line Items</h5>
+                  </div>
+                  <div className="card-body text-center py-4">
+                    <p className="text-muted mb-3">No line items for this job yet.</p>
+                    <Link to={`/jobs/${job.jobId}/edit`} className="btn btn-primary">
+                      + Add Line Items
+                    </Link>
                   </div>
                 </div>
             )}

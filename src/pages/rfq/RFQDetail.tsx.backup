@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import SmartWorkflow from '../../components/SmartWorkflow';
 
 interface RFQ {
   id: number;
@@ -29,6 +30,13 @@ interface RFQ {
   invoiceDate: string;
   jobId: number | null;  // Link to Job
   jobStatus: string | null;  // Job status for workflow
+  amountPaid: number | null;
+  erhaDepartment: string | null;
+  assignedQuoter: string | null;
+  mediaReceived: string | null;
+  actionsRequired: string | null;
+  drawingNumber: string | null;
+  amountPaid: number | null;
 }
 
 interface Signatory {
@@ -219,6 +227,26 @@ const RFQDetail: React.FC = () => {
     }
   };
 
+  const handleExportToPastel = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/export/pastel/rfqs/${id}`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `PASTEL_RFQ_${id}_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting to Pastel:', error);
+      alert('Failed to export RFQ to Pastel');
+    }
+  };
+
   const formatCurrency = (value: number | null | undefined) => {
     if (value === null || value === undefined) return 'N/A';
     return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
@@ -358,6 +386,39 @@ const RFQDetail: React.FC = () => {
               </div>
             </div>
 
+            {/* ENQ Report Information Card */}
+            <div className="card mb-4" style={{borderColor: "#28a745"}}>
+              <div className="card-header" style={{backgroundColor: "#d4edda"}}>
+                <h5 className="mb-0">ENQ Report Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-md-3 mb-3">
+                    <strong>ERHA Department:</strong><br />
+                    {rfq.erhaDepartment || "N/A"}
+                  </div>
+                  <div className="col-md-3 mb-3">
+                    <strong>Assigned Quoter:</strong><br />
+                    {rfq.assignedQuoter || "N/A"}
+                  </div>
+                  <div className="col-md-3 mb-3">
+                    <strong>Media Received:</strong><br />
+                    {rfq.mediaReceived || "N/A"}
+                  </div>
+                  <div className="col-md-3 mb-3">
+                    <strong>Drawing Number:</strong><br />
+                    {rfq.drawingNumber || "N/A"}
+                  </div>
+                  <div className="col-12">
+                    <strong>Actions Required:</strong><br />
+                    {rfq.actionsRequired ? rfq.actionsRequired.split(",").map((action, idx) => (
+                      <span key={idx} className="badge bg-secondary me-1">{action}</span>
+                    )) : "N/A"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Quote Information Card */}
             <div className="card mb-4">
               <div className="card-header bg-info text-white">
@@ -480,7 +541,7 @@ const RFQDetail: React.FC = () => {
               </div>
               <div className="card-body">
                 <div className="d-grid gap-2">
-                  <button className="btn btn-info">Export to Pastel</button>
+                  <button className="btn btn-success" onClick={() => window.open(`/rfq/${id}/enq-report`, '_blank')}>Print ENQ Report</button>
 
                   <label className={`btn btn-warning ${uploading ? 'disabled' : ''}`}>
                     {uploading ? 'Uploading...' : 'Upload Quote PDF'}
@@ -537,54 +598,9 @@ const RFQDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Workflow Progress - UPDATED */}
-            <div className="card">
-              <div className="card-header bg-dark text-white">
-                <h5 className="mb-0">Workflow Progress</h5>
-              </div>
-              <div className="card-body">
-                <div className="list-group">
-                  <div className={`list-group-item ${rfq.id ? 'list-group-item-success' : ''}`}>
-                    <i className="bi bi-check-circle me-2"></i>
-                    RFQ Created
-                  </div>
-                  <div className={`list-group-item ${rfq.quoteNumber ? 'list-group-item-success' : ''}`}>
-                    <i className={`bi ${rfq.quoteNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
-                    Quote Added
-                  </div>
-                  <div className={`list-group-item ${rfq.quotePdfPath ? 'list-group-item-success' : ''}`}>
-                    <i className={`bi ${rfq.quotePdfPath ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
-                    PDF Uploaded
-                  </div>
-                  <div className={`list-group-item ${rfq.docusignStatus === 'COMPLETED' ? 'list-group-item-success' : ''}`}>
-                    <i className={`bi ${rfq.docusignStatus === 'COMPLETED' ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
-                    Customer Signed
-                  </div>
-                  <div className={`list-group-item ${rfq.orderNumber ? 'list-group-item-success' : ''}`}>
-                    <i className={`bi ${rfq.orderNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
-                    Order Received
-                  </div>
 
-                  {/* NEW - Job Created Step */}
-                  <div className={`list-group-item ${rfq.jobId ? 'list-group-item-success' : canCreateJob() ? 'list-group-item-warning' : ''}`}>
-                    <i className={`bi ${rfq.jobId ? 'bi-check-circle' : canCreateJob() ? 'bi-exclamation-circle' : 'bi-circle'} me-2`}></i>
-                    Job Created
-                    {canCreateJob() && !rfq.jobId && (
-                        <span className="badge bg-warning text-dark ms-2">Ready</span>
-                    )}
-                  </div>
-
-                  <div className={`list-group-item ${rfq.invoiceNumber ? 'list-group-item-success' : ''}`}>
-                    <i className={`bi ${rfq.invoiceNumber ? 'bi-check-circle' : 'bi-circle'} me-2`}></i>
-                    Invoiced
-                  </div>
-                  <div className="list-group-item">
-                    <i className="bi bi-circle me-2"></i>
-                    Payment Received
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Smart Workflow Component */}
+            <SmartWorkflow rfq={rfq} />
           </div>
         </div>
 
@@ -704,3 +720,4 @@ const RFQDetail: React.FC = () => {
 };
 
 export default RFQDetail;
+

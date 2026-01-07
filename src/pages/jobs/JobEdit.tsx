@@ -4,6 +4,8 @@ import { ArrowLeft, Save, X } from 'lucide-react';
 import jobService from '../../services/jobService';
 import JobSubTasks from '../../components/job/JobSubTasks';
 import { jobSubTaskService } from '../../services/jobSubTaskService';
+import { jobLineItemService } from '../../services/jobLineItemService';
+import JobLineItems from '../../components/job/JobLineItems';
 
 interface Job {
   jobId: number;
@@ -36,6 +38,18 @@ interface SubTask {
   notes?: string;
 }
 
+interface LineItem {
+  id?: number;
+  lineNumber: number;
+  description: string;
+  quantity: string;
+  unitOfMeasure: string;
+  source: string;
+  status: string;
+  estimatedHours?: string;
+  actualHours?: string;
+}
+
 const JobEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -44,7 +58,6 @@ const JobEdit: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-
   const [formData, setFormData] = useState<Partial<Job>>({
     jobNumber: '',
     status: 'NEW',
@@ -60,8 +73,8 @@ const JobEdit: React.FC = () => {
     location: '',
     priority: 'MEDIUM'
   });
-
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   useEffect(() => {
     loadJob();
@@ -92,6 +105,19 @@ const JobEdit: React.FC = () => {
         priority: data.priority || 'MEDIUM'
       });
 
+      // Load line items
+      try {
+        const items = await jobLineItemService.getLineItemsByJobId(Number(id));
+        setLineItems(items.map(item => ({
+          ...item,
+          quantity: String(item.quantity || ''),
+          estimatedHours: String(item.estimatedHours || ''),
+          actualHours: String(item.actualHours || '')
+        })));
+      } catch (err) {
+        console.error('Failed to load line items:', err);
+      }
+
       // Load sub tasks
       try {
         const tasks = await jobSubTaskService.getSubTasks(Number(id));
@@ -102,7 +128,6 @@ const JobEdit: React.FC = () => {
         })));
       } catch (err) {
         console.error('Failed to load sub tasks:', err);
-        // Don't fail the whole page if sub tasks fail
       }
 
       setError(null);
@@ -121,6 +146,11 @@ const JobEdit: React.FC = () => {
 
   const handleSubTasksChange = (tasks: SubTask[]) => {
     setSubTasks(tasks);
+    setHasChanges(true);
+  };
+
+  const handleLineItemsChange = (items: LineItem[]) => {
+    setLineItems(items);
     setHasChanges(true);
   };
 
@@ -147,6 +177,26 @@ const JobEdit: React.FC = () => {
 
       await jobService.updateJob(Number(id), updateData);
 
+      // Save line items - delete old and create new
+      try {
+        await jobLineItemService.deleteAllByJobId(Number(id));
+        if (lineItems.length > 0) {
+          const itemsToSave = lineItems.map((item, index) => ({
+            lineNumber: index + 1,
+            description: item.description,
+            quantity: parseFloat(String(item.quantity)) || 0,
+            unitOfMeasure: item.unitOfMeasure || 'UNITS',
+            source: item.source || 'ADDED',
+            status: item.status || 'PENDING',
+            estimatedHours: parseFloat(String(item.estimatedHours)) || 0,
+            actualHours: parseFloat(String(item.actualHours)) || 0
+          }));
+          await jobLineItemService.createLineItemsBatch(Number(id), itemsToSave);
+        }
+      } catch (err) {
+        console.error('Failed to save line items:', err);
+      }
+
       // Save sub tasks if they exist
       if (subTasks.length > 0) {
         const tasksToSave = subTasks.map((t, i) => ({
@@ -161,13 +211,10 @@ const JobEdit: React.FC = () => {
           notes: t.notes || null
         }));
 
-        // Delete existing sub tasks first, then create new ones
         try {
-          // Just create batch - backend will handle duplicates
           await jobSubTaskService.createSubTasksBatch(Number(id), tasksToSave);
         } catch (err) {
           console.error('Failed to save sub tasks:', err);
-          // Don't fail the whole save if sub tasks fail
         }
       }
 
@@ -346,7 +393,7 @@ const JobEdit: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Job Value - Read Only display, but show current value */}
+                {/* Job Value - Read Only display */}
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Job Value (Incl VAT)</label>
                   <input
@@ -414,6 +461,20 @@ const JobEdit: React.FC = () => {
                   <div className="form-text">Leave empty if not yet completed</div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* LINE ITEMS SECTION */}
+          <div className="card mb-4" style={{ borderLeft: '4px solid #17a2b8' }}>
+            <div className="card-header" style={{ backgroundColor: '#17a2b8', color: 'white' }}>
+              <h5 className="mb-0">Line Items ({lineItems.length})</h5>
+            </div>
+            <div className="card-body">
+              <JobLineItems
+                  jobId={Number(id)}
+                  initialLineItems={lineItems}
+                  onChange={handleLineItemsChange}
+              />
             </div>
           </div>
 

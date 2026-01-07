@@ -44,6 +44,16 @@ interface Signatory {
   email: string;
 }
 
+interface LineItem {
+  id: number;
+  lineNumber: number;
+  description: string;
+  quantity: number;
+  unitOfMeasure: string;
+  estimatedUnitPrice: number;
+  estimatedLineTotal: number;
+}
+
 const RFQDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -56,6 +66,7 @@ const RFQDetail: React.FC = () => {
   const [showDocuSignModal, setShowDocuSignModal] = useState(false);
   const [managers, setManagers] = useState<Signatory[]>([{ name: '', email: '' }]);
   const [clients, setClients] = useState<Signatory[]>([{ name: '', email: '' }]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   useEffect(() => {
     fetchRfq();
@@ -73,6 +84,14 @@ const RFQDetail: React.FC = () => {
         }]);
       }
       setError(null);
+
+      // Fetch line items
+      try {
+        const lineItemsRes = await axios.get(`http://localhost:8080/api/v1/rfqs/${id}/line-items`);
+        setLineItems(lineItemsRes.data);
+      } catch (e) {
+        setLineItems([]);
+      }
     } catch (err) {
       setError('Failed to load RFQ details');
       console.error(err);
@@ -418,6 +437,41 @@ const RFQDetail: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Line Items Card */}
+            {lineItems.length > 0 && (
+              <div className='card mb-4' style={{borderColor: '#17a2b8'}}>
+                <div className='card-header' style={{backgroundColor: '#17a2b8', color: 'white'}}>
+                  <h5 className='mb-0'>Line Items ({lineItems.length})</h5>
+                </div>
+                <div className='card-body p-0'>
+                  <table className='table table-striped mb-0'>
+                    <thead className='table-dark'>
+                      <tr>
+                        <th>#</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>UoM</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lineItems.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.lineNumber}</td>
+                          <td>{item.description}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unitOfMeasure}</td>
+                          <td>{formatCurrency(item.estimatedUnitPrice)}</td>
+                          <td>{formatCurrency(item.estimatedLineTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Quote Information Card */}
             <div className="card mb-4">
