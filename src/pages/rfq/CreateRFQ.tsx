@@ -166,13 +166,13 @@ export default function CreateRFQ() {
               <div className="card-body p-5 text-center">
                 <Phone size={60} className="text-primary mb-4" />
                 <h3 className="text-primary mb-3">Incoming RFQ</h3>
-                <h5 className="text-muted mb-4">Client â†’ ERHA</h5>
+                <h5 className="text-muted mb-4">Client ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ ERHA</h5>
                 <p className="mb-4">Client requests a quote from ERHA for fabrication, repair, or manufacturing work.</p>
                 <ul className="list-unstyled text-start">
-                  <li className="mb-2">âœ“ External client inquiry</li>
-                  <li className="mb-2">âœ“ ERHA provides quote</li>
-                  <li className="mb-2">âœ“ Creates job if won</li>
-                  <li className="mb-2">âœ“ Revenue-generating</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ External client inquiry</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ ERHA provides quote</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Creates job if won</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Revenue-generating</li>
                 </ul>
                 <button className="btn btn-primary btn-lg mt-3 w-100">Create Incoming RFQ</button>
               </div>
@@ -188,13 +188,13 @@ export default function CreateRFQ() {
               <div className="card-body p-5 text-center">
                 <Package size={60} className="text-success mb-4" />
                 <h3 className="text-success mb-3">Outgoing RFQ</h3>
-                <h5 className="text-muted mb-4">ERHA â†’ Supplier</h5>
+                <h5 className="text-muted mb-4">ERHA ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Supplier</h5>
                 <p className="mb-4">ERHA requests a quote from supplier for materials, services, or equipment.</p>
                 <ul className="list-unstyled text-start">
-                  <li className="mb-2">âœ“ Supplier inquiry</li>
-                  <li className="mb-2">âœ“ ERHA receives quote</li>
-                  <li className="mb-2">âœ“ Links to job/project</li>
-                  <li className="mb-2">âœ“ Cost management</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Supplier inquiry</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ ERHA receives quote</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Links to job/project</li>
+                  <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Cost management</li>
                 </ul>
                 <button className="btn btn-success btn-lg mt-3 w-100">Create Outgoing RFQ</button>
               </div>
@@ -216,7 +216,7 @@ export default function CreateRFQ() {
           <div className="flex-grow-1">
             <h2 className="mb-1">
               <Phone size={24} className="text-primary me-2" />
-              Incoming RFQ (Client â†’ ERHA)
+              Incoming RFQ (Client ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ ERHA)
             </h2>
             <p className="text-muted mb-0">Capture client inquiry details</p>
           </div>
@@ -547,7 +547,7 @@ export default function CreateRFQ() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h2 className="mb-1"><Package size={24} className="text-success me-2" />Outgoing RFQ (ERHA â†’ Supplier)</h2>
+          <h2 className="mb-1"><Package size={24} className="text-success me-2" />Outgoing RFQ (ERHA ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Supplier)</h2>
           <p className="text-muted mb-0">Request quotes from suppliers</p>
         </div>
       </div>
@@ -564,12 +564,12 @@ export default function CreateRFQ() {
                 <div className="card-body">
                   <h5 className="mb-3">Coming Features:</h5>
                   <ul className="list-unstyled text-start">
-                    <li className="mb-2">âœ… Supplier Database (10 suppliers ready)</li>
-                    <li className="mb-2">âœ… Send RFQs to multiple suppliers</li>
-                    <li className="mb-2">âœ… Quote comparison matrix</li>
-                    <li className="mb-2">âœ… Purchase Order generation</li>
-                    <li className="mb-2">âœ… Link materials to jobs</li>
-                    <li className="mb-2">âœ… Pastel accounting integration</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Supplier Database (10 suppliers ready)</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Send RFQs to multiple suppliers</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Quote comparison matrix</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Purchase Order generation</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Link materials to jobs</li>
+                    <li className="mb-2">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Pastel accounting integration</li>
                   </ul>
                 </div>
               </div>

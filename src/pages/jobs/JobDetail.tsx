@@ -365,7 +365,7 @@ const JobDetail: React.FC = () => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="mb-1">
-              <Link to="/jobs" className="btn btn-outline-secondary me-3">← Back</Link>
+              <Link to="/jobs" className="btn btn-outline-secondary me-3">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</Link>
               Job: {job.jobNumber}
             </h1>
             <p className="text-muted mb-0">{job.description}</p>
@@ -615,7 +615,7 @@ const JobDetail: React.FC = () => {
                       </Link>
                   )}
                   <hr />
-                  <Link to="/jobs" className="btn btn-outline-dark">← Back to All Jobs</Link>
+                  <Link to="/jobs" className="btn btn-outline-dark">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to All Jobs</Link>
                 </div>
               </div>
             </div>

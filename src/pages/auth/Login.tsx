@@ -147,7 +147,7 @@ const Login: React.FC = () => {
             <div className="mt-3 pt-3 border-top text-center">
               <small className="text-muted fst-italic">
                 "Commit your works to the LORD, and your plans will be established."
-                <br />— Proverbs 16:3
+                <br />ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Proverbs 16:3
               </small>
             </div>
           </div>

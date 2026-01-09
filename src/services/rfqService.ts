@@ -1,25 +1,23 @@
 // src/services/rfqService.ts
 // ERHA OPS - RFQ Service
-// CLEAN VERSION - With getRfqById function
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 export interface RFQ {
   id: number;
-  rfqNumber: string;
-  clientName: string;
+  jobNo: string;
+  clientId: number;
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
-  projectName: string;
-  description: string;q
-  receivedDate: string;
-  requiredBy: string;
-  priority: string;
-  status: string;
+  department: string;
   operatingEntity: string;
-  workLocation: string;
+  description: string;
+  requestDate: string;
+  requiredDate: string;
+  priority: string;
   estimatedValue?: number;
+  status: string;
   assignedTo?: string;
   createdAt: string;
   updatedAt: string;
@@ -34,7 +32,8 @@ export const rfqService = {
         throw new Error(`Failed to fetch RFQs: ${response.statusText}`);
       }
       const data = await response.json();
-      return data;
+      // Extract content array from paginated response
+      return data.content || data;
     } catch (error) {
       console.error('Error fetching RFQs:', error);
       throw error;
@@ -113,4 +112,3 @@ export const rfqService = {
     }
   },
 };
-
