@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { quoteService } from '../../services/quoteService';
 import { rfqService } from '../../services/rfqService';
@@ -588,8 +588,8 @@ const CreateQuote: React.FC = () => {
                         value={formData.quoteStatus}
                         onChange={handleChange}
                     >
-                      <option value="DRAFT">ðŸ’¾ Draft - Save for later</option>
-                      <option value="SENT">ðŸ“§ Sent - Ready for client</option>
+                      <option value="DRAFT">Ã°Å¸â€™Â¾ Draft - Save for later</option>
+                      <option value="SENT">Ã°Å¸â€œÂ§ Sent - Ready for client</option>
                     </select>
                     <small className="text-muted">
                       {formData.quoteStatus === 'DRAFT'

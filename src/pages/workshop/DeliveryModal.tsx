@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import axios from 'axios';
 import './DeliveryModal.css';
@@ -52,7 +52,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ job, onClose, onDeliveryC
     try {
       const signatureData = signatureRef.current?.toDataURL() || '';
       
-      await axios.post(`http://localhost:8080/api/v1/delivery/confirm/${job.jobId}`, {
+      await axios.post(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/delivery/confirm/${job.jobId}`, {
         deliveredBy,
         vehicle,
         deliveryNoteNumber: generateDeliveryNoteNumber(),

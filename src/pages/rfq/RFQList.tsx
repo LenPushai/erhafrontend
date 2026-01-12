@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -42,7 +42,7 @@ const RFQList: React.FC = () => {
     const loadData = async () => {
       // Fetch clients first
       try {
-        const clientRes = await axios.get('http://localhost:8080/api/v1/clients');
+        const clientRes = await axios.get('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/clients');
         const clientData = clientRes.data || [];
         const map: Record<number, string> = {};
         clientData.forEach((c: any) => {
@@ -60,7 +60,7 @@ const RFQList: React.FC = () => {
 
   const fetchRFQs = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/v1/rfqs');
+      const response = await axios.get('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/rfqs');
       const rawRfqs = response.data.content || [];
 
       const mappedRfqs = rawRfqs.map((rfq: any) => ({
@@ -227,7 +227,7 @@ const RFQList: React.FC = () => {
 
   const handleExportToPastel = async (rfqId: number) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/export/pastel/rfqs/${rfqId}`, {
+      const response = await axios.get(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/export/pastel/rfqs/${rfqId}`, {
         responseType: 'blob'
       });
 
@@ -258,7 +258,7 @@ const RFQList: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:8080/api/export/pastel/rfqs/bulk',
+      const response = await axios.post('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/export/pastel/rfqs/bulk',
           { rfqIds: exportableIds },
           { responseType: 'blob' }
       );

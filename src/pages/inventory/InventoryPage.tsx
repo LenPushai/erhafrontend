@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Package, ExternalLink, AlertCircle, CheckCircle, FileText, TrendingUp } from 'lucide-react';
 
 const InventoryPage: React.FC = () => {

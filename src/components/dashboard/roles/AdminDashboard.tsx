@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -50,9 +50,9 @@ const AdminDashboard: React.FC = () => {
 
     try {
       const [rfqsRes, quotesRes, jobsRes] = await Promise.all([
-        fetch('http://localhost:8080/api/v1/rfqs').then(r => r.json()).catch(() => ({ content: [] })),
-        fetch('http://localhost:8080/api/v1/quotes').then(r => r.json()).catch(() => []),
-        fetch('http://localhost:8080/api/v1/jobs').then(r => r.json()).catch(() => [])
+        fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/rfqs').then(r => r.json()).catch(() => ({ content: [] })),
+        fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/quotes').then(r => r.json()).catch(() => []),
+        fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs').then(r => r.json()).catch(() => [])
       ]);
 
       const rfqs = Array.isArray(rfqsRes) ? rfqsRes : (rfqsRes.content || []);

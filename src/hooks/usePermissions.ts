@@ -1,4 +1,4 @@
-// usePermissions.ts - Hook for role-based permission checks
+﻿// usePermissions.ts - Hook for role-based permission checks
 import { useAuth } from '../contexts/AuthContext';
 
 export const usePermissions = () => {

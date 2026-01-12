@@ -1,4 +1,4 @@
-// RFQConversionFunnel.tsx - Sales funnel analytics
+﻿// RFQConversionFunnel.tsx - Sales funnel analytics
 import React, { useEffect, useState } from 'react';
 
 interface FunnelData {
@@ -20,9 +20,9 @@ const RFQConversionFunnel: React.FC = () => {
       try {
         // Fetch RFQs, Quotes, and Jobs
         const [rfqsRes, quotesRes, jobsRes] = await Promise.all([
-          fetch('http://localhost:8080/api/v1/rfqs?page=0&size=1000'),
-          fetch('http://localhost:8080/api/v1/quotes'),
-          fetch('http://localhost:8080/api/v1/jobs')
+          fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/rfqs?page=0&size=1000'),
+          fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/quotes'),
+          fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs')
         ]);
 
         const rfqs = await rfqsRes.json();

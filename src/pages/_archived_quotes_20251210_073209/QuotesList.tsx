@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import EmptyState from '../../components/common/EmptyState';
 import { Link } from 'react-router-dom';
 import { quoteService } from '../../services/quoteService';
@@ -14,7 +14,7 @@ const QuotesList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // ðŸ†• PAGINATION STATE
+  // Ã°Å¸â€ â€¢ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
@@ -26,7 +26,7 @@ const QuotesList: React.FC = () => {
     filterQuotes();
   }, [quotes, searchTerm, statusFilter]);
 
-  // ðŸ†• Reset to page 1 when filters change
+  // Ã°Å¸â€ â€¢ Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, itemsPerPage]);
@@ -66,7 +66,7 @@ const QuotesList: React.FC = () => {
     setFilteredQuotes(filtered);
   };
 
-  // ðŸ†• PAGINATION CALCULATIONS
+  // Ã°Å¸â€ â€¢ PAGINATION CALCULATIONS
   const totalPages = Math.ceil(filteredQuotes.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -177,7 +177,7 @@ const QuotesList: React.FC = () => {
                   <option value="REJECTED">Rejected</option>
                 </select>
               </div>
-              {/* ðŸ†• ITEMS PER PAGE SELECTOR */}
+              {/* Ã°Å¸â€ â€¢ ITEMS PER PAGE SELECTOR */}
               <div className="col-md-2">
                 <label className="form-label small text-muted mb-1">Show</label>
                 <select
@@ -204,7 +204,7 @@ const QuotesList: React.FC = () => {
                 </button>
               </div>
             </div>
-            {/* ðŸ†• SHOWING INFO */}
+            {/* Ã°Å¸â€ â€¢ SHOWING INFO */}
             <div className="mt-3 pt-3 border-top">
               <div className="d-flex justify-content-between align-items-center">
                 <span className="text-muted small">
@@ -314,7 +314,7 @@ const QuotesList: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {/* ðŸ†• USING currentQuotes INSTEAD OF filteredQuotes */}
+                    {/* Ã°Å¸â€ â€¢ USING currentQuotes INSTEAD OF filteredQuotes */}
                     {currentQuotes.map((quote) => (
                         <tr key={quote.quoteId}>
                           <td>
@@ -385,7 +385,7 @@ const QuotesList: React.FC = () => {
             )}
           </div>
 
-          {/* ðŸ†• PAGINATION CONTROLS */}
+          {/* Ã°Å¸â€ â€¢ PAGINATION CONTROLS */}
           {filteredQuotes.length > 0 && totalPages > 1 && (
               <div className="card-footer">
                 <nav>

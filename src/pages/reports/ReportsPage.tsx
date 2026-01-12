@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { 
   BarChart3, 
   PieChart, 
@@ -95,15 +95,15 @@ const ReportsPage: React.FC = () => {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-header bg-light">
-              <h6 className="mb-0">✅ Current Capabilities</h6>
+              <h6 className="mb-0">âœ… Current Capabilities</h6>
             </div>
             <div className="card-body">
               <ul className="list-unstyled mb-0">
-                <li className="mb-2"><span className="text-success me-2">✓</span> Export Job Cards to PDF</li>
-                <li className="mb-2"><span className="text-success me-2">✓</span> View quote statistics on dashboard</li>
-                <li className="mb-2"><span className="text-success me-2">✓</span> Job status tracking</li>
-                <li className="mb-2"><span className="text-success me-2">✓</span> RFQ pipeline overview</li>
-                <li className="mb-2"><span className="text-success me-2">✓</span> Financial totals on dashboard</li>
+                <li className="mb-2"><span className="text-success me-2">âœ“</span> Export Job Cards to PDF</li>
+                <li className="mb-2"><span className="text-success me-2">âœ“</span> View quote statistics on dashboard</li>
+                <li className="mb-2"><span className="text-success me-2">âœ“</span> Job status tracking</li>
+                <li className="mb-2"><span className="text-success me-2">âœ“</span> RFQ pipeline overview</li>
+                <li className="mb-2"><span className="text-success me-2">âœ“</span> Financial totals on dashboard</li>
               </ul>
             </div>
           </div>
@@ -111,15 +111,15 @@ const ReportsPage: React.FC = () => {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-header bg-light">
-              <h6 className="mb-0">🚀 Phase 2 Enhancements</h6>
+              <h6 className="mb-0">ðŸš€ Phase 2 Enhancements</h6>
             </div>
             <div className="card-body">
               <ul className="list-unstyled mb-0">
-                <li className="mb-2"><span className="text-primary me-2">○</span> Custom report builder</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Scheduled report emails</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Excel/PDF export for all reports</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Dashboard customization</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Trend analysis & forecasting</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Custom report builder</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Scheduled report emails</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Excel/PDF export for all reports</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Dashboard customization</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Trend analysis & forecasting</li>
               </ul>
             </div>
           </div>
@@ -129,7 +129,7 @@ const ReportsPage: React.FC = () => {
       {/* Planned Reports Grid */}
       <div className="card">
         <div className="card-header bg-light">
-          <h6 className="mb-0">📊 Planned Reports</h6>
+          <h6 className="mb-0">ðŸ“Š Planned Reports</h6>
         </div>
         <div className="card-body">
           <div className="row">

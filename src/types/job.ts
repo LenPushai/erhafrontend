@@ -1,4 +1,4 @@
-// Job interface - central type definition
+﻿// Job interface - central type definition
 export type Job = {
   jobId: number;
   jobNumber: string;

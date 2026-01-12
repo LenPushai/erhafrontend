@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8080/api/v1";
+﻿const API_BASE = "https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1";
 
 export interface Worker {
     id: number;

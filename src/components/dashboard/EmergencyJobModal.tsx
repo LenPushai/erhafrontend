@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, AlertTriangle, Loader } from 'lucide-react';
 import { useToast } from '../common/ToastContext';
@@ -37,7 +37,7 @@ const EmergencyJobModal: React.FC<EmergencyJobModalProps> = ({ show, onClose }) 
       const valueIncl = valueExcl * 1.15;
 
       // Create emergency job via API
-      const response = await fetch('http://localhost:8080/api/v1/jobs', {
+      const response = await fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

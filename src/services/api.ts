@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://erha-ops-backend-ac4a0f925914.herokuapp.com',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Check, Clock, Circle } from 'lucide-react';
 
 interface RFQProps {

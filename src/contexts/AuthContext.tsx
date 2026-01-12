@@ -1,4 +1,4 @@
-// AuthContext.tsx - Self-contained with all types
+﻿// AuthContext.tsx - Self-contained with all types
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Define all types locally
@@ -43,7 +43,7 @@ interface AuthProviderProps {
 }
 
 // Inline auth service
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://erha-ops-backend-ac4a0f925914.herokuapp.com';
 
 const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {

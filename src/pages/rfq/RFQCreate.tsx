@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { rfqService } from '../../services/rfqService';
@@ -81,7 +81,7 @@ const RFQCreate: React.FC = () => {
 
   const loadEnums = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/enums/all');
+      const response = await fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/enums/all');
       const data = await response.json();
       setEnums(data);
     } catch (err) {

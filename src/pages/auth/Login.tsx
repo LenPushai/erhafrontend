@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
@@ -20,7 +20,7 @@ const Login: React.FC = () => {
 
     try {
       // Call testlogin endpoint directly
-      const response = await fetch('http://localhost:8080/api/auth/testlogin', {
+      const response = await fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/auth/testlogin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ const Login: React.FC = () => {
             <div className="mt-3 pt-3 border-top text-center">
               <small className="text-muted fst-italic">
                 "Commit your works to the LORD, and your plans will be established."
-                <br />ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Proverbs 16:3
+                <br />ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Proverbs 16:3
               </small>
             </div>
           </div>

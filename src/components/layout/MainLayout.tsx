@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -51,7 +51,7 @@ const MainLayout: React.FC = () => {
   const fetchCounts = async () => {
     try {
       const [rfqs, jobs] = await Promise.all([
-        fetch('http://localhost:8080/api/v1/rfqs').then(r => r.json()).then(data => Array.isArray(data) ? data : (data.content || [])).catch(() => []),
+        fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/rfqs').then(r => r.json()).then(data => Array.isArray(data) ? data : (data.content || [])).catch(() => []),
         jobService.getAllJobs().catch(() => [])
       ]);
       const activeRfqs = rfqs.length;

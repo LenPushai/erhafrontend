@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { 
   Settings, 
   Users, 
@@ -135,7 +135,7 @@ const SettingsPage: React.FC = () => {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-header bg-light">
-              <h6 className="mb-0">🔗 Integrations Status</h6>
+              <h6 className="mb-0">ðŸ”— Integrations Status</h6>
             </div>
             <div className="card-body">
               <div className="d-flex align-items-center mb-3 p-2 bg-light rounded">
@@ -168,16 +168,16 @@ const SettingsPage: React.FC = () => {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-header bg-light">
-              <h6 className="mb-0">🚀 Phase 2 Settings</h6>
+              <h6 className="mb-0">ðŸš€ Phase 2 Settings</h6>
             </div>
             <div className="card-body">
               <ul className="list-unstyled mb-0">
-                <li className="mb-2"><span className="text-primary me-2">○</span> Multi-user role management</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Custom PDF templates</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Email notification rules</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Audit logging</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Pastel API integration</li>
-                <li className="mb-2"><span className="text-primary me-2">○</span> Backup scheduling</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Multi-user role management</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Custom PDF templates</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Email notification rules</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Audit logging</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Pastel API integration</li>
+                <li className="mb-2"><span className="text-primary me-2">â—‹</span> Backup scheduling</li>
               </ul>
             </div>
           </div>

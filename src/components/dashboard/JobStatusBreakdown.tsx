@@ -1,4 +1,4 @@
-// JobStatusBreakdown.tsx - Visual job status distribution
+﻿// JobStatusBreakdown.tsx - Visual job status distribution
 import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
@@ -16,7 +16,7 @@ const JobStatusBreakdown: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/v1/jobs');
+        const response = await fetch('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs');
         const jobs = await response.json();
 
         // Count jobs by status

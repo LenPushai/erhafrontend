@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 // Centralized status type definitions
 export type RFQStatus = 'PENDING' | 'IN_PROGRESS' | 'QUOTED' | 'ACCEPTED' | 'REJECTED';
@@ -24,116 +24,116 @@ const statusConfig: Record<StatusType, {
   'PENDING': {
     label: 'Pending',
     colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    icon: '⏳'
+    icon: 'â³'
   },
   'IN_PROGRESS': {
     label: 'In Progress',
     colorClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '⚙️'
+    icon: 'âš™ï¸'
   },
   'QUOTED': {
     label: 'Quoted',
     colorClass: 'bg-purple-100 text-purple-800 border-purple-300',
-    icon: '📋'
+    icon: 'ðŸ“‹'
   },
   'ACCEPTED': {
     label: 'Accepted',
     colorClass: 'bg-green-100 text-green-800 border-green-300',
-    icon: '✅'
+    icon: 'âœ…'
   },
   'REJECTED': {
     label: 'Rejected',
     colorClass: 'bg-red-100 text-red-800 border-red-300',
-    icon: '❌'
+    icon: 'âŒ'
   },
 
   // Quote Statuses
   'DRAFT': {
     label: 'Draft',
     colorClass: 'bg-gray-100 text-gray-800 border-gray-300',
-    icon: '📝'
+    icon: 'ðŸ“'
   },
   'PENDING_APPROVAL': {
     label: 'Pending Approval',
     colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    icon: '🔐'
+    icon: 'ðŸ”'
   },
   'APPROVED': {
     label: 'Approved',
     colorClass: 'bg-green-100 text-green-800 border-green-300',
-    icon: '✅'
+    icon: 'âœ…'
   },
   'NEEDS_REVISION': {
     label: 'Needs Revision',
     colorClass: 'bg-orange-100 text-orange-800 border-orange-300',
-    icon: '🔄'
+    icon: 'ðŸ”„'
   },
   'SENT_TO_CLIENT': {
     label: 'Sent to Client',
     colorClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '📤'
+    icon: 'ðŸ“¤'
   },
 
   // Job Statuses
   'NOT_STARTED': {
     label: 'Not Started',
     colorClass: 'bg-gray-100 text-gray-800 border-gray-300',
-    icon: '⏸️'
+    icon: 'â¸ï¸'
   },
   'NEW': {
     label: 'New',
     colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    icon: '✨'
+    icon: 'âœ¨'
   },
   'PENDING': {
     label: 'Pending',
     colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    icon: '⏳'
+    icon: 'â³'
   },
   'ACTIVE': {
     label: 'Active',
     colorClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '⚙️'
+    icon: 'âš™ï¸'
   },
   'IN_PROGRESS': {
     label: 'In Progress',
     colorClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '⚙️'
+    icon: 'âš™ï¸'
   },
   'In Progress': {
     label: 'In Progress',
     colorClass: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '⚙️'
+    icon: 'âš™ï¸'
   },
   'ON_HOLD': {
     label: 'On Hold',
     colorClass: 'bg-orange-100 text-orange-800 border-orange-300',
-    icon: '⏸️'
+    icon: 'â¸ï¸'
   },
   'COMPLETED': {
     label: 'Completed',
     colorClass: 'bg-green-100 text-green-800 border-green-300',
-    icon: '✅'
+    icon: 'âœ…'
   },
   'COMPLETE': {
     label: 'Complete',
     colorClass: 'bg-green-100 text-green-800 border-green-300',
-    icon: '✅'
+    icon: 'âœ…'
   },
   'DELIVERED': {
     label: 'Delivered',
     colorClass: 'bg-purple-100 text-purple-800 border-purple-300',
-    icon: '📦'
+    icon: 'ðŸ“¦'
   },
   'INVOICED': {
     label: 'Invoiced',
     colorClass: 'bg-cyan-100 text-cyan-800 border-cyan-300',
-    icon: '💰'
+    icon: 'ðŸ’°'
   },
   'CANCELLED': {
     label: 'Cancelled',
     colorClass: 'bg-red-100 text-red-800 border-red-300',
-    icon: '🚫'
+    icon: 'ðŸš«'
   }
 };
 
@@ -144,7 +144,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ''
     // Fallback for unknown status
     return (
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-800 border-gray-300 ${className}`}>
-        <span className="mr-1">❓</span>
+        <span className="mr-1">â“</span>
           {status}
       </span>
     );

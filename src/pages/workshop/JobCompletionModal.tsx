@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getWorkers, completeJob, type Worker, type JobCompletionRequest } from '../../services/workshopService';
 import './JobCompletionModal.css';
 
@@ -82,7 +82,7 @@ const JobCompletionModal: React.FC<JobCompletionModalProps> = ({ jobId, jobNumbe
 
                 <div className="signature-section">
                     <div className="signature-box">
-                        <div className="signature-icon">🔍</div>
+                        <div className="signature-icon">ðŸ”</div>
                         <h3>QC Inspector / Shop Foreman</h3>
                         <p className="signature-desc">Final inspection verified</p>
                         <select 
@@ -99,13 +99,13 @@ const JobCompletionModal: React.FC<JobCompletionModalProps> = ({ jobId, jobNumbe
                         </select>
                         {qcInspectorId && (
                             <div className="signature-confirmed">
-                                ✓ {getWorkerName(Number(qcInspectorId))}
+                                âœ“ {getWorkerName(Number(qcInspectorId))}
                             </div>
                         )}
                     </div>
 
                     <div className="signature-box">
-                        <div className="signature-icon">👔</div>
+                        <div className="signature-icon">ðŸ‘”</div>
                         <h3>Shop Manager</h3>
                         <p className="signature-desc">Approval to release</p>
                         <select 
@@ -122,7 +122,7 @@ const JobCompletionModal: React.FC<JobCompletionModalProps> = ({ jobId, jobNumbe
                         </select>
                         {shopManagerId && (
                             <div className="signature-confirmed">
-                                ✓ {getWorkerName(Number(shopManagerId))}
+                                âœ“ {getWorkerName(Number(shopManagerId))}
                             </div>
                         )}
                     </div>
@@ -145,7 +145,7 @@ const JobCompletionModal: React.FC<JobCompletionModalProps> = ({ jobId, jobNumbe
                         onClick={handleComplete}
                         disabled={loading || !qcInspectorId || !shopManagerId}
                     >
-                        {loading ? 'Processing...' : '✓ Complete & Ready for Delivery'}
+                        {loading ? 'Processing...' : 'âœ“ Complete & Ready for Delivery'}
                     </button>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-// src/pages/jobs/JobsList.tsx
+﻿// src/pages/jobs/JobsList.tsx
 // ERHA OPS - Clean Industrial White Theme
 // Updated: Delete functionality added
 
@@ -62,7 +62,7 @@ export default function JobsList() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/jobs/${jobToDelete.jobId}`, {
+      const response = await fetch(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${jobToDelete.jobId}`, {
         method: 'DELETE',
       });
 

@@ -1,7 +1,7 @@
-// src/services/rfqService.ts
+﻿// src/services/rfqService.ts
 // ERHA OPS - RFQ Service
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1';
 
 export interface RFQ {
   id: number;

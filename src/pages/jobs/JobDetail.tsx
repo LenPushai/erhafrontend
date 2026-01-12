@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -76,27 +76,27 @@ interface TemplateTask {
 
 const jobService = {
   getJobById: async (id: number): Promise<Job> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/jobs/${id}`);
+    const response = await axios.get(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${id}`);
     return response.data;
   },
 
   getChildJobs: async (parentId: number): Promise<ChildJob[]> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/jobs/${parentId}/children`);
+    const response = await axios.get(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${parentId}/children`);
     return response.data;
   },
 
   createChildJobs: async (parentId: number, children: Partial<Job>[]): Promise<any[]> => {
-    const response = await axios.post(`http://localhost:8080/api/v1/jobs/${parentId}/children`, children);
+    const response = await axios.post(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${parentId}/children`, children);
     return response.data;
   },
 
   addTasksToJob: async (jobId: number, tasks: any[]): Promise<void> => {
-    await axios.post(`http://localhost:8080/api/v1/jobs/${jobId}/tasks`, tasks);
+    await axios.post(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${jobId}/tasks`, tasks);
   },
 
   downloadJobCardPdf: async (jobId: number, jobNumber: string): Promise<void> => {
     const response = await axios.get(
-        `http://localhost:8080/api/v1/jobs/${jobId}/job-card-pdf`,
+        `https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${jobId}/job-card-pdf`,
         { responseType: 'blob' }
     );
     const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -114,7 +114,7 @@ const jobService = {
 const templateService = {
   getAllTemplates: async (): Promise<TaskTemplate[]> => {
     try {
-      const response = await axios.get('http://localhost:8080/api/v1/task-templates');
+      const response = await axios.get('https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/task-templates');
       return response.data;
     } catch {
       return [];
@@ -122,7 +122,7 @@ const templateService = {
   },
 
   getTemplateById: async (id: number): Promise<TaskTemplate> => {
-    const response = await axios.get(`http://localhost:8080/api/v1/task-templates/${id}`);
+    const response = await axios.get(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/task-templates/${id}`);
     return response.data;
   }
 };
@@ -180,7 +180,7 @@ const JobDetail: React.FC = () => {
 
       // Fetch job line items
       try {
-        const lineItemsRes = await axios.get(`http://localhost:8080/api/v1/jobs/${id}/line-items`);
+        const lineItemsRes = await axios.get(`https://erha-ops-backend-ac4a0f925914.herokuapp.com/api/v1/jobs/${id}/line-items`);
         setLineItems(lineItemsRes.data);
       } catch (e) {
         console.log('No line items found');
@@ -365,7 +365,7 @@ const JobDetail: React.FC = () => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="mb-1">
-              <Link to="/jobs" className="btn btn-outline-secondary me-3">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</Link>
+              <Link to="/jobs" className="btn btn-outline-secondary me-3">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ãƒâ€šÃ‚Â Back</Link>
               Job: {job.jobNumber}
             </h1>
             <p className="text-muted mb-0">{job.description}</p>
@@ -615,7 +615,7 @@ const JobDetail: React.FC = () => {
                       </Link>
                   )}
                   <hr />
-                  <Link to="/jobs" className="btn btn-outline-dark">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back to All Jobs</Link>
+                  <Link to="/jobs" className="btn btn-outline-dark">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ãƒâ€šÃ‚Â Back to All Jobs</Link>
                 </div>
               </div>
             </div>

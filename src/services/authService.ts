@@ -1,5 +1,5 @@
-// authService.ts - Authentication API service
-const API_BASE_URL = 'http://localhost:8080';
+﻿// authService.ts - Authentication API service
+const API_BASE_URL = 'https://erha-ops-backend-ac4a0f925914.herokuapp.com';
 
 export interface LoginRequest {
   username: string;
