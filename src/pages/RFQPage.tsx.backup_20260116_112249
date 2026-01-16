@@ -1,0 +1,715 @@
+﻿import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { Search, RefreshCw, FileText, Plus, Eye, Edit, Trash2, X, Building2, ArrowLeft, Save, User, Phone, Mail, Calendar, Clock, AlertTriangle } from 'lucide-react'
+
+interface RFQ {
+  id: string
+  job_no: string
+  client_id: string
+  client?: { company_name: string; client_code: string }
+  contact_person: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  priority: string
+  status: string
+  description: string | null
+  special_requirements: string | null
+  operating_entity: string
+  required_date: string | null
+  received_date: string
+  assigned_to: string | null
+  assigned_worker?: { full_name: string } | null
+  created_at: string
+  updated_at: string
+}
+
+interface Client { id: string; client_code: string; company_name: string }
+interface Worker { id: string; full_name: string; role: string }
+interface LineItem { lineNumber: number; itemType: string; description: string; specification: string; quantity: string; unitOfMeasure: string; costPrice: string; unitPrice: string; lineTotal: string; workerType: string; notes: string; isOptional: boolean }
+
+type ViewMode = 'list' | 'create' | 'detail' | 'edit'
+
+export function RFQPage() {
+  const [view, setView] = useState<ViewMode>('list')
+  const [rfqs, setRFQs] = useState<RFQ[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [form, setForm] = useState({
+    client_id: '', contact_person: '', contact_email: '', contact_phone: '', department: '',
+    operating_entity: 'ERHA SS', priority: 'MEDIUM', description: '', special_requirements: '',
+    request_date: new Date().toISOString().split('T')[0], required_date: '', assigned_to: '',
+    assigned_quoter: '', media_received: '', drawing_number: '',
+    actions_required: [] as string[], notes: '', remarks: ''
+  })
+
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    { lineNumber: 1, itemType: 'MATERIAL', description: '', specification: '', quantity: '1', unitOfMeasure: 'EA', costPrice: '', unitPrice: '', lineTotal: '', workerType: '', notes: '', isOptional: false }
+  ])
+
+  const quoters = ['HENDRIK', 'JOHAN', 'PIETER', 'ADMIN']
+  const mediaOptions = ['EMAIL', 'PHONE', 'WHATSAPP', 'IN_PERSON', 'FAX']
+  const actionOptions = ['SITE_VISIT', 'MEASUREMENTS', 'DRAWINGS', 'MATERIAL_PRICING', 'SUBCONTRACTOR_QUOTE']
+  const itemTypes = ['MATERIAL', 'LABOUR', 'CONSUMABLES', 'TRANSPORT', 'EQUIPMENT', 'SUBCONTRACT']
+  const workerTypes = ['Boilermaker', 'Fitter', 'Rigger', 'Welder', 'Fabricator', 'Helper', 'Supervisor']
+  const uomOptions = ['EA', 'M', 'M²', 'M³', 'KG', 'HR', 'DAY', 'TRIP', 'LOT', 'SET', 'L']
+  const statusOptions = ['DRAFT', 'PENDING', 'QUOTED', 'ACCEPTED', 'REJECTED', 'CANCELLED']
+
+  const fetchData = async () => {
+    setLoading(true)
+    const [rfqRes, clientRes, workerRes] = await Promise.all([
+      supabase.from('rfqs').select('*, client:clients(company_name, client_code), assigned_worker:workers!rfqs_assigned_to_fkey(full_name)').order('created_at', { ascending: false }),
+      supabase.from('clients').select('id, client_code, company_name').eq('is_active', true).order('company_name'),
+      supabase.from('workers').select('id, full_name, role').eq('is_active', true)
+    ])
+    if (rfqRes.data) setRFQs(rfqRes.data)
+    if (clientRes.data) setClients(clientRes.data)
+    if (workerRes.data) setWorkers(workerRes.data)
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const filtered = rfqs.filter(r => {
+    const search = !searchTerm || r.job_no?.toLowerCase().includes(searchTerm.toLowerCase()) || r.description?.toLowerCase().includes(searchTerm.toLowerCase()) || r.client?.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    const status = statusFilter === 'ALL' || r.status === statusFilter
+    return search && status
+  })
+
+  const handleDelete = async () => {
+    if (!selectedRFQ) return
+    await supabase.from('rfqs').delete().eq('id', selectedRFQ.id)
+    setShowDeleteModal(false)
+    setSelectedRFQ(null)
+    fetchData()
+  }
+
+  const handleView = (rfq: RFQ) => {
+    setSelectedRFQ(rfq)
+    setView('detail')
+  }
+
+  const handleEdit = (rfq: RFQ) => {
+    setSelectedRFQ(rfq)
+    setForm({
+      client_id: rfq.client_id,
+      contact_person: rfq.contact_person || '',
+      contact_email: rfq.contact_email || '',
+      contact_phone: rfq.contact_phone || '',
+      department: '',
+      operating_entity: rfq.operating_entity,
+      priority: rfq.priority,
+      description: rfq.description || '',
+      special_requirements: rfq.special_requirements || '',
+      request_date: rfq.received_date,
+      required_date: rfq.required_date || '',
+      assigned_to: rfq.assigned_to || '',
+      assigned_quoter: '',
+      media_received: '',
+      drawing_number: '',
+      actions_required: [],
+      notes: '',
+      remarks: ''
+    })
+    setView('edit')
+  }
+
+  const handleUpdateStatus = async (rfqId: string, newStatus: string) => {
+    await supabase.from('rfqs').update({ status: newStatus }).eq('id', rfqId)
+    if (selectedRFQ) {
+      setSelectedRFQ({ ...selectedRFQ, status: newStatus })
+    }
+    fetchData()
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedRFQ) return
+    setSaving(true)
+    setError(null)
+    
+    const { error: updateError } = await supabase.from('rfqs').update({
+      client_id: form.client_id,
+      contact_person: form.contact_person || null,
+      contact_email: form.contact_email || null,
+      contact_phone: form.contact_phone || null,
+      operating_entity: form.operating_entity,
+      priority: form.priority,
+      description: form.description,
+      special_requirements: form.special_requirements || null,
+      required_date: form.required_date || null,
+      assigned_to: form.assigned_to || null
+    }).eq('id', selectedRFQ.id)
+
+    if (updateError) {
+      setError(updateError.message)
+    } else {
+      setView('list')
+      fetchData()
+    }
+    setSaving(false)
+  }
+
+  const statusBadge = (s: string) => {
+    const c: Record<string,string> = { DRAFT: 'bg-gray-100 text-gray-700', PENDING: 'bg-amber-100 text-amber-700', QUOTED: 'bg-blue-100 text-blue-700', ACCEPTED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-700', CANCELLED: 'bg-gray-200 text-gray-500' }
+    return <span className={'px-2 py-1 text-xs font-medium rounded ' + (c[s] || c.DRAFT)}>{s}</span>
+  }
+
+  const priorityBadge = (p: string) => {
+    const c: Record<string,string> = { LOW: 'bg-gray-100 text-gray-600', MEDIUM: 'bg-blue-100 text-blue-700', HIGH: 'bg-orange-100 text-orange-700', URGENT: 'bg-red-100 text-red-700' }
+    return <span className={'px-2 py-1 text-xs font-medium rounded ' + (c[p] || c.MEDIUM)}>{p}</span>
+  }
+
+  const updateForm = (field: string, value: any) => { setForm(prev => ({ ...prev, [field]: value })); setError(null) }
+
+  const addLineItem = () => {
+    setLineItems(prev => [...prev, { lineNumber: prev.length + 1, description: '', quantity: '1', unitOfMeasure: 'EA', estimatedUnitPrice: '', estimatedLineTotal: '', notes: '' }])
+  }
+
+  const updateLineItem = (index: number, field: string, value: string) => {
+    setLineItems(prev => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      if (field === 'quantity' || field === 'unitPrice') {
+        const qty = parseFloat(updated[index].quantity) || 0
+        const price = parseFloat(updated[index].unitPrice) || 0
+        updated[index].lineTotal = (qty * price).toFixed(2)
+      }
+      return updated
+    })
+  }
+
+  const removeLineItem = (index: number) => {
+    if (lineItems.length > 1) {
+      setLineItems(prev => prev.filter((_, i) => i !== index).map((item, i) => ({ ...item, lineNumber: i + 1 })))
+    }
+  }
+
+  const totalEstimate = lineItems.reduce((sum, item) => sum + (parseFloat(item.lineTotal) || 0), 0)
+
+  const resetForm = () => {
+    setForm({
+      client_id: '', contact_person: '', contact_email: '', contact_phone: '', department: '',
+      operating_entity: 'ERHA SS', priority: 'MEDIUM', description: '', special_requirements: '',
+      request_date: new Date().toISOString().split('T')[0], required_date: '', assigned_to: '',
+      assigned_quoter: '', media_received: '', drawing_number: '',
+      actions_required: [], notes: '', remarks: ''
+    })
+    setLineItems([{ lineNumber: 1, itemType: 'MATERIAL', description: '', specification: '', quantity: '1', unitOfMeasure: 'EA', costPrice: '', unitPrice: '', lineTotal: '', workerType: '', notes: '', isOptional: false }])
+    setError(null)
+    setSelectedRFQ(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.client_id) { setError('Please select a client'); return }
+    if (!form.description.trim()) { setError('Please enter a description'); return }
+    if (!form.required_date) { setError('Please select required date'); return }
+
+    try {
+      setSaving(true)
+      setError(null)
+
+      const { error: rfqError } = await supabase.from('rfqs').insert({
+        client_id: form.client_id,
+        contact_person: form.contact_person || null,
+        contact_email: form.contact_email || null,
+        contact_phone: form.contact_phone || null,
+        operating_entity: form.operating_entity,
+        priority: form.priority,
+        status: 'DRAFT',
+        description: form.description,
+        special_requirements: form.special_requirements || null,
+        required_date: form.required_date,
+        assigned_to: form.assigned_to || null
+      })
+
+      if (rfqError) throw rfqError
+
+      resetForm()
+      setView('list')
+      fetchData()
+    } catch (err: any) {
+      setError(err.message || 'Failed to create RFQ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-ZA') : '-'
+
+  // DETAIL VIEW
+  if (view === 'detail' && selectedRFQ) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => { setView('list'); setSelectedRFQ(null) }} className="p-2 hover:bg-gray-200 rounded-lg"><ArrowLeft size={20} /></button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{selectedRFQ.job_no}</h1>
+              <p className="text-gray-500">RFQ Details</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => handleEdit(selectedRFQ)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"><Edit size={18} />Edit</button>
+            <button onClick={() => { setShowDeleteModal(true) }} className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50"><Trash2 size={18} />Delete</button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>{statusBadge(selectedRFQ.status)}</div>
+                  <div>{priorityBadge(selectedRFQ.priority)}</div>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-500 mr-2">Change Status:</label>
+                  <select 
+                    value={selectedRFQ.status} 
+                    onChange={(e) => handleUpdateStatus(selectedRFQ.id, e.target.value)}
+                    className="px-3 py-1 border border-gray-200 rounded-lg text-sm"
+                  >
+                    {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Client Info */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Client Information</h3></div>
+              <div className="p-4 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Client</p>
+                  <p className="font-medium flex items-center gap-2"><Building2 size={16} className="text-gray-400" />{selectedRFQ.client?.company_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Client Code</p>
+                  <p className="font-medium">{selectedRFQ.client?.client_code}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Contact Person</p>
+                  <p className="font-medium flex items-center gap-2"><User size={16} className="text-gray-400" />{selectedRFQ.contact_person || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Contact Phone</p>
+                  <p className="font-medium flex items-center gap-2"><Phone size={16} className="text-gray-400" />{selectedRFQ.contact_phone || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">Contact Email</p>
+                  <p className="font-medium flex items-center gap-2"><Mail size={16} className="text-gray-400" />{selectedRFQ.contact_email || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Description</h3></div>
+              <div className="p-4">
+                <p className="text-gray-700 whitespace-pre-wrap">{selectedRFQ.description || 'No description provided'}</p>
+                {selectedRFQ.special_requirements && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-gray-500 mb-1">Special Requirements</p>
+                    <p className="text-gray-700">{selectedRFQ.special_requirements}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Info */}
+          <div className="space-y-6">
+            {/* Dates */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Dates</h3></div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500 flex items-center gap-2"><Calendar size={14} />Received</span>
+                  <span className="font-medium">{formatDate(selectedRFQ.received_date)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500 flex items-center gap-2"><Clock size={14} />Required By</span>
+                  <span className="font-medium">{formatDate(selectedRFQ.required_date)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Created</span>
+                  <span className="text-sm">{formatDate(selectedRFQ.created_at)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Updated</span>
+                  <span className="text-sm">{formatDate(selectedRFQ.updated_at)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Assignment</h3></div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Operating Entity</p>
+                  <p className="font-medium">{selectedRFQ.operating_entity}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Assigned To</p>
+                  <p className="font-medium">{selectedRFQ.assigned_worker?.full_name || 'Unassigned'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-sm">
+              <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Actions</h3></div>
+              <div className="p-4 space-y-2">
+                <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Convert to Quote</button>
+                <button className="w-full px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">Print RFQ</button>
+                <button className="w-full px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">Send to Client</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Delete Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Delete RFQ?</h3>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="font-mono font-semibold text-blue-600">{selectedRFQ.job_no}</p>
+                <p className="text-sm text-gray-600">{selectedRFQ.client?.company_name}</p>
+              </div>
+              <p className="text-red-600 text-sm mb-4">This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg">Cancel</button>
+                <button onClick={handleDelete} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg">Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // EDIT VIEW
+  if (view === 'edit' && selectedRFQ) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => { setView('detail') }} className="p-2 hover:bg-gray-200 rounded-lg"><ArrowLeft size={20} /></button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit {selectedRFQ.job_no}</h1>
+            <p className="text-gray-500">Update RFQ Details</p>
+          </div>
+        </div>
+
+        {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>}
+
+        <div className="space-y-6">
+          {/* Client Information */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Client Information</h3></div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                <select value={form.client_id} onChange={e => updateForm('client_id', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">Select client...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                <input type="text" value={form.contact_person} onChange={e => updateForm('contact_person', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                <input type="email" value={form.contact_email} onChange={e => updateForm('contact_email', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                <input type="tel" value={form.contact_phone} onChange={e => updateForm('contact_phone', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* RFQ Details */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">RFQ Details</h3></div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Operating Entity</label>
+                <select value={form.operating_entity} onChange={e => updateForm('operating_entity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="ERHA SS">ERHA SS</option>
+                  <option value="ERHA FC">ERHA FC</option>
+                  <option value="ERHA MPU">ERHA MPU</option>
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select value={form.priority} onChange={e => updateForm('priority', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Required By</label>
+                <input type="date" value={form.required_date} onChange={e => updateForm('required_date', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                <select value={form.assigned_to} onChange={e => updateForm('assigned_to', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">Unassigned</option>
+                  {workers.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
+                </select>
+              </div>
+              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea value={form.description} onChange={e => updateForm('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Special Requirements</label>
+                <textarea value={form.special_requirements} onChange={e => updateForm('special_requirements', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setView('detail')} disabled={saving} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"><X size={18} />Cancel</button>
+            <button onClick={handleSaveEdit} disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {saving ? 'Saving...' : <><Save size={18} />Save Changes</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // CREATE VIEW
+  if (view === 'create') {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => { resetForm(); setView('list') }} className="p-2 hover:bg-gray-200 rounded-lg"><ArrowLeft size={20} /></button>
+          <div><h1 className="text-2xl font-bold text-gray-900">Create New RFQ</h1><p className="text-gray-500">Request for Quotation</p></div>
+        </div>
+
+        {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Client Information */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">Client Information</h3></div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Client <span className="text-red-500">*</span></label>
+                <select value={form.client_id} onChange={e => updateForm('client_id', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" required>
+                  <option value="">Select client...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                <input type="text" value={form.contact_person} onChange={e => updateForm('contact_person', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                <input type="email" value={form.contact_email} onChange={e => updateForm('contact_email', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                <input type="tel" value={form.contact_phone} onChange={e => updateForm('contact_phone', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* ENQ Report Information */}
+          <div className="bg-white rounded-xl shadow-sm border-l-4 border-green-500">
+            <div className="px-4 py-3 border-b bg-green-50 rounded-tr-xl"><h3 className="font-semibold text-gray-900">ENQ Report Information</h3></div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Assigned Quoter</label>
+                <select value={form.assigned_quoter} onChange={e => updateForm('assigned_quoter', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">Select quoter...</option>
+                  {quoters.map(q => <option key={q} value={q}>{q}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Media Received</label>
+                <select value={form.media_received} onChange={e => updateForm('media_received', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">Select media...</option>
+                  {mediaOptions.map(m => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Drawing Number</label>
+                <input type="text" value={form.drawing_number} onChange={e => updateForm('drawing_number', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div className="md:col-span-3"><label className="block text-sm font-medium text-gray-700 mb-2">Actions Required</label>
+                <div className="flex flex-wrap gap-4">
+                  {actionOptions.map(action => (
+                    <label key={action} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={form.actions_required.includes(action)} onChange={e => {
+                        if (e.target.checked) updateForm('actions_required', [...form.actions_required, action])
+                        else updateForm('actions_required', form.actions_required.filter((a: string) => a !== action))
+                      }} className="w-4 h-4 text-blue-600 rounded" />
+                      <span className="text-sm text-gray-700">{action.replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RFQ Details */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl"><h3 className="font-semibold text-gray-900">RFQ Details</h3></div>
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Operating Entity <span className="text-red-500">*</span></label>
+                <select value={form.operating_entity} onChange={e => updateForm('operating_entity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="ERHA SS">ERHA SS</option>
+                  <option value="ERHA FC">ERHA FC</option>
+                  <option value="ERHA MPU">ERHA MPU</option>
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Priority <span className="text-red-500">*</span></label>
+                <select value={form.priority} onChange={e => updateForm('priority', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Date Received <span className="text-red-500">*</span></label>
+                <input type="date" value={form.request_date} onChange={e => updateForm('request_date', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Required By <span className="text-red-500">*</span></label>
+                <input type="date" value={form.required_date} onChange={e => updateForm('required_date', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+                <textarea value={form.description} onChange={e => updateForm('description', e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg" required />
+              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+                <select value={form.assigned_to} onChange={e => updateForm('assigned_to', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                  <option value="">Unassigned</option>
+                  {workers.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
+                </select>
+              </div>
+              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Special Requirements</label>
+                <textarea value={form.special_requirements} onChange={e => updateForm('special_requirements', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* Line Items */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="px-4 py-3 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
+              <h3 className="font-semibold text-gray-900">Line Items</h3>
+              <button type="button" onClick={addLineItem} className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"><Plus size={16} />Add Item</button>
+            </div>
+            <div className="p-4 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b">
+                  <th className="text-left py-2 px-2 w-8">#</th>
+                  <th className="text-left py-2 px-2">Description</th>
+                  <th className="text-left py-2 px-2 w-20">Qty</th>
+                  <th className="text-left py-2 px-2 w-20">UOM</th>
+                  <th className="text-left py-2 px-2 w-28">Unit Price</th>
+                  <th className="text-left py-2 px-2 w-28">Total</th>
+                  <th className="w-10"></th>
+                </tr></thead>
+                <tbody>
+                  {lineItems.map((item, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="py-2 px-2 text-gray-500">{item.lineNumber}</td>
+                      <td className="py-2 px-2"><input type="text" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} className="w-full px-2 py-1 border border-gray-200 rounded" /></td>
+                      <td className="py-2 px-2"><input type="number" value={item.quantity} onChange={e => updateLineItem(idx, 'quantity', e.target.value)} className="w-full px-2 py-1 border border-gray-200 rounded" min="1" /></td>
+                      <td className="py-2 px-2"><select value={item.unitOfMeasure} onChange={e => updateLineItem(idx, 'unitOfMeasure', e.target.value)} className="w-full px-2 py-1 border border-gray-200 rounded">
+                        <option value="EA">EA</option><option value="M">M</option><option value="KG">KG</option><option value="HR">HR</option><option value="SET">SET</option>
+                      </select></td>
+                      <td className="py-2 px-2"><input type="number" value={item.estimatedUnitPrice} onChange={e => updateLineItem(idx, 'estimatedUnitPrice', e.target.value)} className="w-full px-2 py-1 border border-gray-200 rounded" step="0.01" /></td>
+                      <td className="py-2 px-2 font-medium">R{item.estimatedLineTotal || '0.00'}</td>
+                      <td className="py-2 px-2"><button type="button" onClick={() => removeLineItem(idx)} className="p-1 text-red-500 hover:bg-red-50 rounded" disabled={lineItems.length === 1}><X size={16} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot><tr className="bg-gray-50">
+                  <td colSpan={5} className="py-2 px-2 text-right font-semibold">Estimated Total:</td>
+                  <td className="py-2 px-2 font-bold text-blue-600">R{totalEstimate.toFixed(2)}</td>
+                  <td></td>
+                </tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => { resetForm(); setView('list') }} disabled={saving} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"><X size={18} />Cancel</button>
+            <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {saving ? 'Creating...' : <><Save size={18} />Create RFQ</>}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  // LIST VIEW
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <div><h1 className="text-2xl font-bold text-gray-900">RFQs</h1><p className="text-gray-500">{filtered.length} requests</p></div>
+        <button onClick={() => setView('create')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus size={18} />New RFQ</button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2 relative"><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg" /></div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-4 py-2 border border-gray-200 rounded-lg"><option value="ALL">All Status</option><option value="DRAFT">Draft</option><option value="PENDING">Pending</option><option value="QUOTED">Quoted</option><option value="ACCEPTED">Accepted</option><option value="REJECTED">Rejected</option></select>
+          <button onClick={fetchData} className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+        {loading ? <div className="p-8 text-center text-gray-500">Loading...</div> : filtered.length === 0 ? (
+          <div className="p-8 text-center"><FileText size={48} className="mx-auto text-gray-300 mb-3" /><p className="text-gray-500">No RFQs found</p></div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b"><tr>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Job No</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Client</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Description</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Priority</th>
+              <th className="text-left px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
+              <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
+            </tr></thead>
+            <tbody className="divide-y">{filtered.map(rfq => (
+              <tr key={rfq.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3"><span className="font-mono font-medium text-blue-600">{rfq.job_no}</span></td>
+                <td className="px-4 py-3"><div className="flex items-center gap-2"><Building2 size={16} className="text-gray-400" />{rfq.client?.company_name || '-'}</div></td>
+                <td className="px-4 py-3"><span className="text-gray-700 truncate block max-w-xs">{rfq.description || '-'}</span></td>
+                <td className="px-4 py-3">{priorityBadge(rfq.priority)}</td>
+                <td className="px-4 py-3">{statusBadge(rfq.status)}</td>
+                <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                  <button onClick={() => handleView(rfq)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="View"><Eye size={16} /></button>
+                  <button onClick={() => handleEdit(rfq)} className="p-2 text-gray-600 hover:bg-gray-100 rounded" title="Edit"><Edit size={16} /></button>
+                  <button onClick={() => { setSelectedRFQ(rfq); setShowDeleteModal(true) }} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete"><X size={16} /></button>
+                </div></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </div>
+
+      {showDeleteModal && selectedRFQ && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Delete RFQ?</h3>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4"><p className="font-mono font-semibold text-blue-600">{selectedRFQ.job_no}</p><p className="text-sm text-gray-600">{selectedRFQ.client?.company_name}</p></div>
+            <p className="text-red-600 text-sm mb-4">This action cannot be undone.</p>
+            <div className="flex gap-3"><button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg">Cancel</button><button onClick={handleDelete} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg">Delete</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+
+
+
