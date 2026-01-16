@@ -1,13 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { Dashboard } from './pages/Dashboard'
 import { ClientsPage } from './pages/ClientsPage'
 import RFQPage from './pages/RFQPage'
 import { Menu, ChevronDown } from 'lucide-react'
+import SignQuotePage from './pages/SignQuotePage'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('/')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [signToken, setSignToken] = useState<string | null>(null)
+
+  
+  // Check if URL is a signing link (for clients)
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/sign/')) {
+      setSignToken(path.replace('/sign/', ''));
+    }
+  }, []);
+
+  // If signing link, show only the signing page
+  if (signToken) {
+    return <SignQuotePage token={signToken} />;
+  }
 
   const titles: Record<string, string> = { '/': 'Dashboard', '/rfqs': 'RFQs', '/clients': 'Clients', '/jobs': 'Jobs', '/quoter': 'Quoter Dashboard', '/kanban': 'Kanban Board', '/time': 'Time Tracking', '/labor': 'Casual Labor', '/inventory': 'Inventory', '/reports': 'Reports', '/settings': 'Settings' }
 
@@ -40,3 +56,4 @@ function App() {
 }
 
 export default App
+
