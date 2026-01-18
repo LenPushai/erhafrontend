@@ -1,0 +1,433 @@
+const express = require('express');
+const cors = require('cors');
+const { Resend } = require('resend');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const resend = new Resend('re_Q3RKYakG_9yGoARH977FNLhwF2rG9Y8vk');
+
+// Email templates with clickable signature buttons
+const templates = {
+  // ============================================================
+  // STAGE 1: Manager Approval Request
+  // ============================================================
+  docusign_manager_pending: (data) => ({
+    subject: `?? Approval Required: Quote ${data.quote_number} - ${data.client_name}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #d97706, #b45309); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">?? INTERNAL APPROVAL REQUIRED</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Quote ready for your review and signature</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <p style="color: #333; font-size: 16px; margin-bottom: 20px;">
+              Dear ${data.manager_name || 'Manager'},
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6;">
+              A quote has been prepared and requires your approval before being sent to the client.
+            </p>
+            
+            <!-- Quote Details Box -->
+            <div style="background: #fef3c7; border-left: 4px solid #d97706; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; width: 40%;">Quote Number:</td>
+                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${data.quote_number}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Client:</td>
+                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${data.client_name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Description:</td>
+                  <td style="padding: 8px 0; color: #333;">${data.description || 'As per quote'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Total Value:</td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: bold; font-size: 18px;">R ${data.total_value}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.sign_url}" 
+                 style="display: inline-block; background: linear-gradient(135deg, #d97706, #b45309); color: white; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(217,119,6,0.4);">
+                ?? REVIEW & APPROVE QUOTE
+              </a>
+            </div>
+            
+            <p style="color: #888; font-size: 13px; text-align: center; margin-top: 20px;">
+              Click the button above to review the quote PDF and approve with your digital signature.
+            </p>
+            
+            <!-- Divider -->
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              This is an automated message from ERHA Operations Management System.<br>
+              Once approved, the quote will be sent to the client for their signature.
+            </p>
+          </div>
+          
+          <!-- Footer -->
+          <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+            <p>ERHA Fabrication & Construction (Pty) Ltd</p>
+            <p>Powered by PUSH AI Foundation</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // STAGE 2: Client Signature Request
+  // ============================================================
+  docusign_client_pending: (data) => ({
+    subject: `?? Quote ${data.quote_number} from ERHA - Signature Required`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1e3a5f, #2563eb); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">?? QUOTE READY FOR SIGNATURE</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Please review and sign to confirm your order</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <p style="color: #333; font-size: 16px; margin-bottom: 20px;">
+              Dear ${data.client_name},
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6;">
+              Thank you for your enquiry. Please find attached our quotation for your review. 
+              To proceed with this order, please sign the quote electronically by clicking the button below.
+            </p>
+            
+            <!-- Quote Details Box -->
+            <div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; width: 40%;">Quote Number:</td>
+                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${data.quote_number}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Description:</td>
+                  <td style="padding: 8px 0; color: #333;">${data.description || 'As per quote'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Total (Excl VAT):</td>
+                  <td style="padding: 8px 0; color: #059669; font-weight: bold; font-size: 18px;">R ${data.total_value}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Valid Until:</td>
+                  <td style="padding: 8px 0; color: #333;">${data.valid_until || '30 days from issue'}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <!-- Approved Badge -->
+            <div style="background: #d1fae5; border: 1px solid #10b981; padding: 12px 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <span style="color: #059669; font-weight: bold;">? This quote has been approved by ERHA Management</span>
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.sign_url}" 
+                 style="display: inline-block; background: linear-gradient(135deg, #059669, #047857); color: white; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(5,150,105,0.4);">
+                ?? SIGN & ACCEPT QUOTE
+              </a>
+            </div>
+            
+            <p style="color: #888; font-size: 13px; text-align: center; margin-top: 20px;">
+              Click the button above to view the full quote PDF and sign electronically.
+            </p>
+            
+            <!-- Divider -->
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            
+            <p style="color: #555; font-size: 14px;">
+              <strong>What happens next?</strong><br>
+              Once signed, our team will begin processing your order. You will receive a confirmation email with job details.
+            </p>
+            
+            <p style="color: #999; font-size: 12px; margin-top: 20px;">
+              If you have any questions about this quote, please contact us at quotes@erhafab.co.za or call 016 976 2053.
+            </p>
+          </div>
+          
+          <!-- Footer -->
+          <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+            <p>ERHA Fabrication & Construction (Pty) Ltd</p>
+            <p>1 Genl Hertzog Street, Sasolburg | Tel: 016 976 2053</p>
+            <p style="margin-top: 10px;">Powered by PUSH AI Foundation</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // Manager Signed Notification (to admin/quoter)
+  // ============================================================
+  docusign_manager_signed: (data) => ({
+    subject: `? Quote ${data.quote_number} Approved - Ready for Client`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="background: #059669; padding: 25px; text-align: center;">
+            <h1 style="color: white; margin: 0;">? Quote Approved!</h1>
+          </div>
+          <div style="padding: 30px;">
+            <p style="color: #333; font-size: 16px;">
+              Quote <strong>${data.quote_number}</strong> has been approved by <strong>${data.manager_name}</strong>.
+            </p>
+            <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Client:</strong> ${data.client_name}</p>
+              <p style="margin: 5px 0;"><strong>Value:</strong> R ${data.total_value}</p>
+            </div>
+            <p style="color: #666;">
+              The quote is now ready to be sent to the client for their signature. 
+              Go to the RFQ page and click "Send to Client" to proceed.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // Order Won / Quote Signed by Client
+  // ============================================================
+  order_won: (data) => ({
+    subject: `?? ORDER WON! ${data.client_name} - R ${data.total_value}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 40px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 36px;">?? ORDER WON!</h1>
+            <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 10px;">Congratulations Team!</p>
+          </div>
+          <div style="padding: 30px;">
+            <div style="background: #f0fdf4; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+              <p style="color: #666; margin: 0 0 5px 0;">Client</p>
+              <p style="color: #333; font-size: 24px; font-weight: bold; margin: 0;">${data.client_name}</p>
+              <p style="color: #666; margin: 15px 0 5px 0;">Order Value</p>
+              <p style="color: #059669; font-size: 32px; font-weight: bold; margin: 0;">R ${data.total_value}</p>
+            </div>
+            <p style="color: #555; text-align: center;">
+              ${data.description || 'The client has signed the quote. Time to create the job!'}
+            </p>
+            <div style="text-align: center; margin-top: 25px;">
+              <p style="color: #888; font-size: 14px;">?? Let's deliver excellence!</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // Signature Completed (confirmation)
+  // ============================================================
+  docusign_completed: (data) => ({
+    subject: `? Quote ${data.quote_number} Signed - Order Confirmed`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="background: #059669; padding: 25px; text-align: center;">
+            <h1 style="color: white; margin: 0;">? Signature Complete</h1>
+          </div>
+          <div style="padding: 30px;">
+            <p style="color: #333; font-size: 16px;">
+              Quote <strong>${data.quote_number}</strong> has been signed by <strong>${data.signer_name}</strong> from <strong>${data.client_name}</strong>.
+            </p>
+            <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Order Value:</strong> R ${data.total_value}</p>
+              <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #059669; font-weight: bold;">ACCEPTED</span></p>
+            </div>
+            <p style="color: #666;">
+              The order has been confirmed. Create a job from the RFQ page to begin work.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // Quote Sent for Signature (admin notification)
+  // ============================================================
+  docusign_sent: (data) => ({
+    subject: `?? Quote ${data.quote_number} Sent for Signature`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="background: #6366f1; padding: 25px; text-align: center;">
+            <h1 style="color: white; margin: 0;">?? Quote Sent</h1>
+          </div>
+          <div style="padding: 30px;">
+            <p style="color: #333; font-size: 16px;">
+              Quote <strong>${data.quote_number}</strong> has been sent for signature.
+            </p>
+            <div style="background: #eef2ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Client:</strong> ${data.client_name}</p>
+              <p style="margin: 5px 0;"><strong>Contact:</strong> ${data.contact_email}</p>
+              <p style="margin: 5px 0;"><strong>Value:</strong> R ${data.total_value}</p>
+            </div>
+            <p style="color: #666;">
+              You will be notified when the quote is signed.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  // ============================================================
+  // Existing templates (RFQ workflow)
+  // ============================================================
+  rfq_received: (data) => ({
+    subject: `?? New RFQ Received: ${data.rfq_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #1e3a5f; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="margin: 0;">?? New RFQ Received</h2>
+        </div>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p><strong>RFQ Number:</strong> ${data.rfq_number}</p>
+          <p><strong>Client:</strong> ${data.client_name}</p>
+          <p><strong>Description:</strong> ${data.description}</p>
+          <p><strong>Required Date:</strong> ${data.required_date}</p>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">ERHA Operations Management System</p>
+        </div>
+      </div>
+    `
+  }),
+
+  estimator_assigned: (data) => ({
+    subject: `?? RFQ Assigned: ${data.rfq_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="margin: 0;">?? RFQ Assigned to You</h2>
+        </div>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p>You have been assigned to quote the following RFQ:</p>
+          <p><strong>RFQ Number:</strong> ${data.rfq_number}</p>
+          <p><strong>Client:</strong> ${data.client_name}</p>
+          <p><strong>Description:</strong> ${data.description}</p>
+          <p><strong>Required Date:</strong> ${data.required_date}</p>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">ERHA Operations Management System</p>
+        </div>
+      </div>
+    `
+  }),
+
+  quote_ready: (data) => ({
+    subject: `? Quote Ready: ${data.quote_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="margin: 0;">? Quote Ready for Review</h2>
+        </div>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p><strong>Quote Number:</strong> ${data.quote_number}</p>
+          <p><strong>Client:</strong> ${data.client_name}</p>
+          <p><strong>Value:</strong> R ${data.total_value}</p>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">ERHA Operations Management System</p>
+        </div>
+      </div>
+    `
+  }),
+
+  invoice_created: (data) => ({
+    subject: `?? Invoice Created: ${data.invoice_number}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #7c3aed; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h2 style="margin: 0;">?? Invoice Created</h2>
+        </div>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px;">
+          <p><strong>Invoice Number:</strong> ${data.invoice_number}</p>
+          <p><strong>Client:</strong> ${data.client_name}</p>
+          <p><strong>Value:</strong> R ${data.invoice_value}</p>
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">ERHA Operations Management System</p>
+        </div>
+      </div>
+    `
+  })
+};
+
+// Send email endpoint
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, template, data } = req.body;
+    
+    console.log(`?? Email request: ${template} to ${to}`);
+    
+    if (!templates[template]) {
+      return res.status(400).json({ error: `Unknown template: ${template}` });
+    }
+    
+    const emailContent = templates[template](data);
+    
+    const result = await resend.emails.send({
+      from: 'ERHA Operations <onboarding@resend.dev>',
+      to: to,
+      subject: emailContent.subject,
+      html: emailContent.html
+    });
+    
+    console.log(`? Email sent: ${result.id}`);
+    res.json({ success: true, id: result.id });
+  } catch (error) {
+    console.error('? Email error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', templates: Object.keys(templates) });
+});
+
+const PORT = 3001;
+app.listen(PORT, () => {
+  console.log(`?? Email server running on port ${PORT}`);
+  console.log(`?? Available templates: ${Object.keys(templates).join(', ')}`);
+});

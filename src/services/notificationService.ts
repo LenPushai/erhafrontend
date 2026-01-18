@@ -1,26 +1,44 @@
-﻿const EMAIL_SERVER_URL = 'http://localhost:3001';
+const EMAIL_SERVER_URL = 'http://localhost:3001';
 
 export interface NotificationData {
   client_name?: string;
+  rfq_number?: string;
   description?: string;
   priority?: string;
   required_date?: string;
   quote_number?: string;
   total_value?: string;
   quoter_name?: string;
+  quoter_email?: string;
   po_number?: string;
   job_number?: string;
   due_date?: string;
   invoice_number?: string;
+  invoice_value?: string;
+  contact_person?: string;
+  contact_email?: string;
+  manager_name?: string;
+  signing_url?: string;
+  days_pending?: string;
+  expiry_date?: string;
 }
 
-export type NotificationTemplate = 
+export type NotificationTemplate =
+  // RFQ Workflow
   | 'rfq_received'
   | 'estimator_assigned'
   | 'quote_ready'
   | 'order_won'
   | 'job_created'
-  | 'invoice_created';
+  | 'invoice_created'
+  // E-Signature Workflow
+  | 'docusign_sent'
+  | 'docusign_manager_pending'
+  | 'docusign_manager_signed'
+  | 'docusign_client_pending'
+  | 'docusign_completed'
+  | 'docusign_reminder'
+  | 'docusign_expired';
 
 export const sendNotification = async (
   to: string | string[],
@@ -35,7 +53,7 @@ export const sendNotification = async (
     });
     const result = await response.json();
     if (result.success) {
-      console.log('Notification sent:', template);
+      console.log(`📧 Email sent: ${template}`);
       return { success: true, id: result.id };
     } else {
       console.error('Notification failed:', result.error);
@@ -47,25 +65,58 @@ export const sendNotification = async (
   }
 };
 
-export const notifyRfqReceived = async (managerEmail: string, data: NotificationData) => 
-  sendNotification(managerEmail, 'rfq_received', data);
+// ============================================================================
+// RFQ WORKFLOW NOTIFICATIONS
+// ============================================================================
 
-export const notifyEstimatorAssigned = async (quoterEmail: string, data: NotificationData) => 
-  sendNotification(quoterEmail, 'estimator_assigned', data);
+export const notifyRfqReceived = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'rfq_received', data);
 
-export const notifyQuoteReady = async (managerEmail: string, data: NotificationData) => 
-  sendNotification(managerEmail, 'quote_ready', data);
+export const notifyEstimatorAssigned = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'estimator_assigned', data);
 
-export const notifyOrderWon = async (teamEmails: string[], data: NotificationData) => 
-  sendNotification(teamEmails, 'order_won', data);
+export const notifyQuoteReady = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'quote_ready', data);
 
-export const notifyJobCreated = async (workshopEmail: string, data: NotificationData) => 
-  sendNotification(workshopEmail, 'job_created', data);
+export const notifyOrderWon = async (emails: string | string[], data: NotificationData) =>
+  sendNotification(emails, 'order_won', data);
 
-export const notifyInvoiceCreated = async (accountsEmail: string, data: NotificationData) => 
-  sendNotification(accountsEmail, 'invoice_created', data);
+export const notifyJobCreated = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'job_created', data);
 
-export const sendTestNotification = async (email: string) => 
+export const notifyInvoiceCreated = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'invoice_created', data);
+
+// ============================================================================
+// E-SIGNATURE WORKFLOW NOTIFICATIONS
+// ============================================================================
+
+export const notifyDocuSignSent = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_sent', data);
+
+export const notifyManagerPendingSignature = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_manager_pending', data);
+
+export const notifyManagerSigned = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_manager_signed', data);
+
+export const notifyClientPendingSignature = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_client_pending', data);
+
+export const notifyDocuSignCompleted = async (emails: string | string[], data: NotificationData) =>
+  sendNotification(emails, 'docusign_completed', data);
+
+export const notifyDocuSignReminder = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_reminder', data);
+
+export const notifyDocuSignExpired = async (email: string, data: NotificationData) =>
+  sendNotification(email, 'docusign_expired', data);
+
+// ============================================================================
+// TEST FUNCTION
+// ============================================================================
+
+export const sendTestNotification = async (email: string) =>
   sendNotification(email, 'order_won', {
     client_name: 'Test Company',
     total_value: '150,000.00',

@@ -323,7 +323,7 @@ export function Dashboard() {
                 <button
                   key={action.path}
                   onClick={() => navigate(action.path)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <Icon size={18} className={action.color} />

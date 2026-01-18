@@ -118,11 +118,11 @@ const RFQPage: React.FC = () => {
       const filePath = `quotes/${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('quote-pdfs')
         .upload(filePath, file, { cacheControl: '3600', upsert: false })
       if (uploadError) throw uploadError
 
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath)
+      const { data: urlData } = supabase.storage.from('quote-pdfs').getPublicUrl(filePath)
 
       const { error: updateError } = await supabase
         .from('rfqs')
@@ -229,8 +229,63 @@ const RFQPage: React.FC = () => {
     } catch (err: any) { setError(err.message) }
   }
 
+  const handleSendForSignature = async (rfq: RFQ) => {
+    if (!rfq.quote_pdf_url) {
+      setError('Please upload a quote PDF first')
+      return
+    }
+    
+    try {
+      // Generate signature token
+      const token = btoa(JSON.stringify({ rfqId: rfq.id, timestamp: Date.now() }))
+      const signatureUrl = window.location.origin + '/sign/' + token
+      
+      // Update RFQ with signature info
+      await supabase.from('rfqs').update({
+        signature_token: token,
+        signature_sent_at: new Date().toISOString()
+      }).eq('id', rfq.id)
+      
+      // Get client info
+      const client = clients.find(c => c.id === rfq.client_id)
+      const clientName = client?.company_name || 'Client'
+      const clientEmail = client?.contact_email || rfq.contact_email
+      
+      // Send notification emails
+      sendNotification('lenklopper03@gmail.com', 'docusign_sent', {
+        quote_number: rfq.quote_number || rfq.rfq_no,
+        client_name: clientName,
+        contact_email: clientEmail,
+        total_value: rfq.quote_value_excl_vat?.toLocaleString() || '0'
+      }).catch(e => console.error('Signature sent email failed:', e))
+      console.log('Email sent: docusign_sent')
+      
+      sendNotification('lenklopper03@gmail.com', 'docusign_manager_pending', {
+        quote_number: rfq.quote_number || rfq.rfq_no,
+        client_name: clientName,
+        total_value: rfq.quote_value_excl_vat?.toLocaleString() || '0',
+        description: rfq.description,
+        manager_name: 'Manager',
+        sign_url: signatureUrl
+      }).catch(e => console.error('Manager pending email failed:', e))
+      console.log('Email sent: docusign_manager_pending')
+      
+      // Copy link to clipboard
+      await navigator.clipboard.writeText(signatureUrl)
+      setSuccess('Signature link copied! URL: ' + signatureUrl)
+      
+      await loadData()
+    } catch (err: any) {
+      setError('Failed to generate signature link: ' + err.message)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Get client name early for use in notifications
+    const clientName = clients.find(c => c.id === formData.client_id)?.company_name || 'Unknown Client'
+    
     if (!formData.client_id) { setError('Please select a client'); return }
     if (!formData.description.trim()) { setError('Please enter a description'); return }
     if (!formData.required_date) { setError('Please select required date'); return }
@@ -306,6 +361,15 @@ const RFQPage: React.FC = () => {
             description: rfqData.description
           }).catch(e => console.error('Email failed:', e))
         }
+        // 5. Invoice number entered (invoice created)
+        if (formData.invoice_number && formData.invoice_number !== selectedRfq?.invoice_number) {
+          sendNotification('lenklopper03@gmail.com', 'invoice_created', {
+            client_name: clientName,
+            invoice_number: formData.invoice_number,
+            total_value: formData.quote_value_excl_vat?.toLocaleString() || formData.invoice_value?.toLocaleString() || '0'
+          }).catch(e => console.error('Invoice email failed:', e))
+          console.log('ðŸ“§ Sent: invoice_created')
+        }
 
         if (formData.assigned_quoter_id && formData.assigned_quoter_id !== selectedRfq?.assigned_quoter_id) {
           const quoter = workers.find(w => w.id === formData.assigned_quoter_id)
@@ -333,6 +397,19 @@ const RFQPage: React.FC = () => {
             notes: item.notes || null, is_optional: item.is_optional
           })))
         }
+        
+        // Get client name for notifications
+        const clientName = clients.find(c => c.id === formData.client_id)?.company_name || 'Unknown Client'
+        
+        // Email: New RFQ received
+        sendNotification('lenklopper03@gmail.com', 'rfq_received', {
+          rfq_number: data.rfq_no,
+          client_name: clientName,
+          description: formData.description,
+          priority: formData.priority,
+          required_date: formData.required_date
+        }).catch(err => console.error('RFQ received email failed:', err))
+        console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â§ Sent: rfq_received')
         setSuccess('RFQ created successfully')
 
         if (formData.assigned_quoter_id) {
@@ -564,7 +641,7 @@ const RFQPage: React.FC = () => {
                     <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload Quote PDF'}
                   </button>
                 )}
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50" disabled={!selectedRfq.quote_pdf_url}><Send size={16} /> Send for Signature</button>
+                <button onClick={() => handleSendForSignature(selectedRfq)} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50" ><Send size={16} /> Send for Signature</button>
                 <hr />
                 {selectedRfq.order_number && !selectedRfq.job_id && (
                   <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg"><Briefcase size={20} /> Create Job</button>
