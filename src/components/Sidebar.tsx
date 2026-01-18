@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { 
   LayoutDashboard, Users, FileText, ClipboardList, Briefcase,
   Settings, Menu, ChevronLeft, LayoutGrid, Clock, UserCheck,
@@ -8,7 +8,6 @@ import {
 const operationsNav = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'RFQs', href: '/rfqs', icon: FileText },
-  { name: 'Quoter Dashboard', href: '/quoter', icon: ClipboardList },
   { name: 'Jobs', href: '/jobs', icon: Briefcase },
 ]
 
@@ -101,3 +100,4 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     </aside>
   )
 }
+

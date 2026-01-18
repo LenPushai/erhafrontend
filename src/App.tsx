@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { Dashboard } from './pages/Dashboard'
 import { ClientsPage } from './pages/ClientsPage'
 import RFQPage from './pages/RFQPage'
+import { JobsPage } from './pages/JobsPage'
 import { Menu, ChevronDown } from 'lucide-react'
 import SignQuotePage from './pages/SignQuotePage'
 
@@ -46,6 +47,7 @@ function App() {
           {currentPage === '/' && <Dashboard />}
           {currentPage === '/clients' && <ClientsPage />}
           {currentPage === '/rfqs' && <RFQPage />}
+          {currentPage === '/jobs' && <JobsPage />}
           {currentPage !== '/' && currentPage !== '/clients' && currentPage !== '/rfqs' && (
             <div className="p-6"><h1 className="text-2xl font-bold text-gray-900">{titles[currentPage]}</h1><p className="text-gray-500 mt-2">Coming soon...</p></div>
           )}
