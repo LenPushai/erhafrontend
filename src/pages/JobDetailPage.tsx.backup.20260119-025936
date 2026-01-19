@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
@@ -6,8 +6,6 @@ import {
   AlertTriangle, Clock, CheckCircle, FileText, DollarSign, Briefcase
 } from 'lucide-react'
 import { generateJobCardPDF } from '../services/jobCardPdfService'
-import { AddChildJobModal } from '../components/AddChildJobModal'
-
 
 interface Job {
   id: string
@@ -146,7 +144,7 @@ export function JobDetailPage({
   const jobId = propJobId || params.id || ''
   const onBack = propOnBack || (() => navigate('/jobs'))
   const onEdit = propOnEdit || ((id: string) => navigate(`/jobs/${id}/edit`))
-  const onAddChildJob = propOnAddChildJob || (() => setShowAddChildModal(true))
+  const onAddChildJob = propOnAddChildJob || (() => {})
   const onViewChildJob = propOnViewChildJob || ((id: string) => navigate(`/jobs/${id}`))
   const [job, setJob] = useState<Job | null>(null)
   const [lineItems, setLineItems] = useState<JobLineItem[]>([])
@@ -154,7 +152,6 @@ export function JobDetailPage({
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [childJobs, setChildJobs] = useState<ChildJob[]>([])
   const [loading, setLoading] = useState(true)
-const [showAddChildModal, setShowAddChildModal] = useState(false)
 
   useEffect(() => {
     fetchJobDetails()
@@ -250,7 +247,7 @@ const [showAddChildModal, setShowAddChildModal] = useState(false)
                 {statusConfig.label}
               </span>
             </div>
-            <p className="text-gray-500">{job.client_name || 'No client'} {job.job_phase && `â€¢ ${job.job_phase}`}</p>
+            <p className="text-gray-500">{job.client_name || 'No client'} {job.job_phase && `• ${job.job_phase}`}</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -535,33 +532,6 @@ const [showAddChildModal, setShowAddChildModal] = useState(false)
           </div>
         </div>
       </div>
-
-      {/* Add Child Job Modal */}
-      {job && (
-        <AddChildJobModal
-          show={showAddChildModal}
-          parentJobId={job.id}
-          parentJobNumber={job.job_number}
-          onClose={() => setShowAddChildModal(false)}
-          onSuccess={() => {
-            setShowAddChildModal(false)
-            fetchJobDetails()
-          }}
-        />
-      )}
-{/* Add Child Job Modal */}
-{job && (
-  <AddChildJobModal
-    show={showAddChildModal}
-    parentJobId={job.id}
-    parentJobNumber={job.job_number}
-    onClose={() => setShowAddChildModal(false)}
-    onSuccess={() => {
-      setShowAddChildModal(false)
-      fetchJobDetails()
-    }}
-  />
-)}
     </div>
   )
 }

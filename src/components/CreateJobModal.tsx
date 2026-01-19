@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { X, Save, Wrench, Truck, Settings, HardHat, Building, Clock, User, Phone, FileText, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { jobService } from '../services/jobService';
 
 interface CreateJobModalProps {
   show: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: {
+    job_number?: string;
+    client_id?: string;
+    client_name?: string;
+    description?: string;
+    estimated_value?: number;
+    quote_value?: number;
+    contact_person?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    rfq_id?: string;
+    rfq_number?: string;
+    order_number?: string;
+    priority?: string;
+    required_date?: string;
+  };
 }
 
 interface Client {
@@ -37,7 +54,7 @@ const JOB_TYPES: { type: JobType; label: string; description: string; icon: Reac
 
 const LINE_ITEM_CATEGORIES = ['MATERIAL', 'LABOUR', 'CONSUMABLES', 'TRANSPORT', 'EQUIPMENT', 'SUBCONTRACTOR', 'OTHER'];
 
-export function CreateJobModal({ show, onClose, onSuccess }: CreateJobModalProps) {
+export function CreateJobModal({ show, onClose, onSuccess, initialData }: CreateJobModalProps) {
   const [step, setStep] = useState<'type' | 'details'>('type');
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -61,6 +78,39 @@ export function CreateJobModal({ show, onClose, onSuccess }: CreateJobModalProps
       resetForm();
     }
   }, [show]);
+
+  // Pre-fill form with initialData from RFQ
+  useEffect(() => {
+    if (initialData && show) {
+      console.log('Pre-filling from RFQ data:', initialData)
+      setFormData(prev => ({
+        ...prev,
+        client_id: initialData.client_id || '',
+        client_name: initialData.client_name || '',
+        contact_person: initialData.contact_person || '',
+        contact_phone: initialData.contact_phone || '',
+        description: initialData.description || '',
+        priority: initialData.priority || 'NORMAL',
+        site_location: ''
+      }))
+      
+      // Set line items from RFQ
+      if (initialData.line_items && initialData.line_items.length > 0) {
+        setLineItems(initialData.line_items.map((item: any, idx: number) => ({
+          id: `rfq-${idx}`,
+          category: item.item_type || 'MATERIAL',
+          description: item.description || '',
+          quantity: item.quantity || 1,
+          unit: item.uom || 'EACH',
+          unit_price: item.sell_price || 0
+        })))
+      }
+      
+      // Skip type selection if coming from RFQ
+      setSelectedType('RPR')
+      setStep('details')
+    }
+  }, [initialData, show])
 
   const fetchClients = async () => {
     const { data } = await supabase
@@ -273,7 +323,7 @@ export function CreateJobModal({ show, onClose, onSuccess }: CreateJobModalProps
               onClick={() => setStep('type')}
               className="text-sm text-blue-600 hover:text-blue-800 mb-2"
             >
-              ← Back to job type selection
+              â† Back to job type selection
             </button>
 
             {/* Client Selection */}

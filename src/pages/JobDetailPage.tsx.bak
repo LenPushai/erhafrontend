@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { generateJobCardPDF } from '../services/jobCardPdfService'
 import { AddChildJobModal } from '../components/AddChildJobModal'
-
+import { AddChildJobModal } from '../components/AddChildJobModal'
 
 interface Job {
   id: string

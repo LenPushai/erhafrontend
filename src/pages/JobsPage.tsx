@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
   Search, Eye, Edit2, Trash2, Plus,
@@ -56,7 +57,9 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
 }
 
 export function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([])
+  const location = useLocation()
+
+    const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
@@ -68,12 +71,26 @@ export function JobsPage() {
   
   // Modals
   const [showCreateJobModal, setShowCreateJobModal] = useState(false)
+  const [rfqDataForJob, setRfqDataForJob] = useState<any>(null)
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const [parentJobForChild, setParentJobForChild] = useState<{ id: string; number: string } | null>(null)
 
   useEffect(() => {
     fetchJobs()
   }, [])
+
+  // Handle incoming RFQ data for job creation
+  useEffect(() => {
+    if (location.state?.createFromRfq) {
+      const rfqData = location.state.createFromRfq
+      console.log('Creating job from RFQ:', rfqData)
+      setRfqDataForJob(rfqData)
+      setShowCreateJobModal(true)
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
+
+
 
   const fetchJobs = async () => {
     setLoading(true)
@@ -329,7 +346,7 @@ export function JobsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {job.is_child_job && (
-                            <span className="text-gray-400 ml-4">↳</span>
+                            <span className="text-gray-400 ml-4">â†³</span>
                           )}
                           <span className="font-medium text-gray-900">{job.job_number}</span>
                           {job.is_emergency && (
@@ -410,11 +427,16 @@ export function JobsPage() {
       {/* Create Job Modal */}
       <CreateJobModal
         show={showCreateJobModal}
-        onClose={() => setShowCreateJobModal(false)}
+        onClose={() => {
+          setShowCreateJobModal(false)
+          setRfqDataForJob(null)
+        }}
         onSuccess={() => {
           setShowCreateJobModal(false)
+          setRfqDataForJob(null)
           fetchJobs()
         }}
+        initialData={rfqDataForJob}
       />
 
       {/* Add Child Job Modal */}

@@ -1,5 +1,4 @@
 ﻿import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
   ArrowLeft, Save, Plus, Trash2, Clock, CheckCircle, AlertTriangle,
@@ -66,13 +65,6 @@ interface Job {
   operating_entity: string | null
   order_number: string | null
   job_value: number | null
-  // ENQ Report Fields
-  drawing_number: string | null
-  media_received: string | null
-  department: string | null
-  operating_entity: string | null
-  order_number: string | null
-  job_value: number | null
   estimated_hours: number | null
 }
 
@@ -117,9 +109,9 @@ interface TimeEntry {
 }
 
 interface JobEditPageProps {
-  jobId?: string
-  onBack?: () => void
-  onSave?: () => void
+  jobId: string
+  onBack: () => void
+  onSave: () => void
 }
 
 const ITEM_TYPES = [
@@ -158,15 +150,7 @@ const PRIORITY_OPTIONS = [
   { value: 'CRITICAL', label: 'Critical' },
 ]
 
-export function JobEditPage({ jobId: propJobId, onBack: propOnBack, onSave: propOnSave }: JobEditPageProps) {
-  // Support both props (when used as component) and URL params (when used as route)
-  const params = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  
-  const jobId = propJobId || params.id || ''
-  const onBack = propOnBack || (() => navigate('/jobs'))
-  const onSave = propOnSave || (() => navigate(/jobs/+ jobId))
-  
+export function JobEditPage({ jobId, onBack, onSave }: JobEditPageProps) {
   const [job, setJob] = useState<Job | null>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>([])
   const [holdingPoints, setHoldingPoints] = useState<HoldingPoint[]>([])
@@ -490,80 +474,6 @@ export function JobEditPage({ jobId: propJobId, onBack: propOnBack, onSave: prop
                   onChange={(e) => updateJob('site_req', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
-            </div>
-
-            {/* ENQ Report Information */}
-            <div className="bg-green-50 rounded-xl p-4 border border-green-200 mb-6">
-              <h3 className="font-semibold text-green-800 mb-3">ENQ Report Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <input
-                    type="text"
-                    value={job.department || ''}
-                    onChange={(e) => updateJob('department', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g. 2002"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Operating Entity</label>
-                  <input
-                    type="text"
-                    value={job.operating_entity || ''}
-                    onChange={(e) => updateJob('operating_entity', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g. ERHA FC"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Drawing Number</label>
-                  <input
-                    type="text"
-                    value={job.drawing_number || ''}
-                    onChange={(e) => updateJob('drawing_number', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Media Received</label>
-                  <select
-                    value={job.media_received || ''}
-                    onChange={(e) => updateJob('media_received', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select...</option>
-                    <option value="Email">Email</option>
-                    <option value="In Person">In Person</option>
-                    <option value="Phone">Phone</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Fax">Fax</option>
-                    <option value="Post">Post</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Order Number (PO)</label>
-                  <input
-                    type="text"
-                    value={job.order_number || ''}
-                    onChange={(e) => updateJob('order_number', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="Client PO Number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Value (R)</label>
-                  <input
-                    type="number"
-                    value={job.job_value || ''}
-                    onChange={(e) => updateJob('job_value', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    placeholder="0.00"
-                  />
-                </div>
               </div>
             </div>
 

@@ -368,7 +368,8 @@ const RFQPage: React.FC = () => {
     setSelectedRfq(rfq)
     setOriginalStatus(rfq.status)
     setFormData({
-      client_id: rfq.client_id || '', contact_person: rfq.contact_person || '', contact_email: rfq.contact_email || '', contact_phone: rfq.contact_phone || '', department: rfq.department || '', operating_entity: rfq.operating_entity || 'ERHA FC', description: rfq.description || '', request_date: rfq.request_date || '', required_date: rfq.required_date || '', priority: rfq.priority || 'MEDIUM', special_requirements: rfq.special_requirements || '', assigned_to: '', follow_up_date: rfq.follow_up_date || '', notes: rfq.notes || '', remarks: rfq.remarks || '', assigned_quoter_id: rfq.assigned_quoter_id || '', media_received: rfq.media_received || '', actions_required: rfq.actions_required ? rfq.actions_required.split(',') : [],status: rfq.status || 'NEW',
+      client_id: rfq.client_id || '', contact_person: rfq.contact_person || '', contact_email: rfq.contact_email || '', contact_phone: rfq.contact_phone || '', department: rfq.department || '', operating_entity: rfq.operating_entity || 'ERHA FC', description: rfq.description || '', request_date: rfq.request_date || '', required_date: rfq.required_date || '', priority: rfq.priority || 'MEDIUM', special_requirements: rfq.special_requirements || '', assigned_to: '', follow_up_date: rfq.follow_up_date || '', notes: rfq.notes || '', remarks: rfq.remarks || '', assigned_quoter_id: rfq.assigned_quoter_id || '', media_received: rfq.media_received || '', actions_required: rfq.actions_required ? rfq.actions_required.split(',') : [], drawing_number: rfq.drawing_number || '',
+      status: rfq.status || 'NEW',
       quote_number: rfq.quote_number || '',
       quote_value_excl_vat: rfq.quote_value_excl_vat || null,
       valid_until: (rfq as any).valid_until || '',
@@ -865,7 +866,6 @@ const RFQPage: React.FC = () => {
 }
 
 export default RFQPage
-
 
 
 

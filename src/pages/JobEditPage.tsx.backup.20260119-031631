@@ -1,5 +1,4 @@
 ﻿import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
   ArrowLeft, Save, Plus, Trash2, Clock, CheckCircle, AlertTriangle,
@@ -117,9 +116,9 @@ interface TimeEntry {
 }
 
 interface JobEditPageProps {
-  jobId?: string
-  onBack?: () => void
-  onSave?: () => void
+  jobId: string
+  onBack: () => void
+  onSave: () => void
 }
 
 const ITEM_TYPES = [
@@ -158,15 +157,7 @@ const PRIORITY_OPTIONS = [
   { value: 'CRITICAL', label: 'Critical' },
 ]
 
-export function JobEditPage({ jobId: propJobId, onBack: propOnBack, onSave: propOnSave }: JobEditPageProps) {
-  // Support both props (when used as component) and URL params (when used as route)
-  const params = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  
-  const jobId = propJobId || params.id || ''
-  const onBack = propOnBack || (() => navigate('/jobs'))
-  const onSave = propOnSave || (() => navigate(/jobs/+ jobId))
-  
+export function JobEditPage({ jobId, onBack, onSave }: JobEditPageProps) {
   const [job, setJob] = useState<Job | null>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>([])
   const [holdingPoints, setHoldingPoints] = useState<HoldingPoint[]>([])
