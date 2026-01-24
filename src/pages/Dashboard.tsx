@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
@@ -6,7 +6,7 @@ import {
   AlertTriangle, Clock, CheckCircle, DollarSign, Activity,
   Eye, Plus, RefreshCw, Lightbulb, ArrowRight, Zap
 } from 'lucide-react'
-import { EmergencyJobModal } from '../components/EmergencyJobModal'
+import { EmergencyJobModal } from '../components/dashboard/EmergencyJobModal'
 import { CreateJobModal } from '../components/CreateJobModal'
 
 interface DashboardStats {
@@ -77,7 +77,7 @@ export function Dashboard() {
     // Fetch Job stats
     const { data: jobs } = await supabase
       .from('jobs')
-      .select('id, status, priority, quoted_value, invoice_value, is_child_job')
+      .select('id, status, priority, quoted_value, invoice_value, is_child_job, client_name')
       .or('is_child_job.is.null,is_child_job.eq.false')
     
     const activeJobs = jobs?.filter(j => j.status === 'IN_PROGRESS').length || 0
@@ -451,3 +451,5 @@ export function Dashboard() {
 }
 
 export default Dashboard
+
+

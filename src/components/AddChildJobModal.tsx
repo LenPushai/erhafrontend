@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState, FormEvent } from 'react';
 import { X, Plus } from 'lucide-react';
 import jobService from '../services/jobService';
 
@@ -33,7 +33,7 @@ export function AddChildJobModal({ show, parentJobId, parentJobNumber, onClose, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -208,3 +208,5 @@ export function AddChildJobModal({ show, parentJobId, parentJobNumber, onClose, 
 }
 
 export default AddChildJobModal;
+
+

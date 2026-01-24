@@ -1,9 +1,9 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import RFQPage from './pages/RFQPage';
-import { RFQCreate } from './pages/RFQCreate';
+import RFQCreate from './pages/RFQCreate';
 import { JobsPage } from './pages/JobsPage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { JobEditPage } from './pages/JobEditPage';
@@ -38,7 +38,7 @@ function AppContent() {
 
           {/* RFQs */}
           <Route path="/rfqs" element={<RFQPage />} />
-          <Route path="/rfqs/new" element={<RFQCreate />} />
+          <Route path="/rfqs/new" element={<RFQCreate onBack={() => window.history.back()} onSuccess={() => window.location.href = "/rfqs"} />} />
           <Route path="/rfqs/:id" element={<RFQPage />} />
           <Route path="/rfqs/:id/edit" element={<RFQPage />} />
 
@@ -67,3 +67,5 @@ function App() {
 }
 
 export default App;
+
+

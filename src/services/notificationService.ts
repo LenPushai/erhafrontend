@@ -1,4 +1,4 @@
-const EMAIL_SERVER_URL = 'http://localhost:3001';
+﻿const EMAIL_SERVER_URL = 'http://localhost:3001';
 
 export interface NotificationData {
   client_name?: string;
@@ -53,7 +53,7 @@ export const sendNotification = async (
     });
     const result = await response.json();
     if (result.success) {
-      console.log(`📧 Email sent: ${template}`);
+      console.log(`ðŸ“§ Email sent: ${template}`);
       return { success: true, id: result.id };
     } else {
       console.error('Notification failed:', result.error);
@@ -123,3 +123,6 @@ export const sendTestNotification = async (email: string) =>
     po_number: 'PO-TEST-001',
     description: 'Test notification from ERHA OMS'
   });
+
+
+

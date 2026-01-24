@@ -66,13 +66,6 @@ interface Job {
   operating_entity: string | null
   order_number: string | null
   job_value: number | null
-  // ENQ Report Fields
-  drawing_number: string | null
-  media_received: string | null
-  department: string | null
-  operating_entity: string | null
-  order_number: string | null
-  job_value: number | null
   estimated_hours: number | null
 }
 
@@ -1224,3 +1217,5 @@ export function JobEditPage({ jobId: propJobId, onBack: propOnBack, onSave: prop
 }
 
 export default JobEditPage
+
+

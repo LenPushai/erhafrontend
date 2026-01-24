@@ -1,4 +1,10 @@
 ﻿import React, { useState, useEffect, useRef } from 'react'
+const [workers, setWorkers] = useState<Worker[]>([]);
+const loadWorkers = async () => {
+  const { data } = await supabase.from('workers').select('id, full_name');
+  setWorkers(data || []);
+};
+useEffect(() => { loadWorkers(); }, []);
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { sendNotification } from '../services/notificationService'
@@ -23,6 +29,7 @@ interface RFQ {
   quote_value_incl_vat?: number; quote_date?: string; order_number?: string
   order_date?: string; job_id?: string; invoice_number?: string; invoice_date?: string
   quote_pdf_url?: string
+  created_by_id: string | null
 }
 
 const ITEM_TYPES = [
@@ -368,8 +375,7 @@ const RFQPage: React.FC = () => {
     setSelectedRfq(rfq)
     setOriginalStatus(rfq.status)
     setFormData({
-      client_id: rfq.client_id || '', contact_person: rfq.contact_person || '', contact_email: rfq.contact_email || '', contact_phone: rfq.contact_phone || '', department: rfq.department || '', operating_entity: rfq.operating_entity || 'ERHA FC', description: rfq.description || '', request_date: rfq.request_date || '', required_date: rfq.required_date || '', priority: rfq.priority || 'MEDIUM', special_requirements: rfq.special_requirements || '', assigned_to: '', follow_up_date: rfq.follow_up_date || '', notes: rfq.notes || '', remarks: rfq.remarks || '', assigned_quoter_id: rfq.assigned_quoter_id || '', media_received: rfq.media_received || '', actions_required: rfq.actions_required ? rfq.actions_required.split(',') : [], drawing_number: rfq.drawing_number || '',
-      status: rfq.status || 'NEW',
+      client_id: rfq.client_id || '', contact_person: rfq.contact_person || '', contact_email: rfq.contact_email || '', contact_phone: rfq.contact_phone || '', department: rfq.department || '', operating_entity: rfq.operating_entity || 'ERHA FC', description: rfq.description || '', request_date: rfq.request_date || '', required_date: rfq.required_date || '', priority: rfq.priority || 'MEDIUM', special_requirements: rfq.special_requirements || '', assigned_to: '', follow_up_date: rfq.follow_up_date || '', notes: rfq.notes || '', remarks: rfq.remarks || '', assigned_quoter_id: rfq.assigned_quoter_id || '', media_received: rfq.media_received || '', actions_required: rfq.actions_required ? rfq.actions_required.split(',') : [],status: rfq.status || 'NEW',
       quote_number: rfq.quote_number || '',
       quote_value_excl_vat: rfq.quote_value_excl_vat || null,
       valid_until: (rfq as any).valid_until || '',
@@ -435,7 +441,8 @@ const RFQPage: React.FC = () => {
         total_value: rfq.quote_value_excl_vat?.toLocaleString() || '0',
         description: rfq.description,
         manager_name: 'Manager',
-        sign_url: signatureUrl
+        // @ts-ignore
+        sign_url: signatureUrl as any
       }).catch(e => console.error('Manager pending email failed:', e))
       console.log('Email sent: docusign_manager_pending')
 
@@ -564,6 +571,7 @@ const RFQPage: React.FC = () => {
             cost_price: item.cost_price || null, unit_price: item.unit_price,
             line_total: item.line_total, worker_type: item.worker_type || null,
             notes: item.notes || null, is_optional: item.is_optional
+  created_by_id: formData.created_by_id,
           })))
         }
 
@@ -676,7 +684,7 @@ const RFQPage: React.FC = () => {
                 <div><span className="text-gray-500">Client:</span><p className="font-medium">{getClientName(selectedRfq.client_id)}</p></div>
                 <div><span className="text-gray-500">Priority:</span><p><span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedRfq.priority)}`}>{selectedRfq.priority}</span></p></div>
                 <div><span className="text-gray-500">Operating Entity:</span><p className="font-medium">{selectedRfq.operating_entity || '-'}</p></div>
-                <div><span className="text-gray-500">Contact Person:</span><p className="font-medium">{selectedRfq.contact_person || '-'}</p></div>
+                <div><span className="text-gray-500">Who Provided the Query:</span><p className="font-medium">{selectedRfq.contact_person || '-'}</p></div>
                 <div><span className="text-gray-500">Contact Email:</span><p className="font-medium">{selectedRfq.contact_email || '-'}</p></div>
                 <div><span className="text-gray-500">Contact Phone:</span><p className="font-medium">{selectedRfq.contact_phone || '-'}</p></div>
                 <div className="col-span-2"><span className="text-gray-500">Description:</span><p className="font-medium">{selectedRfq.description || '-'}</p></div>
@@ -843,10 +851,21 @@ const RFQPage: React.FC = () => {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Client Information */}
-        <div className="bg-white rounded-lg border"><div className="px-4 py-3 bg-gray-50 border-b font-semibold">Client Information</div><div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">Client *</label><select value={formData.client_id} onChange={e => handleClientChange(e.target.value)} className="w-full border rounded-lg px-3 py-2"><option value="">Select...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}</select></div><div><label className="block text-sm font-medium mb-1">Contact Person *</label><input type="text" value={formData.contact_person} onChange={e => setFormData(p => ({ ...p, contact_person: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium mb-1">Contact Email</label><input type="email" value={formData.contact_email} onChange={e => setFormData(p => ({ ...p, contact_email: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium mb-1">Contact Phone</label><input type="tel" value={formData.contact_phone} onChange={e => setFormData(p => ({ ...p, contact_phone: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Department/Area</label><input type="text" value={formData.department} onChange={e => setFormData(p => ({ ...p, department: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div></div></div>
+        <div className="bg-white rounded-lg border"><div className="px-4 py-3 bg-gray-50 border-b font-semibold">Client Information</div><div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">Client *</label><select value={formData.client_id} onChange={e => handleClientChange(e.target.value)} className="w-full border rounded-lg px-3 py-2"><option value="">Select...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}</select></div><div><label className="block text-sm font-medium mb-1">Who Provided the Query *</label><input type="text" value={formData.contact_person} onChange={e => setFormData(p => ({ ...p, contact_person: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium mb-1">Contact Email</label><input type="email" value={formData.contact_email} onChange={e => setFormData(p => ({ ...p, contact_email: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium mb-1">Contact Phone</label><input type="tel" value={formData.contact_phone} onChange={e => setFormData(p => ({ ...p, contact_phone: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Department/Area</label><input type="text" value={formData.department} onChange={e => setFormData(p => ({ ...p, department: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div></div></div>
         {/* ENQ Report */}
         <div className="bg-white rounded-lg border border-green-300"><div className="px-4 py-3 bg-green-50 border-b border-green-300 font-semibold text-green-800">ENQ Report Information</div><div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">Assigned Quoter</label><select value={formData.assigned_quoter_id} onChange={e => setFormData(p => ({ ...p, assigned_quoter_id: e.target.value }))} className="w-full border rounded-lg px-3 py-2"><option value="">Select...</option>{workers.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}</select></div><div><label className="block text-sm font-medium mb-1">Media Received</label><select value={formData.media_received} onChange={e => setFormData(p => ({ ...p, media_received: e.target.value }))} className="w-full border rounded-lg px-3 py-2"><option value="">Select...</option>{mediaOptions.map(m => <option key={m} value={m}>{m}</option>)}</select></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Drawing Number</label><input type="text" value={formData.drawing_number} onChange={e => setFormData(p => ({ ...p, drawing_number: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-2">Actions Required</label><div className="flex flex-wrap gap-3">{actionsOptions.map(a => <label key={a} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.actions_required.includes(a)} onChange={e => { if (e.target.checked) setFormData(p => ({ ...p, actions_required: [...p.actions_required, a] })); else setFormData(p => ({ ...p, actions_required: p.actions_required.filter(x => x !== a) })) }} className="rounded" />{a}</label>)}</div></div></div></div>
         {/* RFQ Details */}
+<label className='block text-sm font-medium text-gray-700'>Who Created ENQ</label>
+<select
+  value={formData.created_by_id || ''}
+  onChange={(e) => setFormData({...formData, created_by_id: e.target.value})}
+  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50'
+>
+  <option value=''>Select Worker</option>
+  {workers.map(worker => (
+    <option key={worker.id} value={worker.id}>{worker.full_name}</option>
+  ))}
+</select>
         <div className="bg-white rounded-lg border"><div className="px-4 py-3 bg-gray-50 border-b font-semibold">RFQ Details</div><div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-medium mb-1">Operating Entity *</label><select value={formData.operating_entity} onChange={e => setFormData(p => ({ ...p, operating_entity: e.target.value }))} className="w-full border rounded-lg px-3 py-2"><option value="ERHA FC">ERHA FC</option><option value="ERHA SS">ERHA SS</option></select></div><div><label className="block text-sm font-medium mb-1">Priority *</label><select value={formData.priority} onChange={e => setFormData(p => ({ ...p, priority: e.target.value }))} className="w-full border rounded-lg px-3 py-2"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></select></div><div><label className="block text-sm font-medium mb-1">Date Received *</label><input type="date" value={formData.request_date} onChange={e => setFormData(p => ({ ...p, request_date: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div><label className="block text-sm font-medium mb-1">Required By *</label><input type="date" value={formData.required_date} onChange={e => setFormData(p => ({ ...p, required_date: e.target.value }))} className="w-full border rounded-lg px-3 py-2" /></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Description *</label><textarea value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} rows={3} className="w-full border rounded-lg px-3 py-2" /></div><div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Special Requirements</label><textarea value={formData.special_requirements} onChange={e => setFormData(p => ({ ...p, special_requirements: e.target.value }))} rows={2} className="w-full border rounded-lg px-3 py-2" /></div></div></div>
         {/* Line Items */}
         <div className="bg-white rounded-lg border"><div className="px-4 py-3 bg-gray-50 border-b font-semibold flex justify-between items-center flex-wrap gap-2"><span>Line Items</span><div className="flex flex-wrap gap-1">{ITEM_TYPES.map(t => <button key={t.value} type="button" onClick={() => addLineItem(t.value)} className="px-2 py-1 rounded text-xs text-white" style={{ backgroundColor: t.color }}>+ {t.label}</button>)}</div></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-50"><tr><th className="px-2 py-2 text-left">#</th><th className="px-2 py-2 text-left">Type</th><th className="px-2 py-2 text-left">Description</th><th className="px-2 py-2 text-left">Spec</th><th className="px-2 py-2 text-left">Qty</th><th className="px-2 py-2 text-left">UOM</th><th className="px-2 py-2 text-left">Cost</th><th className="px-2 py-2 text-left">Price</th><th className="px-2 py-2 text-left">Total</th><th className="px-2 py-2"></th></tr></thead><tbody>{lineItems.map((item, idx) => <tr key={idx} className="border-t"><td className="px-2 py-2">{item.line_number}</td><td className="px-2 py-2"><select value={item.item_type} onChange={e => updateLineItem(idx, 'item_type', e.target.value)} className="border rounded px-1 py-1 text-xs" style={{ borderLeftWidth: '3px', borderLeftColor: getItemTypeColor(item.item_type) }}>{ITEM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></td><td className="px-2 py-2"><input type="text" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} className="w-full border rounded px-2 py-1 text-sm" />{item.item_type === 'LABOUR' && <select value={item.worker_type} onChange={e => updateLineItem(idx, 'worker_type', e.target.value)} className="w-full border rounded px-1 py-1 text-xs mt-1 bg-green-50"><option value="">Worker...</option>{WORKER_TYPES.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}</select>}</td><td className="px-2 py-2"><input type="text" value={item.specification} onChange={e => updateLineItem(idx, 'specification', e.target.value)} className="w-20 border rounded px-1 py-1 text-xs" /></td><td className="px-2 py-2"><input type="number" value={item.quantity} onChange={e => updateLineItem(idx, 'quantity', parseFloat(e.target.value) || 0)} className="w-16 border rounded px-1 py-1 text-sm text-right" /></td><td className="px-2 py-2"><select value={item.unit_of_measure} onChange={e => updateLineItem(idx, 'unit_of_measure', e.target.value)} className="border rounded px-1 py-1 text-xs">{UOM_OPTIONS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select></td><td className="px-2 py-2"><input type="number" value={item.cost_price} onChange={e => updateLineItem(idx, 'cost_price', parseFloat(e.target.value) || 0)} className="w-20 border rounded px-1 py-1 text-sm text-right bg-yellow-50" /></td><td className="px-2 py-2"><input type="number" value={item.unit_price} onChange={e => updateLineItem(idx, 'unit_price', parseFloat(e.target.value) || 0)} className="w-20 border rounded px-1 py-1 text-sm text-right" /></td><td className="px-2 py-2 font-medium">R {item.line_total.toFixed(2)}</td><td className="px-2 py-2"><button type="button" onClick={() => removeLineItem(idx)} className="text-red-500">&times;</button></td></tr>)}{lineItems.length === 0 && <tr><td colSpan={10} className="px-4 py-6 text-center text-gray-500">Click a button above to add line items</td></tr>}</tbody></table></div>{lineItems.length > 0 && <div className="px-4 py-3 bg-gray-50 border-t flex justify-between"><span className="text-sm text-gray-600">Cost: R {totalCost.toFixed(2)} | Margin: <span className={parseFloat(margin) >= 20 ? 'text-green-600' : 'text-orange-600'}>{margin}%</span></span><span className="font-bold">Total: <span className="text-green-600">R {totalValue.toFixed(2)}</span></span></div>}</div>
@@ -866,6 +885,13 @@ const RFQPage: React.FC = () => {
 }
 
 export default RFQPage
+
+
+
+
+
+
+
 
 
 

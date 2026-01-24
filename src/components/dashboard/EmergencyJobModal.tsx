@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, FormEvent, useEffect } from 'react';
 import { X, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { jobService } from '../../services/jobService';
@@ -124,14 +124,14 @@ export function EmergencyJobModal({ show, onClose, onSuccess }: EmergencyJobModa
   
   // Determine severity
   const getSeverity = () => {
-    if (safetyRisk) return { level: 'CRITICAL', color: 'bg-red-600', text: '🚨 CRITICAL - SAFETY RISK' };
-    if (productionStopped) return { level: 'HIGH', color: 'bg-orange-500', text: '⚠️ HIGH - PRODUCTION STOPPED' };
+    if (safetyRisk) return { level: 'CRITICAL', color: 'bg-red-600', text: 'ðŸš¨ CRITICAL - SAFETY RISK' };
+    if (productionStopped) return { level: 'HIGH', color: 'bg-orange-500', text: 'âš ï¸ HIGH - PRODUCTION STOPPED' };
     return null;
   };
   const severity = getSeverity();
   
   // Submit handler
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -508,7 +508,7 @@ export function EmergencyJobModal({ show, onClose, onSuccess }: EmergencyJobModa
               disabled={loading}
               className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50"
             >
-              {loading ? 'Creating...' : '🚨 Create Emergency Job'}
+              {loading ? 'Creating...' : 'ðŸš¨ Create Emergency Job'}
             </button>
           </div>
         </form>
@@ -518,3 +518,5 @@ export function EmergencyJobModal({ show, onClose, onSuccess }: EmergencyJobModa
 }
 
 export default EmergencyJobModal;
+
+

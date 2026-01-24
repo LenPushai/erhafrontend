@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { 
   LayoutDashboard, Users, FileText, ClipboardList, Briefcase,
   Settings, Menu, ChevronLeft, LayoutGrid, Clock, UserCheck,
@@ -78,16 +78,16 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       
       <nav className="flex-1 py-4 px-2 overflow-y-auto space-y-1">
         <SectionLabel label="Operations" />
-        {operationsNav.map((item) => <NavItem key={item.name} item={item} />)}
+        {operationsNav.map((item, idx) => <div key={idx}><NavItem item={item} /></div>)}
         
         <div className="pt-4">
           <SectionLabel label="Workshop" />
-          {workshopNav.map((item) => <NavItem key={item.name} item={item} />)}
+          {workshopNav.map((item, idx) => <div key={idx}><NavItem item={item} /></div>)}
         </div>
 
         <div className="pt-4">
           <SectionLabel label="Admin" />
-          {adminNav.map((item) => <NavItem key={item.name} item={item} />)}
+          {adminNav.map((item, idx) => <div key={idx}><NavItem item={item} /></div>)}
         </div>
       </nav>
 
@@ -100,4 +100,8 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     </aside>
   )
 }
+
+
+
+
 
