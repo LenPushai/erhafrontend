@@ -282,7 +282,7 @@ const RFQPage: React.FC = () => {
         total_value: rfq.quote_value_excl_vat?.toLocaleString() || '0',
         description: rfq.description,
         manager_name: 'Manager',
-        sign_url: signatureUrl
+        signature_url: signatureUrl
       }).catch(e => console.error('Manager pending email failed:', e))
       console.log('Email sent: docusign_manager_pending')
 
@@ -757,6 +757,7 @@ const RFQPage: React.FC = () => {
 }
 
 export default RFQPage
+
 
 
 

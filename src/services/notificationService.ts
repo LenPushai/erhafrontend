@@ -11,6 +11,7 @@ export interface NotificationData {
   quoter_name?: string;
   quoter_email?: string;
   po_number?: string;
+  signature_url?: string;
   job_number?: string;
   due_date?: string;
   invoice_number?: string;
@@ -123,6 +124,7 @@ export const sendTestNotification = async (email: string) =>
     po_number: 'PO-TEST-001',
     description: 'Test notification from ERHA OMS'
   });
+
 
 
 
