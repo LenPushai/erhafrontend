@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const { Resend } = require('resend');
 
@@ -12,14 +12,14 @@ const resend = new Resend('re_Q3RKYakG_9yGoARH977FNLhwF2rG9Y8vk');
 const templates = {
   // STAGE 1: Manager Approval Request (Internal)
   docusign_manager_pending: (data) => ({
-    subject: `🔐 Approval Required: Quote ${data.quote_number}`,
+    subject: `?? Approval Required: Quote ${data.quote_number}`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">🔐 INTERNAL APPROVAL REQUIRED</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">?? INTERNAL APPROVAL REQUIRED</h1>
         </div>
         <div style="background: #fffbeb; padding: 30px; border: 2px solid #f59e0b; border-top: none; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; color: #92400e;">Dear ${data.manager_name || 'Manager'},</p>
@@ -33,9 +33,9 @@ const templates = {
             </table>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${data.sign_url}" 
+            <a href="${data.signature_url}" 
                style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              ✍️ REVIEW & APPROVE QUOTE
+              ?? REVIEW & APPROVE QUOTE
             </a>
           </div>
           <p style="color: #78350f; font-size: 14px;">Once approved, the quote will be sent to the client for their signature.</p>
@@ -49,14 +49,14 @@ const templates = {
 
   // STAGE 2: Client Signature Request (External)
   docusign_client_pending: (data) => ({
-    subject: `📋 Quote Ready for Signature: ${data.quote_number}`,
+    subject: `?? Quote Ready for Signature: ${data.quote_number}`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">📋 QUOTE READY FOR SIGNATURE</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">?? QUOTE READY FOR SIGNATURE</h1>
         </div>
         <div style="background: #eff6ff; padding: 30px; border: 2px solid #2563eb; border-top: none; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; color: #1e40af;">Dear ${data.client_name},</p>
@@ -69,12 +69,12 @@ const templates = {
             </table>
           </div>
           <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; color: #166534; font-weight: bold;">✅ Approved by ERHA Management</p>
+            <p style="margin: 0; color: #166534; font-weight: bold;">? Approved by ERHA Management</p>
           </div>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${data.sign_url}" 
+            <a href="${data.signature_url}" 
                style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              ✍️ SIGN & ACCEPT QUOTE
+              ?? SIGN & ACCEPT QUOTE
             </a>
           </div>
           <p style="color: #1e3a8a; font-size: 14px;">Click the button above to review and sign the quote electronically.</p>
@@ -88,14 +88,14 @@ const templates = {
 
   // Manager signed notification
   docusign_manager_signed: (data) => ({
-    subject: `✅ Quote ${data.quote_number} Approved - Ready for Client`,
+    subject: `? Quote ${data.quote_number} Approved - Ready for Client`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">✅ QUOTE APPROVED</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">? QUOTE APPROVED</h1>
         </div>
         <div style="background: #ecfdf5; padding: 30px; border: 2px solid #059669; border-top: none; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; color: #065f46;">Quote ${data.quote_number} has been approved by ${data.manager_name || 'management'}.</p>
@@ -114,14 +114,14 @@ const templates = {
 
   // Order Won notification
   order_won: (data) => ({
-    subject: `🎉 ORDER WON: ${data.quote_number} - R ${data.total_value}`,
+    subject: `?? ORDER WON: ${data.quote_number} - R ${data.total_value}`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">🎉 ORDER WON!</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">?? ORDER WON!</h1>
         </div>
         <div style="background: #ecfdf5; padding: 30px; border: 2px solid #059669; border-top: none; border-radius: 0 0 10px 10px;">
           <p style="font-size: 18px; color: #065f46; text-align: center; font-weight: bold;">Congratulations! A new order has been confirmed!</p>
@@ -142,14 +142,14 @@ const templates = {
 
   // DocuSign completed notification
   docusign_completed: (data) => ({
-    subject: `✅ Quote ${data.quote_number} Signed by Client`,
+    subject: `? Quote ${data.quote_number} Signed by Client`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #059669; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">✅ Signature Complete</h1>
+          <h1 style="color: white; margin: 0;">? Signature Complete</h1>
         </div>
         <div style="background: #f0fdf4; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>Quote ${data.quote_number} has been signed by ${data.signer_name || 'the client'}.</p>
@@ -163,14 +163,14 @@ const templates = {
 
   // DocuSign sent notification
   docusign_sent: (data) => ({
-    subject: `📤 Quote ${data.quote_number} Sent for Signature`,
+    subject: `?? Quote ${data.quote_number} Sent for Signature`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #7c3aed; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">📤 Quote Sent</h1>
+          <h1 style="color: white; margin: 0;">?? Quote Sent</h1>
         </div>
         <div style="background: #faf5ff; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>Quote ${data.quote_number} has been sent for signature.</p>
@@ -185,14 +185,14 @@ const templates = {
 
   // RFQ Received notification
   rfq_received: (data) => ({
-    subject: `📥 New RFQ Received: ${data.rfq_number}`,
+    subject: `?? New RFQ Received: ${data.rfq_number}`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #0ea5e9; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">📥 New RFQ</h1>
+          <h1 style="color: white; margin: 0;">?? New RFQ</h1>
         </div>
         <div style="background: #f0f9ff; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>A new Request for Quote has been received.</p>
@@ -207,14 +207,14 @@ const templates = {
 
   // Estimator assigned notification
   estimator_assigned: (data) => ({
-    subject: `👤 RFQ ${data.rfq_number} Assigned to You`,
+    subject: `?? RFQ ${data.rfq_number} Assigned to You`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #8b5cf6; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">👤 RFQ Assigned</h1>
+          <h1 style="color: white; margin: 0;">?? RFQ Assigned</h1>
         </div>
         <div style="background: #faf5ff; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>You have been assigned to prepare a quote for:</p>
@@ -229,14 +229,14 @@ const templates = {
 
   // Quote ready notification
   quote_ready: (data) => ({
-    subject: `✅ Quote ${data.quote_number} Ready for Review`,
+    subject: `? Quote ${data.quote_number} Ready for Review`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #10b981; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">✅ Quote Ready</h1>
+          <h1 style="color: white; margin: 0;">? Quote Ready</h1>
         </div>
         <div style="background: #ecfdf5; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>Quote ${data.quote_number} is ready for review.</p>
@@ -250,14 +250,14 @@ const templates = {
 
   // Invoice created notification
   invoice_created: (data) => ({
-    subject: `🧾 Invoice Created: ${data.invoice_number}`,
+    subject: `?? Invoice Created: ${data.invoice_number}`,
     html: `
       <!DOCTYPE html>
       <html>
       <head><meta charset="utf-8"></head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #f59e0b; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">🧾 Invoice Created</h1>
+          <h1 style="color: white; margin: 0;">?? Invoice Created</h1>
         </div>
         <div style="background: #fffbeb; padding: 20px; border-radius: 0 0 10px 10px;">
           <p>A new invoice has been created.</p>
