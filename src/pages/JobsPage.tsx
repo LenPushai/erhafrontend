@@ -1,17 +1,14 @@
-﻿import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
-  Search, Eye, Edit2, Trash2, Plus,
-  Briefcase, AlertTriangle, Clock, CheckCircle, DollarSign
+  Search, Eye, Edit2, Trash2, Plus, Printer,
+  Briefcase, AlertTriangle, Clock, CheckCircle, 
+  DollarSign, Filter, MoreVertical, FileText
 } from 'lucide-react'
-import { JobDetailPage } from './JobDetailPage'
-import { JobEditPage } from './JobEditPage'
-import { AddChildJobModal } from '../components/AddChildJobModal'
 import { CreateJobModal } from '../components/CreateJobModal'
-import jobService from '../services/jobService'
-
-type ViewMode = 'list' | 'detail' | 'edit'
+import { CreateStandaloneJobModal } from '../components/CreateStandaloneJobModal'
+import { PrintJobCard } from '../components/PrintJobCard'
 
 interface Job {
   id: string
@@ -22,436 +19,398 @@ interface Job {
   rfq_number: string | null
   description: string | null
   job_type: string
-  job_category: string | null
   priority: string
   status: string
-  site_location: string | null
-  contact_person: string | null
-  contact_phone: string | null
-  quoted_value: number | null
-  start_date: string | null
   due_date: string | null
-  completed_date: string | null
+  job_value: number | null
+  assigned_employee_name: string | null
   is_emergency: boolean
-  is_child_job: boolean
-  parent_job_id: string | null
-  job_phase: string | null
   created_at: string
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  'PENDING': { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
-  'IN_PROGRESS': { label: 'In Progress', color: 'bg-blue-100 text-blue-800' },
-  'ON_HOLD': { label: 'On Hold', color: 'bg-orange-100 text-orange-800' },
-  'COMPLETED': { label: 'Completed', color: 'bg-green-100 text-green-800' },
-  'INVOICED': { label: 'Invoiced', color: 'bg-purple-100 text-purple-800' },
-  'CANCELLED': { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+  'PENDING': { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+  'IN_PROGRESS': { label: 'In Progress', color: 'bg-blue-100 text-blue-800', icon: Briefcase },
+  'COMPLETED': { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  'INVOICED': { label: 'Invoiced', color: 'bg-purple-100 text-purple-800', icon: DollarSign },
+  'ON_HOLD': { label: 'On Hold', color: 'bg-orange-100 text-orange-800', icon: AlertTriangle },
+  'CANCELLED': { label: 'Cancelled', color: 'bg-red-100 text-red-800', icon: AlertTriangle },
 }
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
   'LOW': { label: 'Low', color: 'bg-gray-100 text-gray-700' },
-  'NORMAL': { label: 'Normal', color: 'bg-blue-100 text-blue-700' },
+  'MEDIUM': { label: 'Medium', color: 'bg-blue-100 text-blue-700' },
   'HIGH': { label: 'High', color: 'bg-orange-100 text-orange-700' },
   'URGENT': { label: 'Urgent', color: 'bg-red-100 text-red-700' },
-  'CRITICAL': { label: 'Critical', color: 'bg-red-600 text-white' },
 }
 
 export function JobsPage() {
+  const navigate = useNavigate()
   const location = useLocation()
-
-    const [jobs, setJobs] = useState<Job[]>([])
+  
+  const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const [showChildJobs, setShowChildJobs] = useState(false)
-  
-  // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
-  
+  const [clients, setClients] = useState<any[]>([])
+
   // Modals
-  const [showCreateJobModal, setShowCreateJobModal] = useState(false)
-  const [rfqDataForJob, setRfqDataForJob] = useState<any>(null)
-  const [showAddChildModal, setShowAddChildModal] = useState(false)
-  const [parentJobForChild, setParentJobForChild] = useState<{ id: string; number: string } | null>(null)
+  const [showCreateFromRfq, setShowCreateFromRfq] = useState(false)
+  const [showCreateStandalone, setShowCreateStandalone] = useState(false)
+  const [rfqForJob, setRfqForJob] = useState<any>(null)
+  const [rfqLineItems, setRfqLineItems] = useState<any[]>([])
+  const [showCreateMenu, setShowCreateMenu] = useState(false)
+  
+  // Print
+  const [printJob, setPrintJob] = useState<Job | null>(null)
+
+  // Stats
+  const stats = {
+    total: jobs.length,
+    pending: jobs.filter(j => j.status === 'PENDING').length,
+    inProgress: jobs.filter(j => j.status === 'IN_PROGRESS').length,
+    completed: jobs.filter(j => j.status === 'COMPLETED').length,
+    emergency: jobs.filter(j => j.is_emergency).length,
+    totalValue: jobs.reduce((sum, j) => sum + (j.job_value || 0), 0)
+  }
 
   useEffect(() => {
-    fetchJobs()
+    fetchData()
   }, [])
 
   // Handle incoming RFQ data for job creation
   useEffect(() => {
     if (location.state?.createFromRfq) {
       const rfqData = location.state.createFromRfq
-      console.log('Creating job from RFQ:', rfqData)
-      setRfqDataForJob(rfqData)
-      setShowCreateJobModal(true)
+      setRfqForJob(rfqData.rfq)
+      setRfqLineItems(rfqData.lineItems || [])
+      setShowCreateFromRfq(true)
       window.history.replaceState({}, document.title)
     }
   }, [location.state])
 
-
-
-  const fetchJobs = async () => {
+  const fetchData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (!error && data) {
-      setJobs(data)
-    }
+    const [jobsRes, clientsRes] = await Promise.all([
+      supabase.from('jobs').select('*').order('created_at', { ascending: false }),
+      supabase.from('clients').select('id, company_name')
+    ])
+    setJobs(jobsRes.data || [])
+    setClients(clientsRes.data || [])
     setLoading(false)
   }
 
-  // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = !searchTerm || 
       job.job_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
     const matchesStatus = statusFilter === 'ALL' || job.status === statusFilter
-    const matchesChildFilter = showChildJobs || !job.is_child_job
-    
-    return matchesSearch && matchesStatus && matchesChildFilter
+    return matchesSearch && matchesStatus
   })
 
-  // Stats
-  const stats = {
-    total: jobs.filter(j => !j.is_child_job).length,
-    pending: jobs.filter(j => j.status === 'PENDING' && !j.is_child_job).length,
-    inProgress: jobs.filter(j => j.status === 'IN_PROGRESS' && !j.is_child_job).length,
-    completed: jobs.filter(j => (j.status === 'COMPLETED' || j.status === 'INVOICED') && !j.is_child_job).length,
-    emergency: jobs.filter(j => j.is_emergency && !j.is_child_job).length,
-    totalValue: jobs.filter(j => !j.is_child_job).reduce((sum, j) => sum + (j.quoted_value || 0), 0)
+  const handleJobCreated = (job: any) => {
+    fetchData()
+    setShowCreateFromRfq(false)
+    setShowCreateStandalone(false)
+    setPrintJob(job) // Show print option
   }
 
-  // Handlers
-  const handleView = (jobId: string) => {
-    setSelectedJobId(jobId)
-    setViewMode('detail')
+  const handleDeleteJob = async (job: Job) => {
+    if (!confirm(`Delete job ${job.job_number}? This cannot be undone.`)) return
+    await supabase.from('jobs').delete().eq('id', job.id)
+    fetchData()
   }
 
-  const handleEdit = (jobId: string) => {
-    setSelectedJobId(jobId)
-    setViewMode('edit')
+  const formatCurrency = (value: number | null) => {
+    if (!value) return '-'
+    return `R ${value.toLocaleString()}`
   }
 
-  const handleAddChildJob = (parentJobId: string) => {
-    const job = jobs.find(j => j.id === parentJobId)
-    if (job) {
-      setParentJobForChild({ id: parentJobId, number: job.job_number })
-      setShowAddChildModal(true)
-    }
+  const formatDate = (date: string | null) => {
+    if (!date) return '-'
+    return new Date(date).toLocaleDateString('en-ZA')
   }
 
-  const handleBackToList = () => {
-    setViewMode('list')
-    setSelectedJobId(null)
-    fetchJobs()
-  }
-
-  const handleDelete = async (jobId: string) => {
-    if (!confirm('Are you sure you want to delete this job?')) return
-    await supabase.from('jobs').delete().eq('id', jobId)
-    fetchJobs()
-  }
-
-  // Render Detail or Edit page
-  if (viewMode === 'detail' && selectedJobId) {
-    return (
-      <JobDetailPage
-        jobId={selectedJobId}
-        onBack={handleBackToList}
-        onEdit={handleEdit}
-        onAddChildJob={handleAddChildJob}
-        onViewChildJob={handleView}
-      />
-    )
-  }
-
-  if (viewMode === 'edit' && selectedJobId) {
-    return (
-      <JobEditPage
-        jobId={selectedJobId}
-        onBack={() => setViewMode('detail')}
-        onSave={() => {
-          setViewMode('detail')
-          fetchJobs()
-        }}
-      />
-    )
-  }
-
-  // Render List View
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Jobs</h1>
+          <p className="text-gray-500">Manage workshop jobs and job cards</p>
+        </div>
+        
+        {/* Create Job Dropdown */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowCreateMenu(!showCreateMenu)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus size={18} /> Create Job
+          </button>
+          
+          {showCreateMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowCreateMenu(false)} />
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border z-20">
+                <button
+                  onClick={() => {
+                    setShowCreateStandalone(true)
+                    setShowCreateMenu(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b"
+                >
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Briefcase className="text-blue-600" size={20} />
+                  </div>
+                  <div>
+                    <p className="font-medium">New Job</p>
+                    <p className="text-xs text-gray-500">Contract/Direct work</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/rfqs')
+                    setShowCreateMenu(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3"
+                >
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <FileText className="text-green-600" size={20} />
+                  </div>
+                  <div>
+                    <p className="font-medium">From RFQ</p>
+                    <p className="text-xs text-gray-500">Create from accepted quote</p>
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Briefcase size={20} className="text-blue-600" />
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Briefcase className="text-blue-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Jobs</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-gray-500">Total Jobs</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock size={20} className="text-yellow-600" />
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Clock className="text-yellow-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
-              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold">{stats.pending}</p>
+              <p className="text-xs text-gray-500">Pending</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Briefcase size={20} className="text-blue-600" />
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Briefcase className="text-blue-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
-              <p className="text-sm text-gray-500">In Progress</p>
+              <p className="text-2xl font-bold">{stats.inProgress}</p>
+              <p className="text-xs text-gray-500">In Progress</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle size={20} className="text-green-600" />
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="text-green-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
-              <p className="text-sm text-gray-500">Completed</p>
+              <p className="text-2xl font-bold">{stats.completed}</p>
+              <p className="text-xs text-gray-500">Completed</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle size={20} className="text-red-600" />
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="text-red-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.emergency}</p>
-              <p className="text-sm text-gray-500">Emergency</p>
+              <p className="text-2xl font-bold">{stats.emergency}</p>
+              <p className="text-xs text-gray-500">Emergency</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white p-4 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign size={20} className="text-green-600" />
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="text-purple-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">R{(stats.totalValue / 1000).toFixed(0)}K</p>
-              <p className="text-sm text-gray-500">Total Value</p>
+              <p className="text-lg font-bold">R{(stats.totalValue/1000).toFixed(0)}K</p>
+              <p className="text-xs text-gray-500">Total Value</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Create Job Button */}
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={() => setShowCreateJobModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm"
-        >
-          <Plus size={18} /> Create Job
-        </button>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px] relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="Search jobs..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            onChange={e => setStatusFilter(e.target.value)}
+            className="border rounded-lg px-4 py-2"
           >
             <option value="ALL">All Statuses</option>
-            {Object.entries(STATUS_CONFIG).map(([value, config]) => (
-              <option key={value} value={value}>{config.label}</option>
+            {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+              <option key={key} value={key}>{config.label}</option>
             ))}
           </select>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showChildJobs}
-              onChange={(e) => setShowChildJobs(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded"
-            />
-            <span className="text-sm text-gray-600">Show Child Jobs</span>
-          </label>
         </div>
       </div>
 
       {/* Jobs Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading jobs...</div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <Briefcase size={48} className="mx-auto mb-4 opacity-50" />
+            <p>No jobs found</p>
+          </div>
+        ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Job Number</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Client</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Description</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Priority</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Due Date</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Value</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job No</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                      Loading jobs...
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredJobs.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                    No jobs found
-                  </td>
-                </tr>
-              ) : (
-                filteredJobs.map(job => {
-                  const statusConfig = STATUS_CONFIG[job.status] || { label: job.status, color: 'bg-gray-100' }
-                  const priorityConfig = PRIORITY_CONFIG[job.priority] || { label: job.priority, color: 'bg-gray-100' }
-                  
-                  return (
-                    <tr key={job.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {job.is_child_job && (
-                            <span className="text-gray-400 ml-4">â†³</span>
-                          )}
-                          <span className="font-medium text-gray-900">{job.job_number}</span>
-                          {job.is_emergency && (
-                            <AlertTriangle size={14} className="text-red-500" />
-                          )}
-                        </div>
-                        {job.job_phase && (
-                          <span className="text-xs text-indigo-600">{job.job_phase}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{job.client_name || '-'}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{job.description || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          job.is_emergency ? 'bg-red-100 text-red-700' : 
-                          job.job_category ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {job.job_category || job.job_type || 'STANDARD'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${statusConfig.color}`}>
-                          {statusConfig.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${priorityConfig.color}`}>
-                          {priorityConfig.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{job.due_date || '-'}</td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900">
-                        {job.quoted_value ? `R ${job.quoted_value.toLocaleString()}` : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleView(job.id)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                            title="View"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(job.id)}
-                            className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
-                            title="Edit"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          {!job.is_child_job && (
-                            <button
-                              onClick={() => handleAddChildJob(job.id)}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                              title="Add Child Job"
-                            >
-                              <Plus size={16} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(job.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
+            <tbody className="divide-y">
+              {filteredJobs.map(job => {
+                const statusConfig = STATUS_CONFIG[job.status] || STATUS_CONFIG['PENDING']
+                const priorityConfig = PRIORITY_CONFIG[job.priority] || PRIORITY_CONFIG['MEDIUM']
+                const StatusIcon = statusConfig.icon
+                
+                return (
+                  <tr key={job.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {job.is_emergency && <AlertTriangle className="text-red-500" size={16} />}
+                        <span className="font-mono font-bold text-blue-600">{job.job_number}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium">{job.client_name || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{job.description || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs ${job.job_type === 'CONTRACT' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'}`}>
+                        {job.job_type || 'QUOTED'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 w-fit ${statusConfig.color}`}>
+                        <StatusIcon size={12} />
+                        {statusConfig.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs ${priorityConfig.color}`}>
+                        {priorityConfig.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{formatDate(job.due_date)}</td>
+                    <td className="px-4 py-3 font-medium">{formatCurrency(job.job_value)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => setPrintJob(job)}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                          title="Print Job Card"
+                        >
+                          <Printer size={16} />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                          title="View"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/jobs/${job.id}/edit`)}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteJob(job)}
+                          className="p-2 hover:bg-red-100 rounded-lg text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
-        </div>
+        )}
       </div>
 
-      {/* Create Job Modal */}
-      <CreateJobModal
-        show={showCreateJobModal}
-        onClose={() => {
-          setShowCreateJobModal(false)
-          setRfqDataForJob(null)
-        }}
-        onSuccess={() => {
-          setShowCreateJobModal(false)
-          setRfqDataForJob(null)
-          fetchJobs()
-        }}
-        initialData={rfqDataForJob}
-      />
+      {/* Create from RFQ Modal */}
+      {showCreateFromRfq && rfqForJob && (
+        <CreateJobModal
+          isOpen={showCreateFromRfq}
+          onClose={() => setShowCreateFromRfq(false)}
+          rfq={rfqForJob}
+          rfqLineItems={rfqLineItems}
+          clients={clients}
+          onJobCreated={handleJobCreated}
+        />
+      )}
 
-      {/* Add Child Job Modal */}
-      {parentJobForChild && (
-        <AddChildJobModal
-          show={showAddChildModal}
-          parentJobId={parentJobForChild.id}
-          parentJobNumber={parentJobForChild.number}
-          onClose={() => {
-            setShowAddChildModal(false)
-            setParentJobForChild(null)
-          }}
-          onSuccess={() => {
-            fetchJobs()
-          }}
+      {/* Create Standalone Job Modal */}
+      {showCreateStandalone && (
+        <CreateStandaloneJobModal
+          isOpen={showCreateStandalone}
+          onClose={() => setShowCreateStandalone(false)}
+          clients={clients}
+          onJobCreated={handleJobCreated}
+        />
+      )}
+
+      {/* Print Job Card */}
+      {printJob && (
+        <PrintJobCard
+          job={printJob}
+          onClose={() => setPrintJob(null)}
         />
       )}
     </div>
