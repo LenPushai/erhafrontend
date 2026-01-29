@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
@@ -189,6 +189,7 @@ export function Dashboard() {
         <div className="flex gap-3">
           <button
             onClick={() => setShowCreateJobModal(true)}
+            onClick={() => navigate("/jobs")}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
             <Plus size={18} /> Create Job
